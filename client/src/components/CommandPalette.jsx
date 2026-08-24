@@ -19,7 +19,6 @@ const KIND = {
   program: { icon: 'programs', group: 'Programmes' },
   assignment: { icon: 'grades', group: 'Assignments' },
   project: { icon: 'grades', group: 'Assignments' },
-  session: { icon: 'webinar', group: 'Sessions' },
   library: { icon: 'library', group: 'Library' },
   student: { icon: 'profile', group: 'People' },
 };

@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { Program } from '../models/Program.js';
 import { Assignment } from '../models/Assignment.js';
-import { Session } from '../models/Session.js';
 import { LibraryItem } from '../models/LibraryItem.js';
 import { Batch } from '../models/Batch.js';
 import { User } from '../models/User.js';
@@ -117,20 +116,6 @@ router.get('/', requireAuth, async (req, res) => {
       });
     }
 
-    // ── Sessions ───────────────────────────────────────────────────────────
-    const sessions = await Session.find({ batchId: { $in: batchIds }, title: rx })
-      .sort({ startsAt: -1 })
-      .limit(6);
-    for (const s of sessions) {
-      results.push({
-        type: 'session',
-        id: String(s._id),
-        title: s.title,
-        subtitle: `${new Date(s.startsAt).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${batchName.get(String(s.batchId)) ? ` · ${batchName.get(String(s.batchId))}` : ''}`,
-        to: isStudent ? '/app' : '/app/programs',
-        rank: 2,
-      });
-    }
   }
 
   // ── Library ──────────────────────────────────────────────────────────────
