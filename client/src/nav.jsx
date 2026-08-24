@@ -1,5 +1,4 @@
 import { lazy } from 'react';
-import Placeholder from './components/Placeholder.jsx';
 
 // Every destination is code-split: a role only downloads the screens it can
 // reach, and the heavy ones (lesson player, curriculum editor, PDF reader) load
@@ -15,12 +14,6 @@ const Library = lazy(() => import('./pages/Library.jsx'));
 const AdminHome = lazy(() => import('./pages/admin/Home.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
 const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
-
-// A placeholder page factory — renders the spec's sections for screens whose
-// backend is Phase 2.
-const ph = (title, sections, blurb) => () => <Placeholder title={title} sections={sections} blurb={blurb} />;
-
-const S = (title, detail) => ({ title, detail });
 
 // Routes that exist for a role but don't get a sidebar tab (detail/drill-down
 // pages reached by clicking into a list). Same {path, Component} shape as tabs.
