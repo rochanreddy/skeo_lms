@@ -8,6 +8,13 @@ const ICONS = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /></>,
   slides: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M12 16v4" /><path d="M8.5 20h7" /></>,
   alert: <><path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18" /><path d="M8 3v4" /><path d="M16 3v4" /></>,
+  folder: <><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></>,
+  book: <><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22z" /><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20" /></>,
+  briefcase: <><rect x="2.5" y="7" width="19" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M2.5 12h19" /></>,
+  play: <><circle cx="12" cy="12" r="9" /><path d="M10 8.5v7l5.5-3.5z" /></>,
+  chart: <><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M7 15l4-4 3 3 5-6" /></>,
+  bell: <><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5" /><path d="M13.7 20a2 2 0 0 1-3.4 0" /></>,
 };
 
 export default function LineIcon({ name, size = 16 }) {
