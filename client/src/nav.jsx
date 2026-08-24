@@ -12,7 +12,6 @@ const StudentHome = lazy(() => import('./pages/StudentHome.jsx'));
 const StudentGrades = lazy(() => import('./pages/StudentGrades.jsx'));
 const AdminBatches = lazy(() => import('./pages/admin/Batches.jsx'));
 const Library = lazy(() => import('./pages/Library.jsx'));
-const Webinar = lazy(() => import('./pages/admin/Webinar.jsx'));
 const AdminHome = lazy(() => import('./pages/admin/Home.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
 const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
@@ -51,7 +50,6 @@ export function navFor(role) {
         { label: 'Batches', path: 'batches', Component: AdminBatches },
         { label: 'Students', path: 'students', Component: AdminStudents },
         { label: 'Library', path: 'library', Component: Library },
-        { label: 'Webinar', path: 'webinar', Component: Webinar },
         { label: 'Account', path: 'account', Component: Profile },
       ];
     // Unknown/retired roles (legacy 'mentor' or 'partner' accounts) get no tabs — App
