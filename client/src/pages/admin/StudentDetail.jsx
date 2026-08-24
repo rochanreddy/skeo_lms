@@ -6,11 +6,11 @@ import { CheckBadge, SubmissionCheckPanel } from '../../components/SubmissionChe
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
-// Drill-down into one student: profile, every batch with attendance, every
+// Drill-down into one student: profile, every batch, every
 // assignment/project with submission state, quiz attempts, lesson progress.
 // Admin additionally gets the block controls (whole LMS / course / module /
 // item) and password reset.
-// in their own batches, plus the CSV report.
+// in the course, plus the CSV report.
 export default function StudentDetail() {
   const { id } = useParams();
   const { user: viewer } = useOutletContext();
@@ -79,7 +79,6 @@ export default function StudentDetail() {
 
   const u = data.user;
   const lmsBlocked = u.blocked?.lms;
-  const attTotals = data.batches.reduce((n, b) => ({ present: n.present + b.attendance.present, total: n.total + b.attendance.total }), { present: 0, total: 0 });
   const subs = data.assignments.filter((a) => a.submission);
   const graded = subs.filter((a) => a.submission.status === 'graded');
   const gradedScores = graded.filter((a) => a.submission.score != null);
@@ -120,17 +119,6 @@ export default function StudentDetail() {
       {/* Analytics row */}
       <div className="detail-charts">
         <div className="panel chart-card">
-          <div className="eyebrow">Attendance</div>
-          <Donut
-            data={[
-              { label: 'Present', value: attTotals.present, color: SEQ_AQUA.main },
-              { label: 'Absent', value: attTotals.total - attTotals.present, color: SEQ_AQUA.light },
-            ]}
-            centerLabel={attTotals.total ? `${Math.round((attTotals.present / attTotals.total) * 100)}%` : '—'}
-            centerSub="present"
-          />
-        </div>
-        <div className="panel chart-card">
           <div className="eyebrow">Assignments &amp; projects</div>
           <Donut
             data={[
@@ -166,15 +154,15 @@ export default function StudentDetail() {
         </section>
       )}
 
-      {/* Batches — with per-course block */}
+      {/* Course — with a per-student block */}
       <section className="panel" style={{ marginTop: 18 }}>
-        <h3>Courses / batches</h3>
-        {data.batches.length === 0 && <p className="muted">Not enrolled in any batch.</p>}
+        <h3>Course</h3>
+        {data.batches.length === 0 && <p className="muted">Not enrolled yet.</p>}
         {data.batches.map((b) => (
           <div key={b.id} className={`detail-row ${b.blocked ? 'is-blocked' : ''}`}>
             <div>
               <strong>{b.name}</strong> {b.blocked && <span className="badge badge-blocked">course blocked</span>}
-              <div className="muted">{b.program} · {b.status} · attendance {b.attendance.pct == null ? '—' : `${b.attendance.pct}%`} ({b.attendance.present}/{b.attendance.total})</div>
+              <div className="muted">{b.program} · {b.status}</div>
             </div>
             {isAdmin && (
               <button className={`btn sm ${b.blocked ? 'ghost' : 'danger ghost-danger'}`} onClick={() => toggleBatch(b.id, b.blocked)}>
