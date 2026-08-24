@@ -8,7 +8,6 @@ import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Assignment } from '../models/Assignment.js';
 import { Submission } from '../models/Submission.js';
-import { Attendance } from '../models/Attendance.js';
 import { Progress } from '../models/Progress.js';
 import { canManageBatch, myBatchIds } from '../utils/access.js';
 
@@ -29,7 +28,7 @@ router.get('/overview', requireAuth, requireRole('admin'), async (_req, res) => 
 });
 
 // GET /api/skeo/stats/admin-dashboard — everything the admin dashboard charts
-// need in one round trip: role/batch/submission/attendance distributions,
+// need in one round trip: role/batch/submission distributions,
 // enrolment per batch, and student signups over the last 8 weeks.
 router.get('/admin-dashboard', requireAuth, requireRole('admin'), async (_req, res) => {
   const [students, batches, programs, quizzes, blockedUsers] = await Promise.all([
@@ -40,11 +39,10 @@ router.get('/admin-dashboard', requireAuth, requireRole('admin'), async (_req, r
     User.countDocuments({ 'blocked.lms': true }),
   ]);
 
-  const [batchDocs, assignmentDocs, submissionAgg, attendanceAgg, recentStudents] = await Promise.all([
+  const [batchDocs, assignmentDocs, submissionAgg, recentStudents] = await Promise.all([
     Batch.find().select('name status studentIds').sort({ createdAt: -1 }),
     Assignment.find().select('type'),
     Submission.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
-    Attendance.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
     User.find({ role: 'student', createdAt: { $gte: new Date(Date.now() - 8 * 7 * 24 * 3600 * 1000) } }).select('createdAt'),
   ]);
 
@@ -68,10 +66,6 @@ router.get('/admin-dashboard', requireAuth, requireRole('admin'), async (_req, r
       { label: 'graded', count: count(submissionAgg, 'graded') },
       { label: 'awaiting review', count: count(submissionAgg, 'submitted') },
     ],
-    attendance: [
-      { label: 'present', count: count(attendanceAgg, 'present') },
-      { label: 'absent', count: count(attendanceAgg, 'absent') },
-    ],
     perBatch: batchDocs.map((b) => ({ name: b.name.replace(/^Demo — /, ''), count: b.studentIds.length })),
     signups,
   });
@@ -88,19 +82,13 @@ const key = (studentId, scopeId) => `${studentId}:${scopeId}`;
  * fronts outranks one who's merely quiet. Every signal carries a human-readable
  * reason so the admin sees WHAT to act on, not just a number.
  *
- * Each signal stays silent until there's enough data to justify it (e.g. no
- * attendance verdict before 3 marked sessions), which keeps a brand-new cohort
- * from lighting up red on day one.
+ * Each signal stays silent until there's enough data to justify it, which keeps
+ * a brand-new cohort from lighting up red on day one.
  */
 function assess(m) {
   const reasons = [];
   let score = 0;
   const flag = (points, label, detail) => { score += points; reasons.push({ label, detail }); };
-
-  if (m.attendanceTotal >= 3) {
-    if (m.attendancePct < 50) flag(3, 'Low attendance', `${m.attendancePct}% present`);
-    else if (m.attendancePct < 70) flag(2, 'Slipping attendance', `${m.attendancePct}% present`);
-  }
 
   if (m.missedAssignments >= 2) flag(3, 'Missing work', `${m.missedAssignments} assignments overdue`);
   else if (m.missedAssignments === 1) flag(1, 'Missing work', '1 assignment overdue');
@@ -143,9 +131,8 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
 
   // Fetch every signal in two batched rounds, then score in memory. Per-student
   // queries would be N+1 and get slow the moment a cohort grows.
-  const [users, attendance, assignments, quizzes, programs, progress] = await Promise.all([
+  const [users, assignments, quizzes, programs, progress] = await Promise.all([
     User.find({ _id: { $in: studentIds } }).select('fullName email lastActiveAt'),
-    Attendance.find({ batchId: { $in: batchIds }, studentId: { $in: studentIds } }).select('studentId batchId status'),
     Assignment.find({ batchId: { $in: batchIds } }).select('batchId dueDate'),
     Quiz.find({ batchId: { $in: batchIds } }).select('batchId'),
     Program.find({ _id: { $in: programIds } }).select('modules'),
@@ -166,16 +153,6 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
     p._id.toString(),
     (p.modules || []).reduce((n, m) => n + (m.chapters || []).reduce((k, c) => k + (c.topics || []).length, 0), 0),
   ]));
-
-  const attByKey = new Map();
-  for (const a of attendance) {
-    if (!a.batchId) continue;
-    const k = key(a.studentId, a.batchId);
-    const v = attByKey.get(k) || { present: 0, total: 0 };
-    v.total += 1;
-    if (a.status === 'present') v.present += 1;
-    attByKey.set(k, v);
-  }
 
   const attemptsByKey = new Map();
   for (const a of attempts) {
@@ -202,13 +179,10 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
       const u = userById.get(sid);
       if (!u) continue;
 
-      const att = attByKey.get(key(sid, bid)) || { present: 0, total: 0 };
       const myAttempts = attemptsByKey.get(key(sid, bid)) || [];
       const doneLessons = (pid && progressByKey.get(key(sid, pid))) || 0;
 
       const metrics = {
-        attendancePct: att.total ? Math.round((att.present / att.total) * 100) : 0,
-        attendanceTotal: att.total,
         missedAssignments: overdue.filter((a) => !submitted.has(`${a._id}:${sid}`)).length,
         quizAvg: myAttempts.length
           ? Math.round(myAttempts.reduce((s, a) => s + (a.total ? (a.score / a.total) * 100 : 0), 0) / myAttempts.length)
