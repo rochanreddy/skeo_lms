@@ -13,9 +13,13 @@ const router = Router();
 // Admins see full quizzes (with answers). Students see answer-stripped
 // quizzes, each with their own attempt (if any) attached.
 router.get('/', requireAuth, async (req, res) => {
-  const { batchId, scope } = req.query;
+  const { batchId, programId, scope } = req.query;
   let filter;
-  if (batchId) {
+  if (programId) {
+    // Module gates for one program — visible to anyone signed in, since the
+    // curriculum itself is.
+    filter = { programId };
+  } else if (batchId) {
     if (!(await canAccessBatch(req.user, batchId))) return res.status(403).json({ error: 'Forbidden.' });
     filter = { batchId };
   } else {
@@ -37,7 +41,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   const quiz = await Quiz.findById(req.params.id);
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
-  if (!(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'Forbidden.' });
+  if (quiz.batchId && !(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'Forbidden.' });
   if (req.user.role === 'student') {
     const myAttempt = await QuizAttempt.findOne({ quizId: quiz._id, studentId: req.user._id });
     return res.json({ quiz: quiz.forStudent(), myAttempt });
@@ -47,11 +51,13 @@ router.get('/:id', requireAuth, async (req, res) => {
 
 // POST /api/skeo/quizzes — admin creates a quiz/exam.
 router.post('/', requireAuth, async (req, res) => {
-  const { batchId, title, type, questions } = req.body || {};
-  if (!batchId || !title) return res.status(400).json({ error: 'batchId and title are required.' });
+  const { batchId, programId, moduleId, title, type, questions } = req.body || {};
+  if (!title || (!batchId && !programId)) return res.status(400).json({ error: 'title and one of batchId / programId are required.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
   const quiz = await Quiz.create({
-    batchId,
+    batchId: batchId || null,
+    programId: programId || null,
+    moduleId: moduleId || '',
     title,
     type: type === 'exam' ? 'exam' : 'quiz',
     questions: (Array.isArray(questions) ? questions : []).map((q) => ({
@@ -61,16 +67,57 @@ router.post('/', requireAuth, async (req, res) => {
       explanation: (q.explanation || '').trim(),
     })),
   });
-  const batch = await Batch.findById(batchId).select('studentIds');
-  notifyMany(batch?.studentIds || [], { type: 'quiz', text: `New ${quiz.type}: ${title}`, link: '/app/learning' });
+  if (batchId) {
+    const batch = await Batch.findById(batchId).select('studentIds');
+    notifyMany(batch?.studentIds || [], { type: 'quiz', text: `New ${quiz.type}: ${title}`, link: '/app/learning' });
+  }
   res.status(201).json({ quiz });
+});
+
+// PATCH /api/skeo/quizzes/:id — admin edits title/type/questions.
+// Editing the questions of a quiz that has already been attempted would make
+// existing scores meaningless, so that is refused; retitling stays allowed.
+router.patch('/:id', requireAuth, async (req, res) => {
+  const quiz = await Quiz.findById(req.params.id);
+  if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
+  if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
+
+  const { title, type, questions } = req.body || {};
+  if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Title cannot be empty.' });
+
+  if (Array.isArray(questions)) {
+    const attempts = await QuizAttempt.countDocuments({ quizId: quiz._id });
+    if (attempts > 0) {
+      return res.status(409).json({ error: `${attempts} student(s) have already sat this quiz — its questions can no longer change. Delete it and post a new one instead.` });
+    }
+    quiz.questions = questions.map((q) => ({
+      text: q.text || '',
+      options: Array.isArray(q.options) ? q.options : [],
+      correctIndex: Number(q.correctIndex) || 0,
+      explanation: (q.explanation || '').trim(),
+    }));
+  }
+  if (title !== undefined) quiz.title = String(title).trim();
+  if (type !== undefined) quiz.type = type === 'exam' ? 'exam' : 'quiz';
+  await quiz.save();
+  res.json({ quiz });
+});
+
+// DELETE /api/skeo/quizzes/:id — admin removes it and every attempt at it.
+router.delete('/:id', requireAuth, async (req, res) => {
+  const quiz = await Quiz.findById(req.params.id);
+  if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
+  if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
+  await QuizAttempt.deleteMany({ quizId: quiz._id });
+  await quiz.deleteOne();
+  res.json({ ok: true });
 });
 
 // POST /api/skeo/quizzes/:id/attempt  { answers: [idx,...] } — student attempts once.
 router.post('/:id/attempt', requireAuth, async (req, res) => {
   const quiz = await Quiz.findById(req.params.id);
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
-  if (!(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'You are not in this batch.' });
+  if (quiz.batchId && !(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'You are not in this batch.' });
   if (await QuizAttempt.findOne({ quizId: quiz._id, studentId: req.user._id })) {
     return res.status(409).json({ error: 'You have already attempted this quiz.' });
   }
@@ -87,7 +134,7 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
 router.get('/:id/review', requireAuth, async (req, res) => {
   const quiz = await Quiz.findById(req.params.id);
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
-  if (!(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'Forbidden.' });
+  if (quiz.batchId && !(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'Forbidden.' });
 
   // Students are always pinned to their own attempt — ?studentId= is ignored
   // for them so it can't be used to read a classmate's answers.

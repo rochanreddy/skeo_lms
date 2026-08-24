@@ -1638,3 +1638,8 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 }
 .af-content-field:focus { outline: none; border-color: var(--purple); box-shadow: var(--ring); }
 @media (max-width: 700px) { .af-content { grid-template-columns: 1fr; } }
+
+/* A gate quiz you haven't reached yet — dimmed and inert, same language as a
+   locked module in the curriculum sidebar. */
+.quiz-locked { opacity: .55; }
+.quiz-locked strong { color: var(--ink-2); }

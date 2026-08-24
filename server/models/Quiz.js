@@ -15,7 +15,13 @@ const questionSchema = new mongoose.Schema(
 
 const quizSchema = new mongoose.Schema(
   {
-    batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', required: true, index: true },
+    // A quiz belongs EITHER to a batch (the classic batch quiz an admin posts)
+    // OR to a curriculum module (the gate between one module and the next).
+    // Exactly one of batchId / moduleId is set; see routes/quizzes.js.
+    batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', default: null, index: true },
+    // Module gate: attempting this quiz unlocks the next module of the program.
+    programId: { type: mongoose.Schema.Types.ObjectId, ref: 'Program', default: null, index: true },
+    moduleId: { type: String, default: '', index: true }, // Program.modules[]._id
     title: { type: String, required: true, trim: true },
     type: { type: String, enum: ['quiz', 'exam'], default: 'quiz', index: true },
     questions: { type: [questionSchema], default: [] },
@@ -28,6 +34,8 @@ quizSchema.methods.forStudent = function forStudent() {
   return {
     _id: this._id,
     batchId: this.batchId,
+    programId: this.programId,
+    moduleId: this.moduleId,
     title: this.title,
     type: this.type,
     questions: this.questions.map((q) => ({ _id: q._id, text: q.text, options: q.options })),
