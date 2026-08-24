@@ -9,7 +9,7 @@ const Learning = lazy(() => import('./pages/Learning.jsx'));
 const ProgramsManage = lazy(() => import('./pages/ProgramsManage.jsx'));
 const StudentHome = lazy(() => import('./pages/StudentHome.jsx'));
 const StudentGrades = lazy(() => import('./pages/StudentGrades.jsx'));
-const AdminBatches = lazy(() => import('./pages/admin/Batches.jsx'));
+const AdminCourse = lazy(() => import('./pages/admin/Batches.jsx'));
 const Library = lazy(() => import('./pages/Library.jsx'));
 const JobBoard = lazy(() => import('./pages/JobBoard.jsx'));
 const AdminHome = lazy(() => import('./pages/admin/Home.jsx'));
@@ -42,7 +42,7 @@ export function navFor(role) {
       return [
         { label: 'Home', path: '', Component: AdminHome },
         { label: 'Programs', path: 'programs', Component: ProgramsManage },
-        { label: 'Batches', path: 'batches', Component: AdminBatches },
+        { label: 'Course', path: 'course', Component: AdminCourse },
         { label: 'Students', path: 'students', Component: AdminStudents },
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Job Board', path: 'jobs', Component: JobBoard },

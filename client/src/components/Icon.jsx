@@ -26,7 +26,7 @@ const PATHS = {
 
 const ALIAS = {
   'Home': 'home', 'Learning': 'learning', 'Library': 'library',
-  'Profile': 'profile', 'Programs': 'programs', 'Batches': 'batches',
+  'Profile': 'profile', 'Programs': 'programs', 'Course': 'batches',
   'Students': 'students', 'Account': 'account', 'Grades': 'grades',
   'Job Board': 'jobs',
 };

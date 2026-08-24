@@ -2,79 +2,63 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import BatchWorkspace from '../../components/BatchWorkspace.jsx';
 
-// Admin: create batches under a program, then open one to enrol students,
-// enroll students, and schedule sessions (via BatchWorkspace, admin mode).
-export default function AdminBatches() {
-  const [batches, setBatches] = useState([]);
-  const [programs, setPrograms] = useState([]);
-  const [open, setOpen] = useState(null); // batch id being managed
-  const [form, setForm] = useState({ programId: '', name: '', status: 'upcoming' });
+// Admin: the course workspace — roster, announcements, assignments/projects,
+// quizzes and the gradebook.
+//
+// There are no cohorts in this product: one course, one roster. A single Batch
+// record still backs it server-side (assignments, quizzes and announcements all
+// hang off a batchId), but that's plumbing — it is never surfaced as a choice.
+// This page opens that one record directly, and creates it if it's missing.
+export default function AdminCourse() {
+  const [batchId, setBatchId] = useState(null);
+  const [state, setState] = useState('loading'); // loading | ready | empty | error
   const [err, setErr] = useState('');
 
-  const load = () => api('/batches').then((d) => setBatches(d.batches || [])).catch(() => {});
-  useEffect(() => {
-    load();
-    api('/programs').then((d) => setPrograms(d.programs || [])).catch(() => {});
-  }, []);
+  const load = () => api('/batches')
+    .then((d) => {
+      const first = (d.batches || [])[0];
+      if (first) { setBatchId(first.id); setState('ready'); }
+      else setState('empty');
+    })
+    .catch((e) => { setErr(e.message); setState('error'); });
+  useEffect(() => { load(); }, []);
 
-  async function create(e) {
-    e.preventDefault();
+  // Bootstrap: no course record yet, so make the one this product needs.
+  async function create() {
     setErr('');
     try {
-      await api('/batches', { method: 'POST', body: form });
-      setForm({ programId: '', name: '', status: 'upcoming' });
+      const { programs } = await api('/programs');
+      const program = (programs || [])[0];
+      if (!program) return setErr('Publish a programme first — the course attaches to it.');
+      await api('/batches', { method: 'POST', body: { programId: program._id, name: program.title, status: 'ongoing' } });
       load();
-    } catch (e2) { setErr(e2.message); }
+    } catch (e) { setErr(e.message); }
   }
 
-  if (open) return (
-    <div>
-      <button className="btn ghost sm" onClick={() => { setOpen(null); load(); }}>← All batches</button>
-      <div style={{ height: 12 }} />
-      <BatchWorkspace batchId={open} />
-    </div>
-  );
+  if (state === 'loading') {
+    return <div className="skeleton"><div className="skeleton-row" /><div className="skeleton-row tall" /></div>;
+  }
+
+  if (state === 'ready') return <BatchWorkspace batchId={batchId} />;
 
   return (
     <div>
       <div className="page-head">
         <div>
           <div className="eyebrow">Admin board</div>
-          <h1>Batches</h1>
-          <p>Create cohorts, then manage each one — roster, sessions, assignments, grades.</p>
+          <h1>Course</h1>
+          <p>Your roster, projects, quizzes and grades.</p>
         </div>
       </div>
-
-      <form className="panel" onSubmit={create}>
-        <h3>Create a batch</h3>
-        <div className="inline-form">
-          <select value={form.programId} onChange={(e) => setForm((f) => ({ ...f, programId: e.target.value }))} required>
-            <option value="">Program…</option>
-            {programs.map((p) => <option key={p._id} value={p._id}>{p.title}</option>)}
-          </select>
-          <input placeholder="Batch name (e.g. Kickstarter — July 2026)" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
-          <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-            <option value="upcoming">Upcoming</option><option value="ongoing">Ongoing</option><option value="past">Past</option>
-          </select>
-          <button className="btn sm">Create</button>
-        </div>
-        {err && <span className="error">{err}</span>}
-      </form>
-
-      <div className="list">
-        {batches.map((b) => (
-          <div className="panel list-row row-click" key={b.id} onClick={() => setOpen(b.id)}>
-            <div>
-              <strong>{b.name}</strong>
-              <div className="muted">{b.program} · {b.status} · {b.studentCount} students</div>
-            </div>
-            <button className="btn sm" onClick={() => setOpen(b.id)}>Manage</button>
-          </div>
-        ))}
-        {batches.length === 0 && (
-          <div className="empty"><div className="empty-icon">🎓</div><strong>No batches yet</strong>Create your first cohort with the form above.</div>
+      <div className="empty">
+        <div className="empty-icon">🎓</div>
+        <strong>{state === 'error' ? 'Could not load the course' : 'No course set up yet'}</strong>
+        {state === 'error' ? err : 'Create it once and every student joins the same one.'}
+        {state !== 'error' && (
+          <div style={{ marginTop: 14 }}><button className="btn sm" onClick={create}>Create the course</button></div>
         )}
       </div>
+      {err && state !== 'error' && <p className="error" style={{ marginTop: 10 }}>{err}</p>}
     </div>
   );
 }
