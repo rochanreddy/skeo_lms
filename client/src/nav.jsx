@@ -11,7 +11,6 @@ const ProgramsManage = lazy(() => import('./pages/ProgramsManage.jsx'));
 const StudentHome = lazy(() => import('./pages/StudentHome.jsx'));
 const StudentGrades = lazy(() => import('./pages/StudentGrades.jsx'));
 const AdminBatches = lazy(() => import('./pages/admin/Batches.jsx'));
-const Forum = lazy(() => import('./pages/Forum.jsx'));
 const Library = lazy(() => import('./pages/Library.jsx'));
 const Webinar = lazy(() => import('./pages/admin/Webinar.jsx'));
 const AdminHome = lazy(() => import('./pages/admin/Home.jsx'));
@@ -43,7 +42,6 @@ export function navFor(role) {
         { label: 'Learning', path: 'learning', Component: Learning },
         { label: 'Grades', path: 'grades', Component: StudentGrades },
         { label: 'Library', path: 'library', Component: Library },
-        { label: 'Forum', path: 'forum', Component: Forum },
         { label: 'Profile', path: 'profile', Component: Profile },
       ];
     case 'admin':
@@ -54,9 +52,6 @@ export function navFor(role) {
         { label: 'Students', path: 'students', Component: AdminStudents },
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Webinar', path: 'webinar', Component: Webinar },
-        { label: 'Forum', path: 'forum', Component: ph('Forum', [
-          S('Announcements', 'Global'), S('Moderation', 'Remove content across batches'),
-        ]) },
         { label: 'Account', path: 'account', Component: Profile },
       ];
     // Unknown/retired roles (legacy 'mentor' or 'partner' accounts) get no tabs — App
