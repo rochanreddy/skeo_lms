@@ -7,7 +7,6 @@ import { Assignment } from '../models/Assignment.js';
 import { Submission } from '../models/Submission.js';
 import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
-import { Attendance } from '../models/Attendance.js';
 
 const router = Router();
 
@@ -30,17 +29,13 @@ const pct = (part, total) => (total ? `${Math.round((part / total) * 100)}%` : '
 router.get('/platform', requireAuth, requireRole('admin'), async (_req, res) => {
   const batches = await Batch.find().populate('programId', 'title').sort({ createdAt: -1 });
   const batchIds = batches.map((b) => b._id);
-  const [assignments, attendance] = await Promise.all([
-    Assignment.find({ batchId: { $in: batchIds } }).select('batchId'),
-    Attendance.find({ batchId: { $in: batchIds } }).select('batchId status'),
-  ]);
+  const assignments = await Assignment.find({ batchId: { $in: batchIds } }).select('batchId');
   const submissions = await Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) } }).select('assignmentId status');
   const batchOfAssignment = new Map(assignments.map((a) => [String(a._id), String(a.batchId)]));
 
-  const rows = [['Batch', 'Program', 'Status', 'Students', 'Assignments', 'Submissions', 'Graded', 'Attendance %']];
+  const rows = [['Batch', 'Program', 'Status', 'Students', 'Assignments', 'Submissions', 'Graded']];
   for (const b of batches) {
     const bid = String(b._id);
-    const att = attendance.filter((a) => String(a.batchId) === bid);
     const subs = submissions.filter((s) => batchOfAssignment.get(String(s.assignmentId)) === bid);
     rows.push([
       b.name,
@@ -50,7 +45,6 @@ router.get('/platform', requireAuth, requireRole('admin'), async (_req, res) => 
       assignments.filter((a) => String(a.batchId) === bid).length,
       subs.length,
       subs.filter((s) => s.status === 'graded').length,
-      pct(att.filter((a) => a.status === 'present').length, att.length),
     ]);
   }
   sendCsv(res, 'skeo-platform-report.csv', rows);
@@ -62,20 +56,18 @@ router.get('/batch/:id', requireAuth, requireRole('admin'), async (req, res) => 
   const batch = await Batch.findById(req.params.id).populate('programId', 'title').populate('studentIds', 'fullName email blocked lastActiveAt');
   if (!batch) return res.status(404).json({ error: 'Batch not found.' });
 
-  const [assignments, quizzes, attendance] = await Promise.all([
+  const [assignments, quizzes] = await Promise.all([
     Assignment.find({ batchId: batch._id }).select('_id'),
     Quiz.find({ batchId: batch._id }).select('_id'),
-    Attendance.find({ batchId: batch._id }).select('studentId status'),
   ]);
   const [submissions, attempts] = await Promise.all([
     Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) } }).select('studentId status score'),
     QuizAttempt.find({ quizId: { $in: quizzes.map((q) => q._id) } }).select('studentId score total'),
   ]);
 
-  const rows = [['Student', 'Email', 'Attendance %', 'Submitted', 'Graded', 'Avg score', 'Quizzes taken', 'Quiz avg %', 'Blocked', 'Last active']];
+  const rows = [['Student', 'Email', 'Submitted', 'Graded', 'Avg score', 'Quizzes taken', 'Quiz avg %', 'Blocked', 'Last active']];
   for (const s of batch.studentIds) {
     const sid = String(s._id);
-    const att = attendance.filter((a) => String(a.studentId) === sid);
     const subs = submissions.filter((x) => String(x.studentId) === sid);
     const graded = subs.filter((x) => x.status === 'graded' && x.score != null);
     const myAttempts = attempts.filter((a) => String(a.studentId) === sid);
@@ -85,7 +77,6 @@ router.get('/batch/:id', requireAuth, requireRole('admin'), async (req, res) => 
     rows.push([
       s.fullName || '',
       s.email,
-      pct(att.filter((a) => a.status === 'present').length, att.length),
       `${subs.length}/${assignments.length}`,
       graded.length,
       graded.length ? (graded.reduce((n, x) => n + x.score, 0) / graded.length).toFixed(1) : '',
@@ -108,10 +99,7 @@ router.get('/student/:id', requireAuth, requireRole('admin'), async (req, res) =
   const batchIds = batches.map((b) => b._id);
   const batchName = new Map(batches.map((b) => [String(b._id), b.name]));
 
-  const [assignments, attendance] = await Promise.all([
-    Assignment.find({ batchId: { $in: batchIds } }).sort({ createdAt: 1 }),
-    Attendance.find({ studentId: student._id }).select('batchId status'),
-  ]);
+  const assignments = await Assignment.find({ batchId: { $in: batchIds } }).sort({ createdAt: 1 });
   const [submissions, quizzes] = await Promise.all([
     Submission.find({ studentId: student._id }).select('assignmentId status score feedback updatedAt'),
     Quiz.find({ batchId: { $in: batchIds } }).select('title batchId'),
@@ -126,11 +114,10 @@ router.get('/student/:id', requireAuth, requireRole('admin'), async (req, res) =
     ['Blocked', student.blocked?.lms ? `YES — ${student.blocked?.reason || ''}` : 'No'],
     ['Generated', new Date().toISOString().slice(0, 10)],
     [],
-    ['Batch', 'Program', 'Status', 'Attendance %'],
+    ['Batch', 'Program', 'Status'],
   ];
   for (const b of batches) {
-    const att = attendance.filter((a) => String(a.batchId) === String(b._id));
-    rows.push([b.name, b.programId?.title || '', b.status, pct(att.filter((a) => a.status === 'present').length, att.length)]);
+    rows.push([b.name, b.programId?.title || '', b.status]);
   }
 
   rows.push([], ['Assignment / Project', 'Type', 'Batch', 'Due', 'Status', 'Score', 'Feedback']);
