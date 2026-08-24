@@ -10,11 +10,7 @@ import { Assignment } from '../models/Assignment.js';
 import { Submission } from '../models/Submission.js';
 import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
-import { Attendance } from '../models/Attendance.js';
-import { Session } from '../models/Session.js';
 import { Announcement } from '../models/Announcement.js';
-import { Message } from '../models/Message.js';
-import { Doubt } from '../models/Doubt.js';
 import { Progress } from '../models/Progress.js';
 import { Notification } from '../models/Notification.js';
 
@@ -44,11 +40,7 @@ async function run() {
     QuizAttempt.deleteMany({ quizId: { $in: dropQuizzes.map((q) => q._id) } }),
     Assignment.deleteMany({ batchId: { $in: dropBatchIds } }),
     Quiz.deleteMany({ batchId: { $in: dropBatchIds } }),
-    Session.deleteMany({ batchId: { $in: dropBatchIds } }),
-    Attendance.deleteMany({ batchId: { $in: dropBatchIds } }),
     Announcement.deleteMany({ batchId: { $in: dropBatchIds } }),
-    Message.deleteMany({ batchId: { $in: dropBatchIds } }),
-    Doubt.deleteMany({ batchId: { $in: dropBatchIds } }),
     Batch.deleteMany({ _id: { $in: dropBatchIds } }),
   ]);
   console.log(`✓ Deleted ${dropBatchIds.length} other batch(es) and their content`);
@@ -59,11 +51,8 @@ async function run() {
   await Promise.all([
     Submission.deleteMany({ studentId: { $in: dropUserIds } }),
     QuizAttempt.deleteMany({ studentId: { $in: dropUserIds } }),
-    Attendance.deleteMany({ studentId: { $in: dropUserIds } }),
     Progress.deleteMany({ studentId: { $in: dropUserIds } }),
     Notification.deleteMany({ userId: { $in: dropUserIds } }),
-    Message.deleteMany({ authorId: { $in: dropUserIds } }),
-    Doubt.deleteMany({ authorId: { $in: dropUserIds } }),
     User.deleteMany({ _id: { $in: dropUserIds } }),
   ]);
   console.log(`✓ Deleted ${dropUsers.length} user(s): ${dropUsers.map((u) => `${u.email} (${u.role})`).join(', ') || 'none'}`);
