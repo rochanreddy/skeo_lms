@@ -14,7 +14,6 @@ import libraryRoutes from './library.js';
 import webinarRoutes from './webinars.js';
 import statsRoutes from './stats.js';
 import uploadRoutes from './uploads.js';
-import zoomRoutes from './zoom.js';
 import progressRoutes from './progress.js';
 import notificationRoutes from './notifications.js';
 import announcementRoutes from './announcements.js';
@@ -43,7 +42,6 @@ router.use('/library', libraryRoutes);
 router.use('/webinars', webinarRoutes);
 router.use('/stats', statsRoutes);
 router.use('/uploads', uploadRoutes);
-router.use('/zoom', zoomRoutes); // public webhook (signature-verified)
 router.use('/progress', progressRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/announcements', announcementRoutes);

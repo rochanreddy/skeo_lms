@@ -26,8 +26,7 @@ const allowedOrigins = new Set(
     .filter(Boolean),
 );
 
-// Keep the raw body so the Zoom webhook can verify its HMAC signature.
-app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf; } }));
+app.use(express.json());
 app.use(
   cors({
     origin(origin, cb) {

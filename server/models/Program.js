@@ -10,7 +10,7 @@ const topicSchema = new mongoose.Schema(
     contentUrl: { type: String, default: '' },
     body: { type: String, default: '' },
     // Where this particular lecture meets. Set by hand and deliberately dumb:
-    // a Zoom URL while the class is running, swapped for a YouTube URL once the
+    // a live meeting URL while the class is running, swapped for a YouTube URL once the
     // recording is up. We never inspect it — empty just means "not posted yet".
     classLink: { type: String, default: '' },
     // Two files per lecture, both opened in the in-page viewer. The extension
