@@ -8,7 +8,6 @@ import { Assignment } from '../models/Assignment.js';
 import { Submission } from '../models/Submission.js';
 import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
-import { Attendance } from '../models/Attendance.js';
 import { Progress } from '../models/Progress.js';
 import { Program } from '../models/Program.js';
 
@@ -65,7 +64,7 @@ router.post('/:id/reset-password', requireAuth, requireRole('admin'), async (req
 });
 
 // GET /api/skeo/users/:id/overview — deep-dive into one user: everything about
-// where they are in their courses. For students: batches, attendance, every
+// where they are in their courses. For students: batches, every
 // assignment (with submission state), quiz attempts, lesson progress, modules.
 router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) => {
   const user = await User.findById(req.params.id);
@@ -77,8 +76,7 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
     .sort({ createdAt: -1 });
   const batchIds = batches.map((b) => b._id);
 
-  const [attendance, assignments, submissions, quizzes, attempts, progress] = await Promise.all([
-    Attendance.find({ studentId: uid }).select('batchId status'),
+  const [assignments, submissions, quizzes, attempts, progress] = await Promise.all([
     Assignment.find({ batchId: { $in: batchIds } }).sort({ createdAt: -1 }),
     Submission.find({ studentId: uid, isDeleted: false })
       .select('assignmentId status score feedback updatedAt driveLink url checkStatus errorDetail files locked checkedAt'),
@@ -86,15 +84,6 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
     QuizAttempt.find({ studentId: uid }).select('quizId score total createdAt'),
     Progress.find({ studentId: uid }).select('programId completedTopics'),
   ]);
-
-  const attByBatch = new Map();
-  for (const a of attendance) {
-    const k = String(a.batchId);
-    const v = attByBatch.get(k) || { present: 0, total: 0 };
-    v.total += 1;
-    if (a.status === 'present') v.present += 1;
-    attByBatch.set(k, v);
-  }
 
   const subByAssignment = new Map(submissions.map((s) => [String(s.assignmentId), s]));
   const batchName = new Map(batches.map((b) => [String(b._id), b.name]));
@@ -108,14 +97,12 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
   const out = {
     user: user.toPublic(),
     batches: batches.map((b) => {
-      const att = attByBatch.get(String(b._id)) || { present: 0, total: 0 };
       return {
         id: b._id,
         name: b.name,
         status: b.status,
         program: b.programId?.title || '',
         studentCount: (b.studentIds || []).length,
-        attendance: { ...att, pct: att.total ? Math.round((att.present / att.total) * 100) : null },
         blocked: blockedBatches.has(String(b._id)),
       };
     }),
