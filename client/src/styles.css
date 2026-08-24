@@ -447,7 +447,9 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .path-figure-num span { font-size: 30px; color: var(--lavender); margin-left: 2px; letter-spacing: 0; }
 .path-figure-sub { font-size: 12.5px; color: var(--lavender); margin-top: 8px; letter-spacing: .02em; }
 
-.path { position: relative; display: flex; align-items: flex-start; gap: 0; padding: 30px 0 0; overflow-x: auto; scrollbar-width: none; }
+/* Stations stretch to a common height so a module title that wraps to two
+   lines doesn't drop its state caption below the others' (see .path-state). */
+.path { position: relative; display: flex; align-items: stretch; gap: 0; padding: 30px 0 0; overflow-x: auto; scrollbar-width: none; }
 .path::-webkit-scrollbar { display: none; }
 .path-station { position: relative; flex: 1 1 0; min-width: 150px; max-width: 260px; display: flex; flex-direction: column; align-items: center; gap: 9px; background: none; border: 0; padding: 0 10px; font-family: var(--font); cursor: pointer; }
 /* The rule between stations. Travelled sections glow; the road ahead is faint. */
@@ -468,7 +470,9 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .path-station.done .path-label { color: rgba(243,241,249,.78); }
 .path-station.now .path-label { color: var(--parchment); }
 .path-station:hover .path-label { color: var(--parchment); }
-.path-state { font-size: 10.5px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; color: rgba(185,173,246,.45); }
+/* margin-top:auto pins the caption to the bottom of the stretched station, so
+   every station's caption sits on one line however long its title ran. */
+.path-state { margin-top: auto; font-size: 10.5px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; color: rgba(185,173,246,.45); }
 .path-station.done .path-state { color: #4ade80; }
 .path-station.now .path-state { color: var(--lavender); }
 
@@ -1602,6 +1606,22 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 /* Route-level Suspense fallback while a lazily-loaded page chunk downloads. */
 .route-loading { padding-top: 4px; }
 .empty strong { display: block; color: var(--ink-2); font-size: 15px; margin-bottom: 3px; }
+/* ── Module gates ───────────────────────────────────────────────────────────
+   A module stays shut until the previous module's quiz has been attempted.
+   Locked reads as "not yet", not as an error — dimmed and inert, never red. */
+.cur-mod.locked { opacity: .5; }
+.cur-mod.locked .cur-mod-head { cursor: not-allowed; }
+.cur-mod.locked .cur-mod-idx { display: grid; place-items: center; color: var(--muted); }
+.cur-mod.locked .cur-mod-count {
+  background: var(--line-soft); color: var(--muted);
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: var(--pill);
+}
+/* The gate itself sits at the foot of its module, ruled off from the lessons. */
+.cur-gate { margin-top: 4px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.cur-gate .cur-topic-title { font-weight: 600; color: var(--purple); }
+.cur-gate.done .cur-topic-title { color: var(--a6-ink); font-weight: 500; }
+
 /* Edit/Delete on an assignment card — pushed to the right of its head row,
    quiet until you go looking for them. */
 .assignment-tools { margin-left: auto; display: flex; gap: 8px; flex: none; }

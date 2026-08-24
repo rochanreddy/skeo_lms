@@ -7,18 +7,9 @@ import LessonIcon from '../components/LessonIcon.jsx';
 import LineIcon from '../components/LineIcon.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 
-// TEMPORARY test files, until real ones are attached. Both are real Menler-hosted
-// documents on the public marketing host rather than localhost, so they keep
-// working once this is deployed — and the deck HAS to be public regardless,
-// since Microsoft's embed fetches the file itself and cannot see a local
-// address. Delete both constants and the `||` fallbacks below once real files
-// are attached to lessons.
-const PLACEHOLDER_READING = 'https://menler.in/pdfs/Menler_AI_Kickstarter_Curriculum.pdf';
-const PLACEHOLDER_NOTES = 'https://menler.in/project_decks/Account_Research_Agent.pptx';
-
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
 // For admins: just the course content to teach from — they create &
-// grade assignments/quizzes under Programs → a batch, not here.
+// grade assignments/quizzes under Course, not here.
 export default function Learning() {
   const { user } = useOutletContext();
   const isStudent = user.role === 'student';
@@ -42,7 +33,7 @@ export default function Learning() {
     return (
       <div>
         <h1>Learning</h1>
-        <p className="muted">The course content your students see — teach from this. Create &amp; grade assignments and quizzes under <b>Programs → your batch</b>.</p>
+        <p className="muted">The course content your students see — teach from this. Create &amp; grade projects and quizzes under <b>Course</b>.</p>
         <Content />
       </div>
     );
@@ -63,12 +54,83 @@ export default function Learning() {
   );
 }
 
+// Every quiz in one place. The module gates come first, in module order, and
+// unlock one at a time: gate N opens only once gate N-1 has been attempted —
+// the same rule that unlocks the modules themselves over on Content.
 function Quizzes() {
-  const [items, setItems] = useState([]);
-  const load = () => api('/quizzes?scope=mine').then((d) => setItems(d.quizzes || [])).catch(() => {});
+  const [gates, setGates] = useState([]);
+  const [others, setOthers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    const [pd, bq] = await Promise.all([
+      api('/programs').catch(() => ({ programs: [] })),
+      api('/quizzes?scope=mine').catch(() => ({ quizzes: [] })),
+    ]);
+    setOthers(bq.quizzes || []);
+
+    const p = (pd.programs || [])[0];
+    if (p) {
+      // Module order lives on the programme, not the quiz, so fetch the tree
+      // when the list didn't already carry it.
+      const full = p.modules?.length ? p : await api(`/programs/${p._id}`).then((d) => d.program).catch(() => p);
+      const order = new Map((full.modules || []).map((m, i) => [String(m._id), i]));
+      const gq = await api(`/quizzes?programId=${p._id}`).then((d) => d.quizzes || []).catch(() => []);
+      setGates(gq
+        .map((q) => ({ ...q, modIndex: order.has(String(q.moduleId)) ? order.get(String(q.moduleId)) : 1e6 }))
+        .sort((a, b) => a.modIndex - b.modIndex));
+    }
+    setLoading(false);
+  }
   useEffect(() => { load(); }, []);
-  if (items.length === 0) return <p className="muted">No quizzes yet. They appear here once posted.</p>;
-  return <div className="list">{items.map((q) => <QuizCard key={q._id} quiz={q} onDone={load} />)}</div>;
+
+  // How many gates are reachable: every one up to and including the first
+  // unattempted. Attempting it opens the next.
+  let open = 0;
+  for (const g of gates) { open += 1; if (!g.myAttempt) break; }
+
+  if (loading) return <p className="muted">Loading quizzes…</p>;
+  if (gates.length === 0 && others.length === 0) {
+    return <p className="muted">No quizzes yet. They appear here once posted.</p>;
+  }
+
+  return (
+    <div>
+      {gates.length > 0 && (
+        <>
+          <h3 className="ruled-head">Module quizzes</h3>
+          <p className="muted" style={{ margin: '-8px 0 16px' }}>
+            Attempt each one to unlock the next module — and the next quiz.
+          </p>
+          <div className="list">
+            {gates.map((q, i) => (i < open ? (
+              <QuizCard key={q._id} quiz={q} onDone={load} />
+            ) : (
+              <div key={q._id} className="panel quiz-locked">
+                <div className="row">
+                  <LineIcon name="key" size={16} />
+                  <strong>{q.title}</strong>
+                  <span className="badge badge-muted">Locked</span>
+                </div>
+                <p className="muted" style={{ margin: '8px 0 0' }}>
+                  Attempt the Module {i} quiz to open this one.
+                </p>
+              </div>
+            )))}
+          </div>
+        </>
+      )}
+
+      {others.length > 0 && (
+        <>
+          <h3 className="ruled-head" style={{ marginTop: gates.length ? 34 : 0 }}>Other quizzes</h3>
+          <div className="list">
+            {others.map((q) => <QuizCard key={q._id} quiz={q} onDone={load} />)}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 function QuizCard({ quiz, onDone }) {
@@ -263,6 +325,29 @@ function Content() {
   const [total, setTotal] = useState(0);
   const [cert, setCert] = useState(null);
   const [viewer, setViewer] = useState(null); // { label, subtitle, url }
+  // Gate quizzes, one per module. Attempting a module's quiz unlocks the next.
+  const [gates, setGates] = useState([]);       // [{ _id, moduleId, myAttempt, … }]
+
+  const loadGates = (programId) => api(`/quizzes?programId=${programId}`)
+    .then((d) => setGates(d.quizzes || []))
+    .catch(() => setGates([]));
+
+  const gateFor = (modId) => gates.find((q) => String(q.moduleId) === String(modId)) || null;
+
+  // A module is open if every module before it has had its gate quiz attempted.
+  // Admins see everything; so does anyone on a programme with no gates set up.
+  const unlockedCount = useMemo(() => {
+    const mods = program?.modules || [];
+    if (!isStudent) return mods.length;
+    let n = 0;
+    for (const m of mods) {
+      n += 1;                                   // this one is reachable
+      const g = gateFor(m._id);
+      if (g && !g.myAttempt) break;             // its gate stops the rest
+    }
+    return n;
+  }, [program, gates, isStudent]);
+  const isLocked = (mi) => mi >= unlockedCount;
 
   // Flatten the tree into an ordered lesson list for counting + prev/next.
   const flat = useMemo(() => {
@@ -305,6 +390,7 @@ function Content() {
       setTopicId(firstTopic?._id || null);
     }
     loadProgress(id);
+    loadGates(id);
   }
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   function selectTopic(f) {
@@ -358,8 +444,9 @@ function Content() {
   const done = Math.min(completed.size, total);
   const pct = total ? Math.round((done / total) * 100) : 0;
   const isDone = topic && completed.has(topic._id);
-  const readingUrl = topic?.readingUrl || PLACEHOLDER_READING;
-  const notesUrl = topic?.notesUrl || PLACEHOLDER_NOTES;
+  // Two surfaces per lesson and no more: a video player and a PDF.
+  const pdfUrl = topic?.readingUrl || (topic?.contentType === 'pdf' ? topic.contentUrl : '') || '';
+  const videoUrl = (topic?.contentType === 'video' ? topic?.contentUrl : '') || topic?.classLink || '';
 
   return (
     <div className="learn">
@@ -395,15 +482,22 @@ function Content() {
             {(program.modules || []).map((m, mi) => {
               const mTopics = (m.chapters || []).flatMap((c) => c.topics || []);
               const mDone = mTopics.filter((t) => completed.has(t._id)).length;
+              const locked = isLocked(mi);
+              const gate = gateFor(m._id);
               return (
-                <div key={m._id} className="cur-mod">
-                  <button className="cur-mod-head" onClick={() => toggle(m._id)}>
-                    <span className="cur-mod-idx">{String(mi + 1).padStart(2, '0')}</span>
+                <div key={m._id} className={`cur-mod ${locked ? 'locked' : ''}`}>
+                  <button
+                    className="cur-mod-head"
+                    onClick={() => !locked && toggle(m._id)}
+                    disabled={locked}
+                    title={locked ? 'Attempt the previous module’s quiz to unlock this one' : undefined}
+                  >
+                    <span className="cur-mod-idx">{locked ? <LineIcon name="key" size={13} /> : String(mi + 1).padStart(2, '0')}</span>
                     <span className="cur-mod-title">{m.title}</span>
-                    {isStudent && mTopics.length > 0 && <span className="cur-mod-count">{mDone}/{mTopics.length}</span>}
-                    <span className={`cur-caret ${open[m._id] ? 'up' : ''}`}>⌄</span>
+                    {!locked && isStudent && mTopics.length > 0 && <span className="cur-mod-count">{mDone}/{mTopics.length}</span>}
+                    {locked ? <span className="cur-mod-count">Locked</span> : <span className={`cur-caret ${open[m._id] ? 'up' : ''}`}>⌄</span>}
                   </button>
-                  {open[m._id] && (m.chapters || []).map((c) => (
+                  {!locked && open[m._id] && (m.chapters || []).map((c) => (
                     <div key={c._id} className="cur-chap">
                       {(m.chapters.length > 1 || c.title !== 'Lessons') && <div className="cur-chap-title">{c.title}</div>}
                       {(c.topics || []).map((t) => {
@@ -419,6 +513,21 @@ function Content() {
                       })}
                     </div>
                   ))}
+                  {/* The gate sits at the foot of its module — the last thing
+                      you reach, and the thing that opens the next one. */}
+                  {!locked && open[m._id] && gate && (
+                    <button
+                      className={`cur-topic cur-gate ${gate.myAttempt ? 'done' : ''}`}
+                      // The gate lives on the Quizzes tab — that's where every
+                      // quiz is, so sitting one never happens in two places.
+                      onClick={() => setParams({ tab: 'quizzes' })}
+                    >
+                      <span className="cur-tick" />
+                      <span className="cur-topic-title">
+                        Module {mi + 1} quiz{gate.myAttempt ? '' : ' — unlocks the next module'}
+                      </span>
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -437,31 +546,26 @@ function Content() {
                       flattened lesson list, so it tracks as you move around. */}
                   <div className="lesson-position">Lesson {idx + 1} of {flat.length}</div>
 
-                  {/* Three peers on one line. None is filled — the primary move
-                      on this page is still "Mark complete" in the footer. */}
+                  {/* One action. The video plays in the body below; the PDF is
+                      the only thing that needs opening. */}
                   <div className="lesson-actions">
-                    <button className="btn sm lesson-action" onClick={() => setViewer({ label: 'Reading Material', subtitle: topic.title, url: readingUrl })}>
-                      <LessonIcon type="pdf" size={15} /> Reading Material
-                    </button>
-                    <button className="btn sm lesson-action" onClick={() => setViewer({ label: 'Teacher Notes', subtitle: topic.title, url: notesUrl })}>
-                      <LineIcon name="slides" size={15} /> Teacher Notes
-                    </button>
-                    {topic.classLink ? (
-                      <a className="btn sm lesson-action" href={topic.classLink} target="_blank" rel="noreferrer">
-                        <LineIcon name="video" size={15} /> Join Class
-                      </a>
+                    {pdfUrl ? (
+                      <button className="btn sm lesson-action" onClick={() => setViewer({ label: 'PDF', subtitle: topic.title, url: pdfUrl })}>
+                        <LessonIcon type="pdf" size={15} /> PDF
+                      </button>
                     ) : (
-                      <button className="btn sm lesson-action" disabled title="The class link for this lecture hasn't been posted yet">
-                        <LineIcon name="video" size={15} /> Not available yet
+                      <button className="btn sm lesson-action" disabled title="No PDF attached to this lesson yet">
+                        <LessonIcon type="pdf" size={15} /> No PDF yet
                       </button>
                     )}
                   </div>
                 </div>
 
                 <div className="lesson-body">
-                  {topic.contentType === 'video' && topic.contentUrl && <LessonVideo key={topic._id} url={topic.contentUrl} />}
-                  {topic.contentType === 'pdf' && topic.contentUrl && <a className="btn" href={topic.contentUrl} target="_blank" rel="noreferrer">📄 Open PDF</a>}
-                  {topic.body ? <Markdown text={topic.body} /> : (topic.contentType === 'text' && <p className="muted">No content for this lesson yet.</p>)}
+                  {videoUrl
+                    ? <LessonVideo key={topic._id} url={videoUrl} />
+                    : <div className="panel empty-state"><p className="muted">No video for this lesson yet.</p></div>}
+                  {topic.body && <Markdown text={topic.body} />}
                 </div>
 
                 <div className="lesson-foot">
@@ -555,17 +659,16 @@ function Assignments() {
 
 // Mirrors the admin-side DRIVE_TYPES list, in student-facing wording.
 const REQUIRED_LABELS = {
-  video: 'a video',
-  image: 'a photo/screenshot',
   doc: 'a document (PDF, Word or text file)',
   slides: 'a slide deck (PPT)',
-  html: 'an HTML file',
+  html: 'an HTML file or artifact',
 };
 
 function AssignmentCard({ a, onChange }) {
   const { user } = useOutletContext();
   const sub = a.mySubmission;
   const [driveLink, setDriveLink] = useState(sub?.driveLink || '');
+  const [pdf, setPdf] = useState(null); // { label, subtitle, url }
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -616,7 +719,22 @@ function AssignmentCard({ a, onChange }) {
         {sub && <span className={`badge ${sub.status === 'graded' ? 'badge-student' : sub.status === 'submitted' ? 'badge-submitted' : ''}`}>{sub.status}</span>}
       </div>
 
-      {a.description && <div className="assign-desc"><Markdown text={a.description} /></div>}
+      {/* Two panes: what to do on the left, how to hand it in on the right. */}
+      <div className="assign-split">
+        <div className="assign-content">
+          {a.videoUrl && <LessonVideo key={`${a._id}-v`} url={a.videoUrl} />}
+          {a.pdfUrl && (
+            <button className="btn sm lesson-action assign-pdf" onClick={() => setPdf({ label: 'PDF', subtitle: a.title, url: a.pdfUrl })}>
+              <LessonIcon type="pdf" size={15} /> PDF
+            </button>
+          )}
+          {a.description
+            ? <div className="assign-desc"><Markdown text={a.description} /></div>
+            : (!a.videoUrl && !a.pdfUrl && <p className="muted">No brief posted for this {a.type} yet.</p>)}
+        </div>
+
+        <div className="assign-submitpane">
+          <h4 className="assign-pane-head">Your submission</h4>
 
       {/* Current verification state — visible without opening notifications. */}
       {sub && !editing && (
@@ -683,7 +801,7 @@ function AssignmentCard({ a, onChange }) {
             <button className="btn sm" disabled={busy}>{busy ? 'Checking…' : (sub ? 'Save' : 'Submit')}</button>
             {sub && <button type="button" className="btn sm ghost" onClick={() => { setEditing(false); setError(''); setDriveLink(sub.driveLink || ''); }}>Cancel</button>}
           </div>
-          <p className="muted sub-form-hint">Share the folder as “Anyone with the link can view”, and include your video, screenshots, and write-up.</p>
+          <p className="muted sub-form-hint">Share the folder as “Anyone with the link can view”, and include everything the brief asks for.</p>
         </form>
       ) : sub?.locked ? (
         <p className="assign-note">This submission has been reviewed and is locked. Ask your administrator to unlock it if you need to change it.</p>
@@ -695,6 +813,10 @@ function AssignmentCard({ a, onChange }) {
           <button type="button" className="btn sm ghost" onClick={remove} disabled={busy || !editable}>Delete</button>
         </div>
       )}
+        </div>
+      </div>
+
+      {pdf && <FileViewer url={pdf.url} label={pdf.label} subtitle={pdf.subtitle} onClose={() => setPdf(null)} />}
     </div>
   );
 }
