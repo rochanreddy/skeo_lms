@@ -280,9 +280,10 @@ function buildModules() {
       ],
     })),
   }));
-  // Portfolio projects as a final module.
+  // Portfolio projects as a final module. Keeps the "Sxx · " prefix the other
+  // modules carry so the Path draws it as station S05, not a bare "05".
   modules.push({
-    title: 'Portfolio Projects — All 4',
+    title: `S0${SESSIONS.length + 1} · Portfolio Projects — All 4`,
     order: SESSIONS.length,
     chapters: PROJECTS.map((p, i) => ({
       title: `${p.code} · ${p.name}`,
