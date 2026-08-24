@@ -3,25 +3,26 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
 import LineIcon from '../components/LineIcon.jsx';
 
-// THE PATH — the student home.
+// THE STUDENT HOME — four movements, in the order a student actually needs them.
 //
-// Not a dashboard of tiles. The curriculum is drawn as a route: modules are
-// stations along the violet rule, dots say where you are, and one card tells
-// you the single next thing to do. Progress is spatial, so you SEE how far
-// along you are instead of reading a percentage.
+//   01 Progress   where you are in the programme
+//   02 Projects   what you owe
+//   03 Updates    what changed while you were away
+//   04 Ad-ons     the extras, once the work is done
 //
-// The path is indicative, never gating — every station stays clickable.
-// Adult learners revisit material, and locking that is hostile.
+// Progress stays spatial — the curriculum is drawn as a route with modules as
+// stations, so you SEE how far along you are instead of reading a percentage.
+// The path is indicative, never gating: every station stays clickable, because
+// adult learners revisit material and locking that is hostile.
 export default function StudentHome() {
   const { user } = useOutletContext();
   const navigate = useNavigate();
   const [program, setProgram] = useState(null);
-  const [progress, setProgress] = useState({ completedTopics: [], total: 0, pct: 0 });
-  const [sessions, setSessions] = useState([]);
-  const [pastSessions, setPastSessions] = useState([]);
+  const [progress, setProgress] = useState({ completedTopics: [] });
   const [assignments, setAssignments] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [att, setAtt] = useState({ pct: 0, present: 0, total: 0 });
+  const [notes, setNotes] = useState([]);
+  const [addons, setAddons] = useState({ library: 0, jobs: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,20 +30,17 @@ export default function StudentHome() {
     Promise.all([
       api('/batches').catch(() => ({ batches: [] })),
       api('/programs').catch(() => ({ programs: [] })),
-      api('/sessions?scope=upcoming').catch(() => ({ sessions: [] })),
-      // Past sessions too: the Join Live Class button falls back to the most
-      // recent one when nothing is scheduled today. Comes back newest-first.
-      api('/sessions?scope=past').catch(() => ({ sessions: [] })),
       api('/assignments?scope=mine').catch(() => ({ assignments: [] })),
       api('/announcements').catch(() => ({ announcements: [] })),
-      api('/attendance/me').catch(() => ({ pct: 0, present: 0, total: 0 })),
-    ]).then(async ([bd, pd, sd, psd, ad, nd, at]) => {
+      api('/notifications').catch(() => ({ items: [] })),
+      api('/library').catch(() => ({ items: [] })),
+      api('/jobs').catch(() => ({ jobs: [] })),
+    ]).then(async ([bd, pd, ad, nd, nt, lib, jb]) => {
       if (!alive) return;
-      setSessions(sd.sessions || []);
-      setPastSessions(psd.sessions || []);
       setAssignments(ad.assignments || []);
       setAnnouncements(nd.announcements || []);
-      setAtt(at);
+      setNotes(nt.items || []);
+      setAddons({ library: (lib.items || []).length, jobs: (jb.jobs || []).length });
 
       const progId = (bd.batches || [])[0]?.programId;
       const p = (pd.programs || []).find((x) => x._id === progId) || (pd.programs || [])[0] || null;
@@ -99,45 +97,23 @@ export default function StudentHome() {
   const doneTopics = stations.reduce((n, s) => n + s.done, 0);
   const pct = totalTopics ? Math.round((doneTopics / totalTopics) * 100) : 0;
 
-  // Only surface a session if it's genuinely imminent (or running).
-  const live = sessions.find((s) => {
-    const start = new Date(s.startsAt).getTime();
-    return start - Date.now() < 3 * 60 * 60 * 1000 && start + 3 * 60 * 60 * 1000 > Date.now();
-  });
-  const markJoin = (id) => api(`/attendance/join/${id}`, { method: 'POST' }).catch(() => {});
 
-  // The Join Live Class call-to-action. One rule, stated plainly:
-  //   a class on TODAY's date  → that Zoom link, "Join Today's Live Class"
-  //   nothing today            → the newest past class, "Watch Previous Live Class"
-  // The wording carries the difference so nobody clicks expecting a room that
-  // isn't open. A class earlier today still counts as today's — it has already
-  // slipped into the "past" list, which is why both lists are searched.
-  const liveClass = useMemo(() => {
-    const isToday = (d) => {
-      const a = new Date(d), b = new Date();
-      return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-    };
-    // Upcoming is ascending and past is descending, so the first hit in either
-    // is the one nearest to now.
-    const today = sessions.find((s) => isToday(s.startsAt)) || pastSessions.find((s) => isToday(s.startsAt));
-    const session = today || pastSessions[0];
-    if (!session) return null;
-    return {
-      session,
-      today: Boolean(today),
-      // A finished class may only have a recording — better than a dead button.
-      url: session.joinUrl || (!today && session.recordingUrl) || '',
-    };
-  }, [sessions, pastSessions]);
+  // ── Updates ─── announcements and notifications are one feed to a
+  // student; only we care that they come from different collections.
+  const updates = useMemo(() => [
+    ...announcements.map((a) => ({
+      id: `a-${a._id}`, kind: 'Announcement', title: a.title, body: a.body, at: a.createdAt,
+    })),
+    ...notes.map((n) => ({
+      id: `n-${n._id}`, kind: n.type || 'Update', title: n.text, body: '', at: n.createdAt, link: n.link, unread: !n.read,
+    })),
+  ].sort((x, y) => new Date(y.at) - new Date(x.at)).slice(0, 6), [announcements, notes]);
 
-  const openDue = assignments
-    .filter((a) => !a.mySubmission && a.dueDate)
-    .sort((x, y) => new Date(x.dueDate) - new Date(y.dueDate));
   const firstName = (user.full_name || user.email).split(' ')[0];
 
   if (loading) {
     return (
-      <div className="path-wrap">
+      <div>
         <div className="path-where">Loading your path…</div>
         <div className="skeleton sk-title" />
         <div className="skeleton sk-path" />
@@ -147,61 +123,25 @@ export default function StudentHome() {
 
   return (
     <div>
-      <div className="path-wrap">
-        {/* Above the hero, before anything else — the class is the thing a
-            student is most likely to have opened this page for. */}
-        {liveClass && (
-          <div className={`live-cta ${liveClass.today ? 'is-live' : 'is-replay'}`}>
-            <span className="live-cta-mark">
-              {liveClass.today ? <span className="path-live-pulse" /> : <LineIcon name="video" size={18} />}
-            </span>
-            <div className="live-cta-copy">
-              <div className="live-cta-eyebrow">{liveClass.today ? 'Live class today' : 'No live class today'}</div>
-              <div className="live-cta-title">{liveClass.session.title}</div>
-              <div className="live-cta-time">
-                {new Date(liveClass.session.startsAt).toLocaleString([], {
-                  weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                })}
-                {liveClass.session.batchId?.name ? ` · ${liveClass.session.batchId.name.replace(/^Demo — /, '')}` : ''}
-              </div>
-            </div>
-            {liveClass.url ? (
-              <a
-                className="btn live-cta-btn"
-                href={liveClass.url}
-                target="_blank"
-                rel="noreferrer"
-                // Attendance is only meaningful for the class that's actually
-                // on today — watching a past one shouldn't mark you present.
-                onClick={() => liveClass.today && markJoin(liveClass.session._id)}
-              >
-                <LineIcon name="video" size={17} />
-                {liveClass.today ? "Join Today's Live Class" : 'Watch Previous Live Class'}
-              </a>
-            ) : (
-              <span className="live-cta-time" style={{ marginLeft: 'auto' }}>Link coming soon</span>
-            )}
-          </div>
-        )}
+      <p className="serif-lead" style={{ margin: '0 0 30px' }}>Welcome back, {firstName}.</p>
 
+      {/* ═══ 01 · PROGRESS ═══════════════════════════════════════════════ */}
+      <section className="sh-sec">
+        <SecHead n="01" title="Progress" />
         {stations.length === 0 ? (
-          <>
-            <p className="serif-lead">Welcome, {firstName}.</p>
-            <div className="panel empty-state" style={{ marginTop: 20 }}>
-              <p className="muted">
-                {program
-                  ? 'Your curriculum is still being prepared — it will appear here as a path once it is published.'
-                  : "You're not enrolled in a programme yet. Once an admin adds you to a batch, your path shows up here."}
-              </p>
-            </div>
-          </>
+          <div className="empty">
+            <strong>{program ? 'Your curriculum is being prepared' : 'No programme yet'}</strong>
+            {program
+              ? 'It will appear here as a path once your team publishes it.'
+              : "Once an admin enrols you, your path shows up here."}
+          </div>
         ) : (
           <>
             <div className="path-hero">
               <div className="path-lead">
                 <div>
                   <div className="path-where">
-                    {pct === 100 ? 'Programme complete' : `Module ${nowIndex + 1} of ${stations.length} · ${firstName}'s path`}
+                    {pct === 100 ? 'Programme complete' : `Module ${nowIndex + 1} of ${stations.length}`}
                   </div>
                   <h1 className="path-title">{program?.title || 'Your programme'}</h1>
                 </div>
@@ -213,25 +153,25 @@ export default function StudentHome() {
 
               {/* The route */}
               <div className="path" role="list">
-              {stations.map((s, i) => {
-                const state = s.complete ? 'done' : i === nowIndex ? 'now' : 'ahead';
-                return (
-                  <button
-                    key={s.id}
-                    role="listitem"
-                    className={`path-station ${state}`}
-                    onClick={() => navigate('/app/learning')}
-                    title={`${s.done} of ${s.total} lessons complete`}
-                  >
-                    <span className="path-dot" />
-                    <span className="path-code">{s.code}</span>
-                    <span className="path-label">{s.title}</span>
-                    <span className="path-state">
-                      {s.complete ? 'done' : i === nowIndex ? `${s.done}/${s.total} · you are here` : `${s.total} lesson${s.total === 1 ? '' : 's'}`}
-                    </span>
-                  </button>
-                );
-              })}
+                {stations.map((s, i) => {
+                  const state = s.complete ? 'done' : i === nowIndex ? 'now' : 'ahead';
+                  return (
+                    <button
+                      key={s.id}
+                      role="listitem"
+                      className={`path-station ${state}`}
+                      onClick={() => navigate('/app/learning')}
+                      title={`${s.done} of ${s.total} lessons complete`}
+                    >
+                      <span className="path-dot" />
+                      <span className="path-code">{s.code}</span>
+                      <span className="path-label">{s.title}</span>
+                      <span className="path-state">
+                        {s.complete ? 'done' : i === nowIndex ? `${s.done}/${s.total} · you are here` : `${s.total} lesson${s.total === 1 ? '' : 's'}`}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -261,116 +201,143 @@ export default function StudentHome() {
                 <button className="btn" onClick={() => navigate('/app/learning')}>View certificate</button>
               </div>
             )}
-
-            {/* The imminent-session strip stays for a class starting soon, but
-                never for the one already sitting in the button up top. */}
-            {live && live._id !== liveClass?.session._id && (
-              <div className="path-live">
-                <span className="path-live-pulse" />
-                <div>
-                  <div className="path-live-title">{live.title}</div>
-                  <div className="path-live-time">
-                    {new Date(live.startsAt).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })}
-                    {live.batchId?.name ? ` · ${live.batchId.name.replace(/^Demo — /, '')}` : ''}
-                  </div>
-                </div>
-                {live.joinUrl
-                  ? <a className="btn on-stage" href={live.joinUrl} target="_blank" rel="noreferrer" onClick={() => markJoin(live._id)}>Join now</a>
-                  : <span className="path-live-time" style={{ marginLeft: 'auto' }}>Link coming soon</span>}
-              </div>
-            )}
           </>
         )}
-      </div>
+      </section>
 
-      {/* Everything else is secondary and stays quiet. */}
-      <div className="home-grid">
-        <section>
-          <h3 className="ruled-head">Due next</h3>
-          {openDue.length === 0 ? (
-            <p className="muted">Nothing outstanding. {assignments.length > 0 && 'All submitted.'}</p>
-          ) : (
-            <div className="qlist">
-              {openDue.slice(0, 4).map((a) => {
-                const late = new Date(a.dueDate) < new Date();
-                return (
-                  <div className="qrow" key={a._id}>
-                    <span className={`dot ${late ? 'late' : 'ahead'}`} />
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div className="qrow-title">{a.title}</div>
-                      <div className="qrow-sub">
-                        {late ? 'Overdue · ' : ''}
-                        {new Date(a.dueDate).toLocaleDateString([], { day: 'numeric', month: 'short' })}
-                      </div>
-                    </div>
-                    <span className={`status ${late ? 'status-late' : 'status-todo'}`}>{late ? 'Overdue' : 'To do'}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <section>
-          <h3 className="ruled-head">Coming up</h3>
-          {sessions.length === 0 ? (
-            <p className="muted">No sessions scheduled yet.</p>
-          ) : (
-            <div className="qlist">
-              {sessions.slice(0, 4).map((s) => (
-                <div className="qrow" key={s._id}>
-                  <span className="dot ahead" />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div className="qrow-title">{s.title}</div>
-                    <div className="qrow-sub">
-                      {new Date(s.startsAt).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+      {/* ═══ 02 · PROJECTS ═══════════════════════════════════════════════ */}
+      <section className="sh-sec">
+        <SecHead n="02" title="Projects">
+          <button className="sh-more" onClick={() => navigate('/app/learning')}>Open all →</button>
+        </SecHead>
+        {assignments.length === 0 ? (
+          <div className="empty"><strong>Nothing set yet</strong>Projects and assignments show up here when your team publishes them.</div>
+        ) : (
+          <div className="sh-list">
+            {[...assignments].sort(byUrgency).slice(0, 5).map((a) => {
+              const st = projectStatus(a);
+              return (
+                <div className="sh-item" key={a._id} role="button" tabIndex={0}
+                  onClick={() => navigate('/app/learning')}
+                  onKeyDown={(e) => e.key === 'Enter' && navigate('/app/learning')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className={`sh-item-mark ${st.mark}`}><LineIcon name={a.type === 'project' ? 'rocket' : 'folder'} size={19} /></span>
+                  <div className="sh-item-body">
+                    <div className="sh-item-title">{a.title}</div>
+                    <div className="sh-item-sub">
+                      <span>{a.type === 'project' ? 'Project' : 'Assignment'}</span>
+                      {a.dueDate && <><span className="sh-sep" /><span>{st.late ? 'Was due ' : 'Due '}{fmtDate(a.dueDate)}</span></>}
                     </div>
                   </div>
-                  {s.joinUrl && (
-                    <a className="btn quiet sm" href={s.joinUrl} target="_blank" rel="noreferrer" onClick={() => markJoin(s._id)}>Join</a>
-                  )}
+                  <div className="sh-item-end">
+                    <span className={`status ${st.cls}`}>{st.label}</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section>
-          <h3 className="ruled-head">Your standing</h3>
-          <div className="qlist">
-            <div className="qrow">
-              <div style={{ flex: 1 }}><div className="qrow-title">Attendance</div><div className="qrow-sub">{att.present} of {att.total} sessions</div></div>
-              <span className="figure">{att.total ? `${att.pct}%` : '—'}</span>
-            </div>
-            <div className="qrow">
-              <div style={{ flex: 1 }}><div className="qrow-title">Assignments</div><div className="qrow-sub">submitted</div></div>
-              <span className="figure">{assignments.filter((a) => a.mySubmission).length}/{assignments.length}</span>
-            </div>
-            <div className="qrow">
-              <div style={{ flex: 1 }}><div className="qrow-title">Lessons</div><div className="qrow-sub">completed</div></div>
-              <span className="figure">{doneTopics}/{totalTopics}</span>
-            </div>
+              );
+            })}
           </div>
-        </section>
-
-        {announcements.length > 0 && (
-          <section className="home-wide">
-            <h3 className="ruled-head">Announcements</h3>
-            <div className="qlist">
-              {announcements.slice(0, 3).map((a) => (
-                <div className="qrow" key={a._id}>
-                  <span className="dot ahead" />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div className="qrow-title">{a.title}</div>
-                    {a.body && <div className="qrow-sub">{a.body}</div>}
-                  </div>
-                  <span className="qrow-sub">{new Date(a.createdAt).toLocaleDateString([], { day: 'numeric', month: 'short' })}</span>
-                </div>
-              ))}
-            </div>
-          </section>
         )}
-      </div>
+      </section>
+
+      {/* ═══ 03 · UPDATES ════════════════════════════════════════════════ */}
+      <section className="sh-sec">
+        <SecHead n="03" title="Updates" />
+        {updates.length === 0 ? (
+          <div className="empty"><strong>All quiet</strong>Announcements and alerts from your team will collect here.</div>
+        ) : (
+          <div className="sh-list">
+            {updates.map((u) => (
+              <div className="sh-item" key={u.id}>
+                <span className={`sh-item-mark ${u.kind === 'Announcement' ? 'is-amber' : 'is-sky'}`}>
+                  <LineIcon name={u.kind === 'Announcement' ? 'megaphone' : 'bell'} size={19} />
+                </span>
+                <div className="sh-item-body">
+                  <div className="sh-item-title">{u.title}</div>
+                  <div className="sh-item-sub">
+                    <span>{u.kind}</span>
+                    <span className="sh-sep" />
+                    <span>{fmtDate(u.at)}</span>
+                    {u.body && <><span className="sh-sep" /><span>{u.body}</span></>}
+                  </div>
+                </div>
+                {u.unread && <span className="sh-item-end"><span className="dot now" /></span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ═══ 04 · AD-ONS ═════════════════════════════════════════════════ */}
+      <section className="sh-sec">
+        <SecHead n="04" title="Ad-ons" />
+        <p className="sh-sub">Everything beyond the coursework — resources, careers and the people around you.</p>
+        <div className="sh-addons">
+          <button className="sh-addon" onClick={() => navigate('/app/library')}>
+            <span className="sh-addon-mark"><LineIcon name="book" size={20} /></span>
+            <span className="sh-addon-title">Library</span>
+            <span className="sh-addon-sub">
+              {addons.library > 0 ? `${addons.library} slide deck${addons.library === 1 ? '' : 's'}, eBook${addons.library === 1 ? '' : 's'} and notes` : 'Slides, eBooks and notes'}
+            </span>
+            <span className="sh-addon-go">Browse →</span>
+          </button>
+          <button className="sh-addon" onClick={() => navigate('/app/jobs')}>
+            <span className="sh-addon-mark"><LineIcon name="briefcase" size={20} /></span>
+            <span className="sh-addon-title">Job Board</span>
+            <span className="sh-addon-sub">
+              {addons.jobs > 0 ? `${addons.jobs} opening${addons.jobs === 1 ? '' : 's'} you can apply to today` : 'Jobs and internships from the team'}
+            </span>
+            <span className="sh-addon-go">View roles →</span>
+          </button>
+          <button className="sh-addon" onClick={() => navigate('/app/grades')}>
+            <span className="sh-addon-mark"><LineIcon name="chart" size={20} /></span>
+            <span className="sh-addon-title">Grades</span>
+            <span className="sh-addon-sub">Every quiz score and graded project in one place.</span>
+            <span className="sh-addon-go">See grades →</span>
+          </button>
+        </div>
+      </section>
     </div>
   );
+}
+
+// The numbered section header — the number, the ruled title, a hairline out to
+// whatever the section wants to put on the right.
+function SecHead({ n, title, children }) {
+  return (
+    <div className="sh-head">
+      <span className="sh-num">{n}</span>
+      <h2>{title}</h2>
+      <span className="sh-rule" />
+      {children}
+    </div>
+  );
+}
+
+// ── formatting ────────────────────────────────────────────────────────────
+const fmtLong = (d) => new Date(d).toLocaleString([], {
+  weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+});
+const fmtDate = (d) => new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short' });
+const cleanBatch = (name) => name.replace(/^Demo — /, '');
+
+// Graded → Submitted → Overdue → To do, each with its own dot colour.
+function projectStatus(a) {
+  const sub = a.mySubmission;
+  if (sub?.status === 'graded') {
+    return { label: sub.score != null ? `Graded · ${sub.score}` : 'Graded', cls: 'status-done', mark: 'is-green' };
+  }
+  if (sub) return { label: 'Submitted', cls: 'status-progress', mark: 'is-green' };
+  const late = a.dueDate && new Date(a.dueDate) < new Date();
+  if (late) return { label: 'Overdue', cls: 'status-late', mark: 'is-rose', late: true };
+  return { label: 'To do', cls: 'status-todo', mark: '' };
+}
+
+// What needs doing first: unsubmitted before submitted, then by due date, then
+// the undated ones last so they never crowd out a real deadline.
+function byUrgency(x, y) {
+  const open = (a) => (a.mySubmission ? 1 : 0);
+  if (open(x) !== open(y)) return open(x) - open(y);
+  if (x.dueDate && y.dueDate) return new Date(x.dueDate) - new Date(y.dueDate);
+  return x.dueDate ? -1 : y.dueDate ? 1 : 0;
 }

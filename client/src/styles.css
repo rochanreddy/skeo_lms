@@ -1606,6 +1606,175 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 /* Route-level Suspense fallback while a lazily-loaded page chunk downloads. */
 .route-loading { padding-top: 4px; }
 .empty strong { display: block; color: var(--ink-2); font-size: 15px; margin-bottom: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STUDENT HOME — six numbered movements
+     01 Progress · 02 Start to class · 03 Classes · 04 Projects
+     05 Updates  · 06 Ad-ons
+   Each section is announced by a number set in the display face and the RULE.
+   The numbers are the point: the home reads as an ordered sequence, not a
+   scatter of tiles, so a student always knows where they are in it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sh-sec { margin-top: 52px; }
+.sh-sec:first-child { margin-top: 0; }
+
+.sh-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px; }
+.sh-num {
+  font-family: var(--display); font-size: 12px; font-weight: 700;
+  letter-spacing: .1em; color: var(--purple); flex: none;
+  padding-top: 2px; font-variant-numeric: tabular-nums;
+}
+.sh-head h2 {
+  position: relative; font-size: 25px; padding-bottom: 11px; flex: none;
+}
+.sh-head h2::after {
+  content: ''; position: absolute; left: 0; bottom: 0;
+  width: 46px; height: 2px; border-radius: 2px; background: var(--purple);
+}
+/* The hairline carries the eye from the title across to the action. */
+.sh-rule { flex: 1; height: 1px; background: var(--line); min-width: 12px; }
+.sh-more {
+  flex: none; font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; background: none; border: 0; cursor: pointer;
+  font-family: var(--font); padding: 0; transition: color .15s;
+}
+.sh-more:hover { color: var(--purple); }
+.sh-sub { font-size: 13.5px; color: var(--muted); margin: -12px 0 18px; }
+
+/* ── 02 Start to class ─────────────────────────────────────────────────────
+   The one button the page exists for. Live goes green and full-bleed; a replay
+   stays a quiet white card so the two are never confused at a glance. */
+.sh-start {
+  display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+  padding: 26px 30px; border-radius: var(--radius-lg);
+}
+.sh-start.live { background: var(--green); color: #fff; box-shadow: var(--shadow-lg); }
+.sh-start.replay { background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.sh-start.none { background: var(--card); border: 1.5px dashed var(--line); }
+.sh-start-mark {
+  width: 52px; height: 52px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+}
+.sh-start.live .sh-start-mark { background: rgba(255,255,255,.2); }
+.sh-start.replay .sh-start-mark { background: var(--purple-soft); color: var(--purple); }
+.sh-start.none .sh-start-mark { background: var(--line-soft); color: var(--muted); }
+.sh-start-body { flex: 1; min-width: 220px; }
+.sh-start-eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: .15em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.sh-start.live .sh-start-eyebrow { color: rgba(255,255,255,.85); }
+.sh-start.replay .sh-start-eyebrow { color: var(--purple); }
+.sh-start.none .sh-start-eyebrow { color: var(--muted); }
+.sh-start-title {
+  font-family: var(--display); font-size: 26px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1.15; margin: 0;
+}
+.sh-start.live .sh-start-title { color: #fff; }
+.sh-start-meta { font-size: 13.5px; margin-top: 7px; }
+.sh-start.live .sh-start-meta { color: rgba(255,255,255,.85); }
+.sh-start.replay .sh-start-meta, .sh-start.none .sh-start-meta { color: var(--muted); }
+.sh-start .btn { flex: none; padding: 15px 30px; font-size: 15.5px; }
+.sh-start.live .btn { background: #fff; color: var(--a6-ink); }
+.sh-start.live .btn:hover { background: var(--parchment); }
+
+/* ── 03 Classes · 04 Projects · 05 Updates — the shared card list ────────── */
+.sh-list { display: flex; flex-direction: column; gap: 10px; }
+.sh-item {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 17px 20px;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.sh-item:hover { border-color: var(--purple-line); box-shadow: var(--shadow); }
+.sh-item-mark {
+  width: 40px; height: 40px; border-radius: 12px; flex: none;
+  display: grid; place-items: center;
+  background: var(--purple-soft); color: var(--purple);
+}
+.sh-item-mark.is-green { background: var(--green-soft); color: var(--a6-ink); }
+.sh-item-mark.is-rose  { background: var(--a4-soft); color: var(--a4-ink); }
+.sh-item-mark.is-sky   { background: var(--a5-soft); color: var(--a5-ink); }
+.sh-item-mark.is-amber { background: var(--a3-soft); color: var(--a3-ink); }
+.sh-item-body { flex: 1; min-width: 0; }
+.sh-item-title {
+  font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sh-item-sub {
+  font-size: 12.5px; color: var(--muted); margin-top: 4px;
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+/* A 3px separator between meta facts — lighter than a bullet, still a beat. */
+.sh-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--line); flex: none; }
+.sh-item-end { flex: none; display: flex; align-items: center; gap: 10px; }
+.sh-item-note { font-size: 12.5px; color: var(--muted); }
+
+/* Two columns where the content is short enough to pair up. */
+.sh-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 860px) { .sh-two { grid-template-columns: 1fr; } }
+
+/* ── 03 Classes — the attendance figure rides in the section head ───────── */
+.sh-att {
+  display: flex; align-items: baseline; gap: 7px; flex: none;
+  font-size: 13px; color: var(--muted);
+}
+.sh-att b {
+  font-family: var(--display); font-size: 19px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.02em;
+}
+
+/* ── 06 Ad-ons — the extras, as three equal doors ───────────────────────── */
+.sh-addons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 860px) { .sh-addons { grid-template-columns: 1fr; } }
+.sh-addon {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 24px 22px 22px;
+  text-align: left; font-family: var(--font); cursor: pointer;
+  transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+.sh-addon:hover {
+  border-color: var(--purple); box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+.sh-addon-mark {
+  width: 42px; height: 42px; border-radius: 13px;
+  display: grid; place-items: center;
+  background: var(--purple-soft); color: var(--purple);
+}
+.sh-addon:nth-child(2) .sh-addon-mark { background: var(--a3-soft); color: var(--a3-ink); }
+.sh-addon:nth-child(3) .sh-addon-mark { background: var(--a5-soft); color: var(--a5-ink); }
+.sh-addon-title {
+  font-family: var(--display); font-size: 17px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.02em;
+}
+.sh-addon-sub { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.sh-addon-go {
+  margin-top: auto; font-size: 12.5px; font-weight: 700;
+  letter-spacing: .04em; color: var(--purple);
+}
+
+/* The six sections arrive in order rather than all at once. */
+.sh-sec { animation: page-in .44s cubic-bezier(.2,.7,.3,1) both; }
+.sh-sec:nth-of-type(1) { animation-delay: .02s; }
+.sh-sec:nth-of-type(2) { animation-delay: .07s; }
+.sh-sec:nth-of-type(3) { animation-delay: .12s; }
+.sh-sec:nth-of-type(4) { animation-delay: .17s; }
+.sh-sec:nth-of-type(5) { animation-delay: .22s; }
+.sh-sec:nth-of-type(6) { animation-delay: .27s; }
+@media (prefers-reduced-motion: reduce) { .sh-sec { animation: none; } }
+
+@media (max-width: 700px) {
+  .sh-sec { margin-top: 40px; }
+  .sh-head h2 { font-size: 21px; }
+  .sh-start { padding: 22px; gap: 16px; }
+  .sh-start-title { font-size: 21px; }
+  .sh-start .btn { width: 100%; }
+}
+
+
 /* ── Module gates ───────────────────────────────────────────────────────────
    A module stays shut until the previous module's quiz has been attempted.
    Locked reads as "not yet", not as an error — dimmed and inert, never red. */
