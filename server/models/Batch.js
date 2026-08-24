@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 // A cohort of one program (e.g. "Kickstarter — July 2026"). Admins run it,
-// students are enrolled. Sessions/attendance/assignments will reference batchId.
+// students are enrolled. Assignments and quizzes reference batchId.
 const batchSchema = new mongoose.Schema(
   {
     programId: { type: mongoose.Schema.Types.ObjectId, ref: 'Program', required: true, index: true },

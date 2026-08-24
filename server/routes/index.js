@@ -5,7 +5,6 @@ import meRoutes from './me.js';
 import programRoutes from './programs.js';
 import userRoutes from './users.js';
 import batchRoutes from './batches.js';
-import sessionRoutes from './sessions.js';
 import assignmentRoutes from './assignments.js';
 import submissionRoutes from './submissions.js';
 import quizRoutes from './quizzes.js';
@@ -33,7 +32,6 @@ router.use('/programs', programRoutes);
 // Phase 2
 router.use('/users', userRoutes);
 router.use('/batches', batchRoutes);
-router.use('/sessions', sessionRoutes);
 router.use('/assignments', assignmentRoutes);
 router.use('/submissions', submissionRoutes);
 router.use('/quizzes', quizRoutes);
