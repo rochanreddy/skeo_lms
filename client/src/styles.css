@@ -1602,3 +1602,39 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 /* Route-level Suspense fallback while a lazily-loaded page chunk downloads. */
 .route-loading { padding-top: 4px; }
 .empty strong { display: block; color: var(--ink-2); font-size: 15px; margin-bottom: 3px; }
+/* Edit/Delete on an assignment card — pushed to the right of its head row,
+   quiet until you go looking for them. */
+.assignment-tools { margin-left: auto; display: flex; gap: 8px; flex: none; }
+.assignment-tools .btn { padding: 5px 12px; font-size: 12.5px; }
+
+/* ── Assignments & projects: content | submission ───────────────────────────
+   The brief (video, PDF, written instructions) sits on the left; handing the
+   work in sits on the right, ruled off from it. Same card, two jobs, so a
+   student never has to scroll away from the task to submit against it. */
+.assign-split { display: grid; grid-template-columns: 1.25fr 1fr; gap: 0; margin-top: 18px; }
+.assign-content { padding-right: 28px; min-width: 0; }
+.assign-submitpane { padding-left: 28px; border-left: 1px solid var(--line); min-width: 0; }
+.assign-pane-head {
+  font-family: var(--display); font-size: 12px; font-weight: 700;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--purple);
+  margin: 0 0 14px;
+}
+.assign-content .lesson-video { width: 100%; border-radius: var(--radius-sm); margin-bottom: 14px; }
+.assign-pdf { margin-bottom: 14px; }
+.assign-content .assign-desc { margin-top: 0; }
+
+/* Below ~900px the two panes stack and the rule becomes a horizontal one. */
+@media (max-width: 900px) {
+  .assign-split { grid-template-columns: 1fr; gap: 22px; }
+  .assign-content { padding-right: 0; }
+  .assign-submitpane { padding-left: 0; padding-top: 22px; border-left: 0; border-top: 1px solid var(--line); }
+}
+
+/* Admin: the two content URLs sit side by side under the description box. */
+.af-content { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+.af-content-field {
+  padding: 10px 13px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  font-size: 13.5px; font-family: var(--font); background: var(--card); color: var(--ink); width: 100%;
+}
+.af-content-field:focus { outline: none; border-color: var(--purple); box-shadow: var(--ring); }
+@media (max-width: 700px) { .af-content { grid-template-columns: 1fr; } }

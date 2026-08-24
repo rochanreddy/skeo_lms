@@ -34,14 +34,14 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /api/skeo/assignments — admin sets an assignment/project.
 router.post('/', requireAuth, async (req, res) => {
-  const { batchId, type, title, description, startDate, dueDate, requiredDriveTypes } = req.body || {};
+  const { batchId, type, title, description, videoUrl, pdfUrl, startDate, dueDate, requiredDriveTypes } = req.body || {};
   if (!batchId || !title) return res.status(400).json({ error: 'batchId and title are required.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
   if (startDate && dueDate && new Date(startDate) > new Date(dueDate)) {
     return res.status(400).json({ error: 'The start date must be before the last date for submission.' });
   }
 
-  const ALLOWED_TYPES = ['video', 'image', 'doc', 'slides', 'html'];
+  const ALLOWED_TYPES = ['doc', 'slides', 'html'];
   const required = Array.isArray(requiredDriveTypes)
     ? [...new Set(requiredDriveTypes.filter((t) => ALLOWED_TYPES.includes(t)))]
     : undefined; // undefined → fall back to the schema default
@@ -51,6 +51,8 @@ router.post('/', requireAuth, async (req, res) => {
     type: type === 'project' ? 'project' : 'assignment',
     title,
     description: description || '',
+    videoUrl: videoUrl || '',
+    pdfUrl: pdfUrl || '',
     startDate: startDate || null,
     dueDate: dueDate || null,
     ...(required ? { requiredDriveTypes: required } : {}),
@@ -58,6 +60,50 @@ router.post('/', requireAuth, async (req, res) => {
   const batch = await Batch.findById(batchId).select('studentIds');
   notifyMany(batch?.studentIds || [], { type: 'assignment', text: `New ${assignment.type}: ${title}`, link: '/app/learning' });
   res.status(201).json({ assignment });
+});
+
+// PATCH /api/skeo/assignments/:id — admin edits an assignment/project.
+// Same validation as create; only the fields actually sent are touched.
+router.patch('/:id', requireAuth, async (req, res) => {
+  const assignment = await Assignment.findById(req.params.id);
+  if (!assignment) return res.status(404).json({ error: 'Assignment not found.' });
+  if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
+
+  const { type, title, description, videoUrl, pdfUrl, startDate, dueDate, requiredDriveTypes } = req.body || {};
+  if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Title cannot be empty.' });
+
+  // Validate against the dates as they WILL be, not just the ones sent, so an
+  // edit that moves only one end still can't invert the window.
+  const nextStart = startDate !== undefined ? startDate : assignment.startDate;
+  const nextDue = dueDate !== undefined ? dueDate : assignment.dueDate;
+  if (nextStart && nextDue && new Date(nextStart) > new Date(nextDue)) {
+    return res.status(400).json({ error: 'The start date must be before the last date for submission.' });
+  }
+
+  const ALLOWED_TYPES = ['doc', 'slides', 'html'];
+  if (title !== undefined) assignment.title = String(title).trim();
+  if (type !== undefined) assignment.type = type === 'project' ? 'project' : 'assignment';
+  if (description !== undefined) assignment.description = description || '';
+  if (videoUrl !== undefined) assignment.videoUrl = videoUrl || '';
+  if (pdfUrl !== undefined) assignment.pdfUrl = pdfUrl || '';
+  if (startDate !== undefined) assignment.startDate = startDate || null;
+  if (dueDate !== undefined) assignment.dueDate = dueDate || null;
+  if (Array.isArray(requiredDriveTypes)) {
+    assignment.requiredDriveTypes = [...new Set(requiredDriveTypes.filter((t) => ALLOWED_TYPES.includes(t)))];
+  }
+  await assignment.save();
+  res.json({ assignment });
+});
+
+// DELETE /api/skeo/assignments/:id — admin removes it, and every submission
+// under it (they'd be orphaned and unreachable otherwise).
+router.delete('/:id', requireAuth, async (req, res) => {
+  const assignment = await Assignment.findById(req.params.id);
+  if (!assignment) return res.status(404).json({ error: 'Assignment not found.' });
+  if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
+  await Submission.deleteMany({ assignmentId: assignment._id });
+  await assignment.deleteOne();
+  res.json({ ok: true });
 });
 
 // GET /api/skeo/assignments/:id

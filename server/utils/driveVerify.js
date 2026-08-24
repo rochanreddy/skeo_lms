@@ -41,8 +41,6 @@ const SLIDES_EXTENSIONS = new Set(['ppt', 'pptx', 'key', 'odp']);
 
 // Human-readable names for the "you're missing X" message.
 const TYPE_LABELS = {
-  video: 'a video',
-  image: 'a photo/screenshot',
   doc: 'a document (PDF, Word or text file)',
   slides: 'a slide deck (PPT)',
   html: 'an HTML file',
@@ -85,7 +83,7 @@ async function driveGet(path, apiKey) {
  * verifyDriveFolder(driveLink, { requiredTypes }) -> { status, errorDetail, files }
  * status: 'READY' | 'NEEDS_FIXES' | 'CHECK_FAILED'
  */
-export async function verifyDriveFolder(driveLink, { requiredTypes = ['video', 'image', 'doc'] } = {}) {
+export async function verifyDriveFolder(driveLink, { requiredTypes = ['doc'] } = {}) {
   if (!driveLink || typeof driveLink !== 'string') {
     return { status: 'NEEDS_FIXES', errorDetail: 'A Drive folder link is required.', files: [] };
   }
@@ -134,7 +132,7 @@ export async function verifyDriveFolder(driveLink, { requiredTypes = ['video', '
   }
 
   if (items.length === 0) {
-    return { status: 'NEEDS_FIXES', errorDetail: 'This Drive folder is empty. Add your video, screenshots, and write-up, then resubmit.', files: [] };
+    return { status: 'NEEDS_FIXES', errorDetail: 'This Drive folder is empty. Add your write-up and any files the brief asks for, then resubmit.', files: [] };
   }
 
   // 3. Classify + check individual access. Dangerous files block outright;

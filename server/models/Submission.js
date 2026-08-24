@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 const submissionFileSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    type: { type: String, enum: ['video', 'image', 'doc', 'other'], default: 'other' },
+    type: { type: String, enum: ['doc', 'slides', 'html', 'video', 'image', 'other'], default: 'other' },
     webViewLink: { type: String, default: '' },
     mimeType: { type: String, default: '' },
   },
