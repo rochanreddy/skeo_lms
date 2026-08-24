@@ -10,6 +10,7 @@
     "seed": "node scripts/seed.js",
     "seed:demo": "node scripts/seedDemo.js",
     "seed:content": "node scripts/seedContent.js",
+    "seed:claude": "node scripts/seedClaude.js",
     "seed:library": "node scripts/seedLibrary.js"
   },
   "dependencies": {
