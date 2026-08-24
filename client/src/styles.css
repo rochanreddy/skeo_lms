@@ -1643,3 +1643,16 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
    locked module in the curriculum sidebar. */
 .quiz-locked { opacity: .55; }
 .quiz-locked strong { color: var(--ink-2); }
+
+/* ── Course work authoring (Programs → Manage curriculum) ──────────────────
+   The view switcher sits under the editor bar; the managers reuse the
+   .assignment card the Course page already uses, so the two read the same. */
+.ce-views { margin: 0 0 22px; }
+.cw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.cw-sub { font-family: var(--display); font-size: 15px; font-weight: 700; margin: 26px 0 10px; }
+/* The module number in front of a gate quiz row. */
+.cw-modnum {
+  font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  color: var(--purple); background: var(--purple-soft);
+  padding: 3px 7px; border-radius: 6px; flex: none;
+}

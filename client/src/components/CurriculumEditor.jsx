@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, postFile } from '../api.js';
 import LessonIcon from './LessonIcon.jsx';
+import { ProjectsManager, QuizzesManager } from './CourseWork.jsx';
 
 // Admin curriculum builder for one program. Upload a doc to auto-structure it,
 // then review/edit the Module → Chapter → Topic tree and publish.
@@ -12,6 +13,9 @@ export default function CurriculumEditor({ programId, onClose }) {
   const [dirty, setDirty] = useState(false);
   const [msg, setMsg] = useState('');
   const [importing, setImporting] = useState(false);
+  const [view, setView] = useState('curriculum'); // curriculum | projects | quizzes
+  // Projects hang off the single course record, not the programme.
+  const [batchId, setBatchId] = useState(null);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -19,6 +23,10 @@ export default function CurriculumEditor({ programId, onClose }) {
       setProgram(p); setModules(p.modules || []); setPublished(!!p.published);
     }).catch(() => {});
   }, [programId]);
+
+  useEffect(() => {
+    api('/batches').then((d) => setBatchId((d.batches || [])[0]?.id || null)).catch(() => {});
+  }, []);
 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 2500); };
   // Immutable tree edit: clone, mutate via callback, mark dirty.
@@ -33,7 +41,7 @@ export default function CurriculumEditor({ programId, onClose }) {
   // ── Tree mutators ──
   const addModule = () => touch((m) => m.push({ title: 'New module', order: m.length, chapters: [] }));
   const addChapter = (mi) => touch((m) => m[mi].chapters.push({ title: 'New chapter', order: m[mi].chapters.length, topics: [] }));
-  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'text', contentUrl: '', body: '', classLink: '', readingUrl: '', notesUrl: '', order: m[mi].chapters[ci].topics.length }));
+  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'text', contentUrl: '', body: '', classLink: '', readingUrl: '', order: m[mi].chapters[ci].topics.length }));
   const delModule = (mi) => { touch((m) => m.splice(mi, 1)); setSel(null); };
   const delChapter = (mi, ci) => { touch((m) => m[mi].chapters.splice(ci, 1)); setSel(null); };
   const delTopic = (mi, ci, ti) => { touch((m) => m[mi].chapters[ci].topics.splice(ti, 1)); setSel(null); };
@@ -70,10 +78,28 @@ export default function CurriculumEditor({ programId, onClose }) {
       <div className="ce-bar">
         <button className="btn ghost sm" onClick={onClose}>← Programs</button>
         <div className="ce-bar-title"><strong>{program.title}</strong> <span className="muted">· {stats.modules} modules · {stats.topics} lessons</span></div>
-        <label className="ce-pub"><input type="checkbox" checked={published} onChange={(e) => { setPublished(e.target.checked); setDirty(true); }} /> Published</label>
+        {view === 'curriculum' && (
+          <label className="ce-pub"><input type="checkbox" checked={published} onChange={(e) => { setPublished(e.target.checked); setDirty(true); }} /> Published</label>
+        )}
         {msg && <span className="muted ce-msg">{msg}</span>}
-        <button className="btn" onClick={save} disabled={!dirty}>{dirty ? 'Save changes' : 'Saved'}</button>
+        {view === 'curriculum' && (
+          <button className="btn" onClick={save} disabled={!dirty}>{dirty ? 'Save changes' : 'Saved'}</button>
+        )}
       </div>
+
+      {/* Three things belong to a programme: its lessons, the work set against
+          them, and the quizzes that gate them. Author all three in one place. */}
+      <div className="tabs ce-views">
+        <button className={`tab ${view === 'curriculum' ? 'active' : ''}`} onClick={() => setView('curriculum')}>Curriculum</button>
+        <button className={`tab ${view === 'projects' ? 'active' : ''}`} onClick={() => setView('projects')}>Projects &amp; assignments</button>
+        <button className={`tab ${view === 'quizzes' ? 'active' : ''}`} onClick={() => setView('quizzes')}>Quizzes</button>
+      </div>
+
+      {view === 'projects' && <ProjectsManager batchId={batchId} />}
+      {view === 'quizzes' && <QuizzesManager programId={programId} modules={modules} batchId={batchId} />}
+
+      {view === 'curriculum' && (
+      <>
 
       <div className="ce-import">
         <div>
@@ -148,10 +174,10 @@ export default function CurriculumEditor({ programId, onClose }) {
 
               {/* Independent of content type — a reading lesson can still have
                   had a live class about it. */}
-              <label className="ce-label">Class link <span className="muted">(Zoom while it's live, YouTube once recorded — leave empty and students see "Not available yet")</span></label>
+              <label className="ce-label">Class link <span className="muted">(the meeting link while it's live, YouTube once recorded — leave empty and students see "Not available yet")</span></label>
               <input
                 className="ce-field"
-                placeholder="https://zoom.us/j/… or https://youtube.com/watch?v=…"
+                placeholder="https://meet.google.com/… or https://youtube.com/watch?v=…"
                 value={selTopic.classLink || ''}
                 onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { classLink: e.target.value })}
               />
@@ -164,20 +190,14 @@ export default function CurriculumEditor({ programId, onClose }) {
                 onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { readingUrl: e.target.value })}
               />
 
-              <label className="ce-label">Teacher notes <span className="muted">(PPTX or PDF — a PPTX must sit on a public URL to preview)</span></label>
-              <input
-                className="ce-field"
-                placeholder="https://… .pptx"
-                value={selTopic.notesUrl || ''}
-                onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { notesUrl: e.target.value })}
-              />
-
               <label className="ce-label">Content <span className="muted">(Markdown — # headings, **bold**, - lists, `code`)</span></label>
               <textarea className="ce-body" rows={16} value={selTopic.body} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { body: e.target.value })} placeholder="Write the lesson content here…" />
             </>
           )}
         </section>
       </div>
+      </>
+      )}
     </div>
   );
 }
