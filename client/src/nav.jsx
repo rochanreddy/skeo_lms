@@ -16,13 +16,18 @@ const AdminHome = lazy(() => import('./pages/admin/Home.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
 const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
 
-// Routes that exist for a role but don't get a sidebar tab (detail/drill-down
+// Routes that exist for a role but don't get a dock tab (detail/drill-down
 // pages reached by clicking into a list). Same {path, Component} shape as tabs.
+// Profile lives here rather than in the dock: it's an account setting, not a
+// section of the product, and the avatar menu is where people go looking for it.
 export function extraRoutesFor(role) {
   if (role === 'admin') {
-    return [{ path: 'students/:id', Component: AdminStudentDetail }];
+    return [
+      { path: 'students/:id', Component: AdminStudentDetail },
+      { path: 'account', Component: Profile },
+    ];
   }
-  return [];
+  return [{ path: 'profile', Component: Profile }];
 }
 
 // Each role's nav tabs. path '' is the index (Home). label drives the sidebar;
@@ -36,7 +41,6 @@ export function navFor(role) {
         { label: 'Grades', path: 'grades', Component: StudentGrades },
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Job Board', path: 'jobs', Component: JobBoard },
-        { label: 'Profile', path: 'profile', Component: Profile },
       ];
     case 'admin':
       return [
@@ -46,7 +50,6 @@ export function navFor(role) {
         { label: 'Students', path: 'students', Component: AdminStudents },
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Job Board', path: 'jobs', Component: JobBoard },
-        { label: 'Account', path: 'account', Component: Profile },
       ];
     // Unknown/retired roles (legacy 'mentor' or 'partner' accounts) get no tabs — App
     // treats an empty nav as "no access" rather than rendering a blank shell.

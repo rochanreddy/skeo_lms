@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutletContext } from 'react-router-dom';
-import { api, uploadFile, isStoredFile, openStoredFile } from '../api.js';
+import { api } from '../api.js';
 
 // Fully wired against GET/PATCH /api/skeo/me. Sections from the spec:
-// Personal · Educational · Professional · Resume.
+// Personal · Educational · Professional.
 export default function Profile() {
   const { user, setUser } = useOutletContext();
   const [form, setForm] = useState({
@@ -11,31 +11,11 @@ export default function Profile() {
     phone: user.phone || '',
     education: user.education || {},
     professional: user.professional || {},
-    resumeUrl: user.resume_url || '',
   });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [resumeFileName, setResumeFileName] = useState('');
-  const resumeFileRef = useRef(null);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  async function onResumeFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setResumeFileName(file.name);
-    setUploading(true);
-    setMsg('');
-    try { const { url } = await uploadFile(file); set('resumeUrl', url); setMsg('Uploaded ✓ — click Save changes'); }
-    catch (e2) { setMsg(e2.message); }
-    finally { setUploading(false); }
-  }
-  async function viewResume() {
-    setMsg('');
-    try { await openStoredFile(form.resumeUrl); }
-    catch (e2) { setMsg(e2.message); }
-  }
 
   const setEdu = (k, v) => setForm((f) => ({ ...f, education: { ...f.education, [k]: v } }));
   const setPro = (k, v) => setForm((f) => ({ ...f, professional: { ...f.professional, [k]: v } }));
@@ -60,7 +40,6 @@ export default function Profile() {
     form.fullName, form.phone,
     form.education.degree, form.education.institution, form.education.year,
     form.professional.title, form.professional.company, form.professional.experience,
-    form.resumeUrl,
   ];
   const pct = Math.round((fields.filter((v) => String(v || '').trim()).length / fields.length) * 100);
 
@@ -121,38 +100,6 @@ export default function Profile() {
           <label>Company<input value={form.professional.company || ''} onChange={(e) => setPro('company', e.target.value)} /></label>
           <label>Experience<input value={form.professional.experience || ''} onChange={(e) => setPro('experience', e.target.value)} /></label>
         </div>
-      </section>
-
-      <section className="panel">
-        <h3>Resume</h3>
-        <div className="field-grid">
-          <label>Upload a file (PDF/DOC, ≤ 5 MB)
-            <div className="file-picker">
-              <input ref={resumeFileRef} type="file" accept=".pdf,.doc,.docx" onChange={onResumeFile} disabled={uploading} hidden />
-              <button type="button" className="btn quiet sm" onClick={() => resumeFileRef.current?.click()} disabled={uploading}>
-                {uploading ? 'Uploading…' : 'Choose file'}
-              </button>
-              <span className="muted file-picker-name">{resumeFileName || 'No file chosen'}</span>
-            </div>
-          </label>
-          {/* An uploaded resume is an id, not a link — showing it in the paste
-              box would just be noise, and it can't be opened with a bare href. */}
-          {isStoredFile(form.resumeUrl) ? (
-            <label>Attached file
-              <div className="file-picker">
-                <button type="button" className="btn quiet sm" onClick={viewResume}>View</button>
-                <button type="button" className="btn quiet sm" onClick={() => { set('resumeUrl', ''); setResumeFileName(''); }}>Remove</button>
-                <span className="muted file-picker-name">{resumeFileName || 'Uploaded resume'}</span>
-              </div>
-            </label>
-          ) : (
-            <label>…or paste a link<input value={form.resumeUrl} onChange={(e) => set('resumeUrl', e.target.value)} placeholder="https://…" /></label>
-          )}
-        </div>
-        {uploading && <p className="muted">Uploading…</p>}
-        {form.resumeUrl && !isStoredFile(form.resumeUrl) && (
-          <p className="muted"><a href={form.resumeUrl} target="_blank" rel="noreferrer">View current resume →</a></p>
-        )}
       </section>
 
       <div className="row">
