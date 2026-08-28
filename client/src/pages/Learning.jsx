@@ -6,6 +6,8 @@ import Markdown from '../components/Markdown.jsx';
 import LessonIcon from '../components/LessonIcon.jsx';
 import LineIcon from '../components/LineIcon.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
+import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
 // For admins: just the course content to teach from — they create &
@@ -454,10 +456,12 @@ function Content() {
       <div className="learn-top">
         <div className="learn-prog-pick">
           <span className="learn-eyebrow" id="learn-prog-label">Program</span>
-          <select aria-labelledby="learn-prog-label" value={program?._id || ''} onChange={(e) => { if (e.target.value) { setParams({ program: e.target.value }, { replace: true }); pick(e.target.value); } }}>
-            <option value="">Select a program…</option>
-            {programs.map((p) => <option key={p._id} value={p._id}>{p.title}</option>)}
-          </select>
+          <Select value={program?._id || undefined} onValueChange={(v) => { if (v) { setParams({ program: v }, { replace: true }); pick(v); } }}>
+            <SelectTrigger aria-labelledby="learn-prog-label"><SelectValue placeholder="Select a program…" /></SelectTrigger>
+            <SelectContent>
+              {programs.map((p) => <SelectItem key={p._id} value={p._id}>{p.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         {program && isStudent && total > 0 && (
           <div className="learn-progress">
@@ -622,8 +626,16 @@ function Ring({ pct }) {
 
 function CertificateModal({ cert, onClose }) {
   return (
-    <div className="cert-overlay" onClick={onClose}>
-      <div className="cert" onClick={(e) => e.stopPropagation()}>
+    // A real modal: Radix traps focus, closes on Escape and locks the page
+    // scroll. The click-outside-to-close of the old overlay is preserved.
+    <Dialog open onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName="cert-overlay"
+        className="cert z-[101] gap-0 border-0 p-0"
+        aria-describedby={undefined}
+      >
+        <DialogTitle className="sr-only">Certificate of Completion</DialogTitle>
         <div className="cert-inner">
           <div className="cert-brand">Skeo</div>
           <div className="cert-kicker">Certificate of Completion</div>
@@ -639,8 +651,8 @@ function CertificateModal({ cert, onClose }) {
           <button className="btn" onClick={() => window.print()}>Download / Print</button>
           <button className="btn ghost" onClick={onClose}>Close</button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

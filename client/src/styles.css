@@ -589,8 +589,11 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 
 /* The certificate leans hardest on the serif — it's the most human artefact
    the product makes, and the one a student shows someone else. */
-.cert-overlay { position: fixed; inset: 0; background: rgba(20,18,28,.6); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 100; padding: 20px; }
-.cert { background: var(--parchment); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); max-width: 660px; width: 100%; }
+/* Radix supplies `fixed inset-0` and the fade for every scrim; these rules add
+   only what is particular to this one. Centring moved to the popper, so the
+   old 20px overlay padding becomes an inset on the panel itself. */
+.cert-overlay { background: rgba(20,18,28,.6); backdrop-filter: blur(4px); z-index: 100; }
+.cert { background: var(--parchment); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); max-width: 660px; width: calc(100% - 40px); }
 .cert-inner { border: 1px solid var(--purple-line); margin: 16px; padding: 52px 44px; text-align: center; border-radius: var(--radius); position: relative; }
 .cert-inner::before { content: ''; position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 54px; height: 2px; background: var(--purple); border-radius: 0 0 2px 2px; }
 .cert-brand { font-family: var(--display); font-weight: 900; font-size: 19px; color: var(--ink); letter-spacing: -0.025em; }
@@ -600,7 +603,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .cert-program { font-family: var(--display); font-size: 21px; font-weight: 700; color: var(--purple); margin-top: 10px; letter-spacing: -0.02em; }
 .cert-meta { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--purple-line); font-size: 11.5px; color: var(--muted); }
 .cert-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 0 18px 20px; }
-@media print { body * { visibility: hidden; } .cert, .cert * { visibility: visible; } .cert { position: absolute; inset: 0; box-shadow: none; } .cert-actions { display: none; } }
+@media print { body * { visibility: hidden; } .cert, .cert * { visibility: visible; } .cert { position: absolute; inset: 0; transform: none; width: auto; max-width: none; box-shadow: none; } .cert-actions { display: none; } }
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
 .tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
 .tile-value { font-family: var(--display); font-size: 26px; font-weight: 700; }
@@ -622,7 +625,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .learn-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
 .learn-prog-pick { display: flex; flex-direction: column; gap: 5px; }
 .learn-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
-.learn-prog-pick select { padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; font-size: 15px; font-family: var(--display); font-weight: 600; color: var(--ink); background: var(--card); min-width: 220px; }
+.learn-prog-pick select, .learn-prog-pick [data-slot='select-trigger'] { padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; font-size: 15px; font-family: var(--display); font-weight: 600; color: var(--ink); background: var(--card); min-width: 220px; }
 .learn-progress { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; box-shadow: var(--shadow); }
 .learn-progress-pct { font-family: var(--display); font-weight: 700; font-size: 15px; }
 .ring-bg { fill: none; stroke: #e9ebf1; stroke-width: 5; }
