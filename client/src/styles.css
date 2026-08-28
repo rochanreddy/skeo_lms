@@ -344,7 +344,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 /* ── Cards / panels ── */
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; box-shadow: var(--shadow); }
 .panel label { display: block; font-size: 13px; color: var(--ink-2); font-weight: 500; margin: 12px 0 0; }
-.panel input, .panel select, .panel textarea { width: 100%; padding: 11px 13px; margin-top: 5px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font); background: var(--card); color: var(--ink); }
+.panel input, .panel select, .panel textarea, .panel [data-slot='select-trigger'] { width: 100%; padding: 11px 13px; margin-top: 5px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font); background: var(--card); color: var(--ink); }
 .panel input:focus, .panel select:focus, .panel textarea:focus { outline: none; border-color: var(--purple); box-shadow: var(--ring); }
 .panel input:disabled { background: var(--line-soft); color: #8e88a3; }
 

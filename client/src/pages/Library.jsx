@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 
 const CATEGORIES = ['PPT', 'eBook', 'Note', 'Library'];
 
@@ -47,9 +48,12 @@ export default function Library() {
           <h3>Add a resource</h3>
           <div className="inline-form">
             <input placeholder="Title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-            <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
+            <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
+              <SelectTrigger aria-label="Category"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <input placeholder="Link (Drive, PDF…)" value={form.url} onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
             <button className="btn sm" disabled={busy}>{busy ? 'Adding…' : 'Add'}</button>
           </div>
