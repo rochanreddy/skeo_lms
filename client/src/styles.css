@@ -1073,8 +1073,8 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .dtp-clear { color: var(--muted); font-size: 16px; line-height: 1; padding: 0 2px; border-radius: 5px; }
 .dtp-clear:hover { color: var(--a4); background: var(--a4-soft); }
 
+/* Placement is Radix's (see DateTimePicker); only the box is described here. */
 .dtp-pop {
-  position: absolute; z-index: 60; top: calc(100% + 6px); left: 0;
   width: 288px; padding: 14px;
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
@@ -1111,7 +1111,6 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 /* Flip to the right edge when the field sits near the viewport edge. */
 @media (max-width: 560px) {
   .dtp, .dtp-field { width: 100%; }
-  .dtp-pop { left: auto; right: 0; }
 }
 
 /* Required-file-type picker on the assignment form */

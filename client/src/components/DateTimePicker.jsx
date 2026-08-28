@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import LineIcon from './LineIcon.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover.jsx';
 
 // A drop-in replacement for <input type="datetime-local">, which renders as a
 // different (and uniformly ugly) native widget in every browser. Same value
@@ -28,22 +29,9 @@ export default function DateTimePicker({ value, onChange, placeholder = 'Pick da
   const selected = parseValue(value);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => selected || new Date());
-  const wrapRef = useRef(null);
 
   // Follow the value when it changes from outside (e.g. the form resetting).
   useEffect(() => { const d = parseValue(value); if (d) setView(d); }, [value]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onDown = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
 
   const year = view.getFullYear();
   const month = view.getMonth();
@@ -83,33 +71,33 @@ export default function DateTimePicker({ value, onChange, placeholder = 'Pick da
     : placeholder;
 
   return (
-    <div className="dtp" ref={wrapRef}>
-      <button
-        type="button"
-        id={id}
-        className={`dtp-field ${selected ? '' : 'is-empty'}`}
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <LineIcon name="clock" size={14} />
-        <span className="dtp-label">{label}</span>
-        {selected && (
-          <span
-            role="button"
-            tabIndex={0}
-            aria-label="Clear"
-            className="dtp-clear"
-            onClick={(e) => { e.stopPropagation(); onChange(''); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); onChange(''); } }}
-          >
-            ×
-          </span>
-        )}
-      </button>
+    <div className="dtp">
+      <Popover open={open} onOpenChange={setOpen}>
+        {/* Radix owns aria-haspopup/aria-expanded, the outside-click, Escape and
+            returning focus to this button — all of which used to be hand-rolled. */}
+        <PopoverTrigger asChild>
+          <button type="button" id={id} className={`dtp-field ${selected ? '' : 'is-empty'}`}>
+            <LineIcon name="clock" size={14} />
+            <span className="dtp-label">{label}</span>
+            {selected && (
+              /* Clearing sits inside the trigger, so it has to swallow the event
+                 before Radix reads it as a request to open the calendar. */
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="Clear"
+                className="dtp-clear"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onChange(''); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); onChange(''); } }}
+              >
+                ×
+              </span>
+            )}
+          </button>
+        </PopoverTrigger>
 
-      {open && (
-        <div className="dtp-pop" role="dialog" aria-label="Choose date and time">
+        <PopoverContent align="start" sideOffset={6} className="dtp-pop" aria-label="Choose date and time">
           <div className="dtp-head">
             <button type="button" className="dtp-nav" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
             <div className="dtp-month">{MONTHS[month]} {year}</div>
@@ -150,8 +138,8 @@ export default function DateTimePicker({ value, onChange, placeholder = 'Pick da
               <button type="button" className="btn sm" onClick={() => setOpen(false)}>Done</button>
             </div>
           </div>
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
