@@ -1409,7 +1409,16 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 /* ── Focus ── One consistent ring everywhere, for keyboard users only. */
 a:focus-visible, button:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
-  outline: none; box-shadow: var(--ring); border-radius: 8px;
+  outline: none; box-shadow: var(--ring);
+}
+/* The ring is a box-shadow, so it traces whatever radius the element has; 8px
+   is the fallback for elements that declare none. Anything carrying a Tailwind
+   `rounded-*` utility (i.e. a shadcn component) already has one, and forcing
+   8px there would square off a pill the moment it took focus. */
+a:not([class*="rounded"]):focus-visible, button:not([class*="rounded"]):focus-visible,
+input:not([class*="rounded"]):focus-visible, select:not([class*="rounded"]):focus-visible,
+textarea:not([class*="rounded"]):focus-visible, [tabindex]:not([class*="rounded"]):focus-visible {
+  border-radius: 8px;
 }
 .dock-item:focus-visible { box-shadow: 0 0 0 3px rgba(243,241,249,.5); }
 
