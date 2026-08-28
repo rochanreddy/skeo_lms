@@ -256,20 +256,37 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   transition: background .14s, color .14s;
 }
 .who-menu-item svg { color: var(--muted); flex: none; transition: color .14s; }
-.who-menu-item:hover { background: var(--purple-soft); color: var(--purple); }
-.who-menu-item:hover svg { color: var(--purple); }
-.who-menu-item.danger:hover { background: #fdecec; color: #c0362c; }
-.who-menu-item.danger:hover svg { color: #c0362c; }
+/* Radix highlights the focused item with [data-highlighted] as you arrow
+   through the menu; pair it with :hover so mouse and keyboard look the same. */
+.who-menu-item:hover, .who-menu-item[data-highlighted] { background: var(--purple-soft); color: var(--purple); }
+.who-menu-item:hover svg, .who-menu-item[data-highlighted] svg { color: var(--purple); }
+.who-menu-item.danger:hover, .who-menu-item.danger[data-highlighted] { background: #fdecec; color: #c0362c; }
+.who-menu-item.danger:hover svg, .who-menu-item.danger[data-highlighted] svg { color: #c0362c; }
 
 /* Wordmark — the product name, set plainly. */
 .skeo-wm { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1; }
 .skeo-wm__word { font-family: 'DM Sans', sans-serif; font-weight: 900; font-size: 1em; letter-spacing: -0.025em; line-height: 1; display: inline-block; color: inherit; }
 .skeo-wm__tagline { font-family: 'DM Serif Display', serif; font-style: italic; font-weight: 400; font-size: 0.22em; margin-top: 0.5em; }
 /* ── Command palette (⌘K) — the actual navigation ── */
-.cmd-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(20,18,28,.42); backdrop-filter: blur(3px); display: flex; justify-content: center; padding: 12vh 20px 20px; animation: cmd-in .14s ease-out; }
-@keyframes cmd-in { from { opacity: 0; } to { opacity: 1; } }
-.cmd { width: 100%; max-width: 580px; max-height: 62vh; background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; animation: cmd-pop .18s cubic-bezier(.3,1.2,.5,1); }
-@keyframes cmd-pop { from { transform: translateY(-8px) scale(.985); } to { transform: none; } }
+/* ── shadcn bridge ── Radix renders the scrim for every dialog, so the Skeo
+   one is described once here: the stage colour at 42% with a light blur,
+   rather than Tailwind's flat black. */
+[data-slot='dialog-overlay'] { background: rgba(20,18,28,.42); backdrop-filter: blur(3px); }
+
+/* Select triggers sit next to plain <input>s, so they inherit the UI font
+   rather than the button default, and the portalled listbox picks up the
+   card surface and the purple highlight the rest of the product uses. */
+[data-slot='select-trigger'] { font-family: var(--font); color: var(--ink); text-align: left; }
+[data-slot='select-trigger'][data-placeholder] { color: var(--muted); }
+[data-slot='select-content'] { border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); }
+[data-slot='select-item'] { font-size: 13.5px; border-radius: 8px; }
+[data-slot='select-item'][data-highlighted] { background: var(--purple-soft); color: var(--purple); }
+
+/* The palette box. Placement and the enter/exit motion belong to Radix now —
+   an `animation` here would win the cascade and never re-fire on close, which
+   leaves Presence waiting on an animationend that never comes. The 40px inset
+   keeps the old 20px gutter on a phone; max-width still caps it on a desktop. */
+.cmd { width: calc(100% - 40px); max-width: 580px; max-height: 62vh; background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
 .cmd-input-wrap { display: flex; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--line-soft); color: var(--muted); }
 .cmd-input { flex: 1; border: 0; outline: none; font-family: var(--font); font-size: 17px; color: var(--ink); background: none; }
 .cmd-input::placeholder { color: #8e88a3; }
