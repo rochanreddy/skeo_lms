@@ -856,7 +856,7 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 /* ── Placeholder / forms / batch workspace ── */
 .ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 6px; }
 .inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
-.inline-form input, .inline-form select { padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; font-size: 13.5px; font-family: var(--font); }
+.inline-form input, .inline-form select, .inline-form [data-slot='select-trigger'] { padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; font-size: 13.5px; font-family: var(--font); }
 .inline-form input { min-width: 200px; }
 .ann-body { padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; font-size: 13.5px; font-family: var(--font); box-sizing: border-box; }
 .table-wrap { overflow-x: auto; margin-top: 8px; }

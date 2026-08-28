@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 
 const TYPES = ['Full-time', 'Part-time', 'Internship', 'Contract'];
 
@@ -54,9 +55,12 @@ export default function JobBoard() {
             <input placeholder="Title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
             <input placeholder="Company" value={form.company} onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))} />
             <input placeholder="Location" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
-            <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-              {TYPES.map((t) => <option key={t}>{t}</option>)}
-            </select>
+            <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+              <SelectTrigger aria-label="Type"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <input placeholder="Apply link" value={form.applyUrl} onChange={(e) => setForm((f) => ({ ...f, applyUrl: e.target.value }))} />
             <button className="btn sm" disabled={busy}>{busy ? 'Posting…' : 'Post'}</button>
           </div>
