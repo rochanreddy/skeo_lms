@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import LineIcon from './LineIcon.jsx';
 import Markdown from './Markdown.jsx';
 import DateTimePicker from './DateTimePicker.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.jsx';
 
 // Authoring for the two things students hand in against: projects/assignments
 // and quizzes. Both live under Programs → Manage curriculum, next to the
@@ -379,9 +380,13 @@ function QuizEditor({ initial, onSave, onCancel }) {
     <form className="quiz-builder" onSubmit={submit}>
       <div className="inline-form">
         <input placeholder="Quiz title" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
-        <select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="quiz">Quiz</option><option value="exam">Exam</option>
-        </select>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger aria-label="Assessment type"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="quiz">Quiz</SelectItem>
+            <SelectItem value="exam">Exam</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       {questions.map((q, qi) => (
         <div key={qi} className="quiz-q">
