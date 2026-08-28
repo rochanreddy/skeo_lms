@@ -1,0 +1,198 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TAILWIND + SHADCN — the bridge into the Skeo design language
+
+   Two rules govern this file, and breaking either one breaks the app:
+
+   1. NO PREFLIGHT. styles.css does its own reset and leans on UA defaults in
+      places (markdown <ul> bullets, h4–h6 sizing). Tailwind's preflight strips
+      exactly those, so we import theme + utilities only.
+
+   2. EVERYTHING HERE IS LAYERED; styles.css is not. Unlayered CSS always beats
+      layered CSS in the cascade, whatever the specificity — so styles.css stays
+      the authority and shadcn can never quietly restyle an existing page.
+      The flip side: a Tailwind utility also loses inside a styles.css selector
+      (e.g. an <Input> under `.panel input`). Keep shadcn out of those, or
+      reach for `!` on the utility.
+
+   Token names below are shadcn's contract, but every value traces back to a
+   variable in styles.css, so components inherit the identity instead of
+   shadcn's default neutral gray. Nothing here redefines a styles.css variable
+   — collisions are real (`--ring` is a box-shadow there, a colour here; its
+   `--muted` is a text colour, shadcn's is a surface) so ours are `--sk-` prefixed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import 'tw-animate-css';
+
+/* Dark = the "stage": lessons and live sessions. There is no global dark mode,
+   so this is opt-in — wrap a stage region in `.dark` and shadcn follows it. */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ── Surfaces ── */
+  --sk-background: #f7f6f9;        /* --bg   */
+  --sk-foreground: #14121c;        /* --ink  */
+  --sk-card: #ffffff;              /* --card */
+  --sk-card-foreground: #14121c;
+  --sk-popover: #ffffff;
+  --sk-popover-foreground: #14121c;
+
+  /* ── Purple carries every interactive state ── */
+  --sk-primary: #6c4af2;           /* --purple      */
+  --sk-primary-foreground: #ffffff;
+  --sk-secondary: #e9e4ff;         /* --purple-soft */
+  --sk-secondary-foreground: #4a2ec4;
+  --sk-accent: #e9e4ff;
+  --sk-accent-foreground: #4a2ec4;
+
+  /* shadcn's `muted` is a SURFACE; styles.css's --muted is TEXT. Both kept. */
+  --sk-muted: #f2f0f5;             /* --line-soft */
+  --sk-muted-foreground: #6f6b78;  /* --muted     */
+
+  --sk-destructive: #c0362c;       /* the .error red */
+  --sk-destructive-foreground: #ffffff;
+
+  --sk-border: #e8e5ed;            /* --line */
+  --sk-input: #e8e5ed;
+  --sk-ring: #6c4af2;
+
+  /* Course identity accents --a1..--a6, in registry order. */
+  --sk-chart-1: #6c4af2;
+  --sk-chart-2: #0d9488;
+  --sk-chart-3: #ffcf52;
+  --sk-chart-4: #d81b60;
+  --sk-chart-5: #2563eb;
+
+  --sk-sidebar: #ffffff;
+  --sk-sidebar-foreground: #14121c;
+  --sk-sidebar-primary: #6c4af2;
+  --sk-sidebar-primary-foreground: #ffffff;
+  --sk-sidebar-accent: #e9e4ff;
+  --sk-sidebar-accent-foreground: #4a2ec4;
+  --sk-sidebar-border: #e8e5ed;
+  --sk-sidebar-ring: #6c4af2;
+
+  /* Falls back to styles.css's --radius (18px) so corners match the cards. */
+  --sk-radius: var(--radius, 18px);
+}
+
+/* The stage. Near-black, never a tinted navy, so purple is the only colour. */
+.dark {
+  --sk-background: #14121c;        /* --stage      */
+  --sk-foreground: #f3f1f9;        /* --parchment  */
+  --sk-card: #1e1b28;              /* --stage-2    */
+  --sk-card-foreground: #f3f1f9;
+  --sk-popover: #1e1b28;
+  --sk-popover-foreground: #f3f1f9;
+
+  --sk-primary: #6c4af2;
+  --sk-primary-foreground: #ffffff;
+  --sk-secondary: #322e3f;         /* --stage-line */
+  --sk-secondary-foreground: #f3f1f9;
+  --sk-accent: #322e3f;
+  --sk-accent-foreground: #f3f1f9;
+
+  --sk-muted: #1e1b28;
+  --sk-muted-foreground: #a9a4b8;
+
+  --sk-destructive: #e5695f;
+  --sk-destructive-foreground: #14121c;
+
+  --sk-border: #322e3f;
+  --sk-input: #322e3f;
+  --sk-ring: #b9adf6;              /* --lavender reads on near-black */
+
+  --sk-sidebar: #1e1b28;
+  --sk-sidebar-foreground: #f3f1f9;
+  --sk-sidebar-primary: #b9adf6;
+  --sk-sidebar-primary-foreground: #14121c;
+  --sk-sidebar-accent: #322e3f;
+  --sk-sidebar-accent-foreground: #f3f1f9;
+  --sk-sidebar-border: #322e3f;
+  --sk-sidebar-ring: #b9adf6;
+}
+
+@theme inline {
+  --color-background: var(--sk-background);
+  --color-foreground: var(--sk-foreground);
+  --color-card: var(--sk-card);
+  --color-card-foreground: var(--sk-card-foreground);
+  --color-popover: var(--sk-popover);
+  --color-popover-foreground: var(--sk-popover-foreground);
+  --color-primary: var(--sk-primary);
+  --color-primary-foreground: var(--sk-primary-foreground);
+  --color-secondary: var(--sk-secondary);
+  --color-secondary-foreground: var(--sk-secondary-foreground);
+  --color-muted: var(--sk-muted);
+  --color-muted-foreground: var(--sk-muted-foreground);
+  --color-accent: var(--sk-accent);
+  --color-accent-foreground: var(--sk-accent-foreground);
+  --color-destructive: var(--sk-destructive);
+  --color-destructive-foreground: var(--sk-destructive-foreground);
+  --color-border: var(--sk-border);
+  --color-input: var(--sk-input);
+  --color-ring: var(--sk-ring);
+
+  --color-chart-1: var(--sk-chart-1);
+  --color-chart-2: var(--sk-chart-2);
+  --color-chart-3: var(--sk-chart-3);
+  --color-chart-4: var(--sk-chart-4);
+  --color-chart-5: var(--sk-chart-5);
+
+  --color-sidebar: var(--sk-sidebar);
+  --color-sidebar-foreground: var(--sk-sidebar-foreground);
+  --color-sidebar-primary: var(--sk-sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sk-sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sk-sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sk-sidebar-accent-foreground);
+  --color-sidebar-border: var(--sk-sidebar-border);
+  --color-sidebar-ring: var(--sk-sidebar-ring);
+
+  /* Brand extras, so `bg-lime` / `text-green` / `font-serif` stay reachable. */
+  --color-lime: #dfff75;
+  --color-yellow: #ffcf52;
+  --color-green: #1d9e75;
+  --color-lavender: #b9adf6;
+  --color-parchment: #f3f1f9;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'DM Sans', 'Inter', system-ui, sans-serif;
+  --font-serif: 'DM Serif Display', Georgia, serif;
+
+  --radius-sm: calc(var(--sk-radius) - 6px);
+  --radius-md: calc(var(--sk-radius) - 4px);
+  --radius-lg: var(--sk-radius);
+  --radius-xl: calc(var(--sk-radius) + 8px);
+}
+
+@layer base {
+  /* Tailwind's `border` utility sets width and style but not colour — preflight
+     normally supplies the default. Without it every shadcn component that says
+     `border` (Select's listbox, Card, Input) inherits currentColor and draws a
+     hard black rule. Colour only: elements with no border still show none, and
+     styles.css overrides it wherever it sets a border of its own. */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--sk-border);
+  }
+
+  /* The one piece of preflight shadcn genuinely needs: its `ghost`/`outline`
+     button variants set no base background, so without this the UA button
+     chrome shows through. Scoped to buttons only — lists and headings keep
+     their UA defaults, which is what markdown rendering relies on. */
+  button,
+  [type='button'],
+  [type='reset'],
+  [type='submit'] {
+    appearance: button;
+    background-color: transparent;
+    background-image: none;
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+  }
+}
