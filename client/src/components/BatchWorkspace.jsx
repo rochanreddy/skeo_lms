@@ -5,6 +5,7 @@ import LineIcon from './LineIcon.jsx';
 import Markdown from './Markdown.jsx';
 import { SubmissionCheckPanel } from './SubmissionCheck.jsx';
 import { DRIVE_TYPES } from './CourseWork.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.jsx';
 
 const dueLabel = (d) => new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
@@ -117,10 +118,12 @@ export default function BatchWorkspace({ batchId }) {
           <div className="roster-controls">
             <div className="rc-card">
               <label>Enrol an existing student</label>
-              <select className="rc-select" value={pickStudent} onChange={(e) => setPickStudent(e.target.value)}>
-                <option value="">Choose a student…</option>
-                {availableStudents.map((s) => <option key={s.id} value={s.id}>{s.full_name || s.email}</option>)}
-              </select>
+              <Select value={pickStudent || undefined} onValueChange={setPickStudent}>
+                <SelectTrigger className="rc-select"><SelectValue placeholder="Choose a student…" /></SelectTrigger>
+                <SelectContent>
+                  {availableStudents.map((s) => <SelectItem key={s.id} value={s.id}>{s.full_name || s.email}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <button className="btn sm rc-btn" onClick={enrolExisting} disabled={!pickStudent}>Enrol student</button>
             </div>
 
@@ -387,10 +390,14 @@ function GradeRow({ sub, onGrade, onRecheck, onUnlock }) {
 
       <div className="inline-form">
         {sub.locked && <button type="button" className="btn sm ghost" onClick={() => onUnlock(sub._id)}>Unlock</button>}
-        <select className="grade-score" value={score} onChange={(e) => setScore(e.target.value)}>
-          <option value="">Score…</option>
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} / 10</option>)}
-        </select>
+        {/* `score` seeds from sub.score, which arrives as a number; Radix matches
+            item values by string identity, so it is normalised on both sides. */}
+        <Select value={score === '' || score == null ? undefined : String(score)} onValueChange={setScore}>
+          <SelectTrigger className="grade-score" aria-label="Score"><SelectValue placeholder="Score…" /></SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <SelectItem key={n} value={String(n)}>{n} / 10</SelectItem>)}
+          </SelectContent>
+        </Select>
         <input placeholder="Feedback" value={feedback} onChange={(e) => setFeedback(e.target.value)} />
         <button className="btn sm" onClick={grade} disabled={grading}>{grading ? 'Saving…' : 'Grade'}</button>
       </div>
