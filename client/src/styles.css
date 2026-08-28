@@ -236,14 +236,13 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .who-caret { color: var(--muted); transition: transform .2s; flex: none; }
 .who-caret.up { transform: rotate(180deg); }
 
+/* Radix portals this panel and drives its placement and enter animation, so
+   only the box is described here — a position or transform would fight the
+   popper's inline styles. */
 .who-menu {
-  position: absolute; top: calc(100% + 10px); right: 0; z-index: 80;
   width: 268px; background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 7px;
-  animation: menu-in .16s cubic-bezier(.3,1.1,.5,1);
-  transform-origin: top right;
 }
-@keyframes menu-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
 .who-menu-head { display: flex; align-items: center; gap: 12px; padding: 12px 12px 14px; }
 .avatar-lg { width: 42px; height: 42px; font-size: 17px; flex: none; }
 .who-menu-id { min-width: 0; }
