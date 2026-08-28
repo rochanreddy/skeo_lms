@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog.jsx';
 // `?url` emits the worker as its own asset and hands us a string — the 1.3 MB
 // never enters the bundle, and is only fetched when a PDF is actually opened.
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -19,30 +19,22 @@ function FileViewer({ label, subtitle, url, onClose, allowNewTab = false }) {
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[?::1)/i.test(url);
   const src = isOffice ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}` : url;
 
-  const panelRef = useRef(null);
-
-  useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  // Move focus into the dialog on open and hand it back to whatever launched
-  // the viewer on close — a keyboard user shouldn't be dropped back at the top
-  // of the page, and a screen reader should land inside the dialog.
-  useEffect(() => {
-    const opener = document.activeElement;
-    panelRef.current?.focus();
-    return () => { if (opener instanceof HTMLElement) opener.focus(); };
-  }, []);
-
-  // Portalled to <body> on purpose. `.main` carries the page-enter animation,
-  // and a filling transform/opacity animation makes the element a stacking
-  // context — which would trap this overlay inside it, letting the topbar and
-  // the dock paint over the reader no matter how high its z-index went.
-  return createPortal(
-    <div className="fv-overlay" onClick={onClose}>
-      <div className="fv" ref={panelRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`${label} — ${subtitle}`}>
+  // Radix portals this to <body>, which matters here: `.main` carries the
+  // page-enter animation, and a filling transform/opacity animation makes that
+  // element a stacking context — an in-place overlay would be trapped inside
+  // it, letting the topbar and the dock paint over the reader at any z-index.
+  // Escape, the focus trap and returning focus to the opener are Radix's too;
+  // the hand-rolled versions below it only moved focus, they never trapped it,
+  // so Tab used to walk straight out of the reader and into the page behind.
+  return (
+    <Dialog open onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName="fv-overlay"
+        className="fv z-[131] gap-0 border-0 p-0"
+        aria-describedby={undefined}
+      >
+        <DialogTitle className="sr-only">{`${label} — ${subtitle}`}</DialogTitle>
         <div className="fv-head">
           <div className="fv-head-copy">
             <div className="fv-kicker">{label}</div>
@@ -62,9 +54,8 @@ function FileViewer({ label, subtitle, url, onClose, allowNewTab = false }) {
             public URL to preview it here, or use “Open in new tab”.
           </div>
         )}
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   );
 }
 
