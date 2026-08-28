@@ -42,11 +42,6 @@ export default function AppShell({ user, setUser, logout }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => {
-    document.body.style.overflow = cmdOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [cmdOpen]);
-
   return (
     <div className="app">
       <header className={`topbar ${stuck ? 'stuck' : ''}`}>

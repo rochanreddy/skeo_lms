@@ -1310,16 +1310,26 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
   .lesson-head, .lesson-body, .lesson-foot { padding-left: 18px; padding-right: 18px; }
 
   /* Notifications dropdown fits the viewport */
-  .notif-menu { width: calc(100vw - 32px); right: -8px; max-width: 340px; }
+  .notif-menu { width: calc(100vw - 32px); max-width: 340px; }
 }
 
 /* Only genuinely small screens get the bottom sheet. Above this the palette
    stays a compact centred dialog — a zoomed laptop shouldn't get a full-bleed
    overlay just for a search box. */
 @media (max-width: 640px) {
-  .cmd-overlay { padding: 0; align-items: flex-end; }
-  .cmd { max-width: 100%; max-height: 82vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; animation: sheet-up .24s cubic-bezier(.3,1,.4,1); }
+  /* Re-anchor Radix's centred popper to the bottom edge. These win because
+     styles.css is unlayered and the popper's placement is Tailwind utilities. */
+  .cmd {
+    top: auto; bottom: 0; left: 0; right: 0; transform: none;
+    width: 100%; max-width: 100%; max-height: 82vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  /* Keyed to data-state so the sheet also animates *out*. A one-way animation
+     here would never re-fire on close and Presence would wait forever. */
+  .cmd[data-state='open'] { animation: sheet-up .24s cubic-bezier(.3,1,.4,1); }
+  .cmd[data-state='closed'] { animation: sheet-down .2s cubic-bezier(.4,0,1,1); }
   @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes sheet-down { from { transform: none; } to { transform: translateY(100%); } }
   .cmd-input-wrap { padding: 16px 18px; }
   .cmd-foot { display: none; }
 }

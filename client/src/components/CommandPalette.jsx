@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import Icon from './Icon.jsx';
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog.jsx';
 
 // ⌘K — navigation AND search.
 //
@@ -105,13 +106,10 @@ export default function CommandPalette({ open, onClose, tabs, onLogout }) {
 
   useEffect(() => { setSel(0); }, [q, remote]);
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) return;
     setQ('');
     setSel(0);
     setRemote([]);
-    // Focus after paint so the sheet animation doesn't fight the caret.
-    const id = requestAnimationFrame(() => inputRef.current?.focus());
-    return () => cancelAnimationFrame(id);
   }, [open]);
 
   // Keep the highlighted row in view when arrowing past the fold.
@@ -119,10 +117,8 @@ export default function CommandPalette({ open, onClose, tabs, onLogout }) {
     listRef.current?.querySelector('.cmd-item.sel')?.scrollIntoView({ block: 'nearest' });
   }, [sel, results]);
 
-  if (!open) return null;
-
+  // Escape is Radix's job now; the arrow/enter keys still drive the list.
   function onKeyDown(e) {
-    if (e.key === 'Escape') { onClose(); return; }
     if (e.key === 'ArrowDown') { e.preventDefault(); setSel((s) => Math.min(s + 1, results.length - 1)); }
     if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => Math.max(s - 1, 0)); }
     if (e.key === 'Enter') {
@@ -136,8 +132,16 @@ export default function CommandPalette({ open, onClose, tabs, onLogout }) {
   let lastGroup = null;
 
   return (
-    <div className="cmd-overlay" onMouseDown={onClose}>
-      <div className="cmd" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-label="Search">
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      {/* The Skeo palette sits high on the page rather than dead-centre, and
+          carries no close button — `esc` is in the footer hint. The utilities
+          here only undo shadcn's centring, padding and border; `.cmd` itself
+          still supplies the box. */}
+      <DialogContent
+        showCloseButton={false}
+        className="cmd top-[12vh] translate-y-0 gap-0 border-0 p-0"
+      >
+        <DialogTitle className="sr-only">Search</DialogTitle>
         <div className="cmd-input-wrap">
           {busy ? (
             <span className="cmd-spin" aria-hidden="true" />
@@ -191,7 +195,7 @@ export default function CommandPalette({ open, onClose, tabs, onLogout }) {
           <span>↑↓ navigate</span><span>↵ open</span><span>esc close</span>
           {searching && <span className="cmd-foot-count">{remote.length} result{remote.length === 1 ? '' : 's'}</span>}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
