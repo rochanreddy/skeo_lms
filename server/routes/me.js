@@ -31,12 +31,11 @@ router.patch('/password', requireAuth, async (req, res) => {
 // PATCH /api/skeo/me — update own Profile tab.
 router.patch('/', requireAuth, async (req, res) => {
   const u = req.user;
-  const { fullName, phone, education, professional, resumeUrl } = req.body || {};
+  const { fullName, phone, education, professional } = req.body || {};
   if (fullName !== undefined) u.fullName = fullName;
   if (phone !== undefined) u.phone = phone;
   if (education !== undefined) u.education = education;
   if (professional !== undefined) u.professional = professional;
-  if (resumeUrl !== undefined) u.resumeUrl = resumeUrl;
   await u.save();
   forget(u._id);
   res.json({ user: u.toPublic() });

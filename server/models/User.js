@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema(
 
     education: { type: mongoose.Schema.Types.Mixed, default: {} },     // { degree, institution, year }
     professional: { type: mongoose.Schema.Types.Mixed, default: {} },  // { title, company, experience }
-    resumeUrl: { type: String, default: '' },
 
     batchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Batch' }],
 
@@ -60,7 +59,6 @@ userSchema.methods.toPublic = function toPublic() {
     role: this.role,
     education: this.education,
     professional: this.professional,
-    resume_url: this.resumeUrl,
     batch_ids: (this.batchIds || []).map((b) => b.toString()),
     email_verified: this.emailVerified,
     must_change_password: this.mustChangePassword,
