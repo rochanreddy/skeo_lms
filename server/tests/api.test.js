@@ -100,7 +100,6 @@ const SHARED = [
 const ADMIN_ONLY = [
   '/users',
   '/submissions',
-  '/stats/overview',
   '/stats/admin-dashboard',
   '/stats/at-risk',
   '/reports/platform',
@@ -204,7 +203,7 @@ test('the service no longer identifies as the old menler-lms fork', async () => 
 // lesson they are allowed to see. These check the gates, not the upstream —
 // they pass whether or not VDOCIPHER_API_SECRET is set.
 
-test('the video library and uploads are admin-only, and closed to anonymous callers', async () => {
+test('the video library is admin-only, and closed to anonymous callers', async () => {
   for (const path of ['/videos', '/videos/aaaaaaaaaaaaaaaa']) {
     assert.equal((await get(path)).status, 401, `${path} answered without a token`);
     assert.equal((await get(path, studentToken)).status, 403, `a student was not forbidden from ${path}`);

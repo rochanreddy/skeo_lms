@@ -13,20 +13,6 @@ import { canManageBatch, myBatchIds } from '../utils/access.js';
 
 const router = Router();
 
-// GET /api/skeo/stats/overview — admin platform analytics: headline counts +
-// student distribution per batch (for the chart).
-router.get('/overview', requireAuth, requireRole('admin'), async (_req, res) => {
-  const [students, batches, programs, quizzes] = await Promise.all([
-    User.countDocuments({ role: 'student' }),
-    Batch.countDocuments(),
-    Program.countDocuments(),
-    Quiz.countDocuments(),
-  ]);
-  const batchDocs = await Batch.find().select('name studentIds').sort({ createdAt: -1 });
-  const perBatch = batchDocs.map((b) => ({ name: b.name.replace(/^Demo — /, ''), count: b.studentIds.length }));
-  res.json({ stats: { students, batches, programs, quizzes }, perBatch });
-});
-
 // GET /api/skeo/stats/admin-dashboard — everything the admin dashboard charts
 // need in one round trip: role/batch/submission distributions,
 // enrolment per batch, and student signups over the last 8 weeks.
