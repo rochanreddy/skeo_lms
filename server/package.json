@@ -12,6 +12,7 @@
     "seed:content": "node scripts/seedContent.js",
     "seed:claude": "node scripts/seedClaude.js",
     "seed:library": "node scripts/seedLibrary.js",
+    "vdo:check": "node scripts/vdoCheck.js",
     "test": "node --test \"tests/**/*.test.js\""
   },
   "dependencies": {
