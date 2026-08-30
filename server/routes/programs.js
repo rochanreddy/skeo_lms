@@ -11,17 +11,25 @@ const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSiz
 
 // Admin module-block: strip blocked curriculum modules from what a non-admin
 // user sees. The module simply doesn't exist for them (Learning, progress UI).
+//
+// Takes either a document or a lean object — the list route reads lean, the
+// detail route still hydrates.
 function withoutBlockedModules(program, user) {
   const blocked = new Set((user.blocked?.moduleIds || []).map(String));
   if (user.role === 'admin' || blocked.size === 0) return program;
-  const p = program.toObject();
+  const p = typeof program.toObject === 'function' ? program.toObject() : { ...program };
   p.modules = (p.modules || []).filter((m) => !blocked.has(String(m._id)));
   return p;
 }
 
 // GET /api/skeo/programs — any logged-in user lists programs.
+//
+// Read lean. This returns every program with its whole module/chapter/topic
+// tree, and it is the most-requested endpoint in the app; hydrating all of that
+// into Mongoose documents costs real CPU and garbage for objects that are only
+// going to be serialised straight back out to JSON.
 router.get('/', requireAuth, async (req, res) => {
-  const programs = await Program.find().sort({ createdAt: -1 });
+  const programs = await Program.find().sort({ createdAt: -1 }).lean();
   res.json({ programs: programs.map((p) => withoutBlockedModules(p, req.user)) });
 });
 

@@ -58,9 +58,13 @@ app.use(
 // A ceiling on the whole API. Set well above what the UI does in normal use,
 // so it only ever catches a runaway client or a scraper; /health is left out
 // deliberately so an uptime probe can never be throttled.
+//
+// 300 a minute for one signed-in account; 3000 for an unidentified address,
+// which on mobile data is not one person but everyone the carrier has put
+// behind that address.
 app.use(
   '/api/skeo',
-  rateLimit({ bucket: 'api', max: 300, windowMs: 60_000 }),
+  rateLimit({ bucket: 'api', max: 300, ipMax: 3000, windowMs: 60_000 }),
 );
 
 app.get('/health', (_req, res) => res.json({ ok: true }));

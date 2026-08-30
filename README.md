@@ -68,11 +68,28 @@ Mounted at `/api/skeo`.
 - `GET /api/skeo/programs` · `GET /api/skeo/programs/:id` · `POST|PATCH` (admin only)
 - `batches` · `sessions` · `attendance` · `assignments` · `submissions` · `quizzes`
   · `grades` · `announcements` · `forum` · `library` · `webinars` · `uploads`
-  · `reports` · `stats` · `search` · `users` · `notifications`
+  · `reports` · `stats` · `search` · `users` · `notifications` · `videos`
+
+## Video (VdoCipher)
+Lesson videos can either be a plain URL (played by the browser's own `<video>`)
+or a DRM-protected VdoCipher video. Set `VDOCIPHER_API_SECRET` in the server
+env and the curriculum editor grows a **Video source** switch; leave it unset
+and the option stays hidden.
+
+The API secret never leaves the server. A student's browser asks
+`POST /api/skeo/videos/:videoId/otp` and gets a 5-minute playback ticket, and
+only for a video attached to a lesson in a module they are allowed to see —
+an id alone buys nothing. Playback is watermarked with the viewer's own name
+and email (`VDOCIPHER_WATERMARK=off` turns that off).
+
+Admins upload from **Programs → Manage curriculum → a video lesson → Library**.
+The file goes straight from the browser to VdoCipher on a signed, single-video
+credential; the bytes never pass through this API.
 
 ## Deploy
 - **Backend** → Render (new Web Service, root `server/`, start `npm start`).
-  Env: `MONGODB_URI`, `JWT_SECRET`, `SKEO_APP_URL=https://<your-frontend-domain>`.
+  Env: `MONGODB_URI`, `JWT_SECRET`, `SKEO_APP_URL=https://<your-frontend-domain>`,
+  `VDOCIPHER_API_SECRET` (for DRM lesson video).
   `SKEO_APP_URL` is what the CORS allowlist trusts in production — there is no
   hard-coded fallback domain, so the frontend cannot call the API until it is set.
 - **Frontend** → Vercel (root `client/`). Env: `VITE_API_URL=https://<render-app>/api/skeo`.

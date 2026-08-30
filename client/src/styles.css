@@ -1900,3 +1900,36 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   color: var(--purple); background: var(--purple-soft);
   padding: 3px 7px; border-radius: 6px; flex: none;
 }
+
+/* ── VdoCipher video ───────────────────────────────────────────────────────
+   The DRM player is an iframe, so it needs a box of its own: .lesson-video
+   sizes it exactly as the <video> tag it replaces, and the 16:9 ratio keeps the
+   lesson body from jumping while the OTP is still being fetched. */
+.vdo-frame {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  background: #101014; border-radius: var(--radius-sm); overflow: hidden;
+}
+.vdo-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.vdo-loading { display: flex; align-items: center; justify-content: center; background-size: cover; background-position: center; }
+.vdo-loading .muted { color: #d8d6e0; background: rgba(16, 16, 20, .6); padding: 6px 12px; border-radius: 999px; }
+
+/* The admin picker: upload strip on top, searchable library below. */
+.vdo-dialog { max-width: 720px; }
+.vdo-upload { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 14px 0; }
+.vdo-title { flex: 1; min-width: 180px; }
+.vdo-filename { font-size: 12px; margin-top: 8px; }
+.vdo-error { color: var(--danger, #c0392b); font-size: 12px; margin-top: 8px; }
+.vdo-progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.vdo-progress-track { flex: 1; height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.vdo-progress-bar { height: 100%; background: var(--purple); border-radius: 999px; transition: width .2s ease; }
+.vdo-list { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; margin-top: 12px; }
+.vdo-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 8px; border: 1px solid transparent; border-radius: 9px;
+  background: none; cursor: pointer; font-family: var(--font);
+}
+.vdo-item:hover { border-color: var(--line); background: var(--wash, rgba(0, 0, 0, .02)); }
+.vdo-thumb { width: 84px; height: 48px; object-fit: cover; border-radius: 6px; flex: none; }
+.vdo-thumb-empty { background: var(--line); display: block; }
+.vdo-item-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vdo-item-title { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

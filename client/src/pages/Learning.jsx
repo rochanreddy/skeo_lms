@@ -5,6 +5,7 @@ import FileViewer from '../components/FileViewer.jsx';
 import Markdown from '../components/Markdown.jsx';
 import LessonIcon from '../components/LessonIcon.jsx';
 import LineIcon from '../components/LineIcon.jsx';
+import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
@@ -448,7 +449,10 @@ function Content() {
   const isDone = topic && completed.has(topic._id);
   // Two surfaces per lesson and no more: a video player and a PDF.
   const pdfUrl = topic?.readingUrl || (topic?.contentType === 'pdf' ? topic.contentUrl : '') || '';
-  const videoUrl = (topic?.contentType === 'video' ? topic?.contentUrl : '') || topic?.classLink || '';
+  // A DRM lesson wins over every plain URL on the topic: if the admin put the
+  // recording in VdoCipher, that is where it is watched.
+  const vdoId = topic?.contentType === 'video' && topic?.videoSource === 'vdocipher' ? (topic.vdoVideoId || '') : '';
+  const videoUrl = vdoId ? '' : (topic?.contentType === 'video' ? topic?.contentUrl : '') || topic?.classLink || '';
 
   return (
     <div className="learn">
@@ -566,9 +570,11 @@ function Content() {
                 </div>
 
                 <div className="lesson-body">
-                  {videoUrl
-                    ? <LessonVideo key={topic._id} url={videoUrl} />
-                    : <div className="panel empty-state"><p className="muted">No video for this lesson yet.</p></div>}
+                  {vdoId
+                    ? <VdoPlayer key={topic._id} videoId={vdoId} title={topic.title} />
+                    : videoUrl
+                      ? <LessonVideo key={topic._id} url={videoUrl} />
+                      : <div className="panel empty-state"><p className="muted">No video for this lesson yet.</p></div>}
                   {topic.body && <Markdown text={topic.body} />}
                 </div>
 

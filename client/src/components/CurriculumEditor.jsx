@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, postFile } from '../api.js';
 import LessonIcon from './LessonIcon.jsx';
 import { ProjectsManager, QuizzesManager } from './CourseWork.jsx';
+import VdoLibrary from './VdoLibrary.jsx';
 
 // Admin curriculum builder for one program. Upload a doc to auto-structure it,
 // then review/edit the Module → Chapter → Topic tree and publish.
@@ -17,6 +18,10 @@ export default function CurriculumEditor({ programId, onClose }) {
   // Projects hang off the single course record, not the programme.
   const [batchId, setBatchId] = useState(null);
   const fileRef = useRef(null);
+  // VdoCipher is only offered when the server actually holds an API secret --
+  // otherwise the option would be a field that silently never plays.
+  const [vdoReady, setVdoReady] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   useEffect(() => {
     api(`/programs/${programId}`).then(({ program: p }) => {
@@ -26,6 +31,7 @@ export default function CurriculumEditor({ programId, onClose }) {
 
   useEffect(() => {
     api('/batches').then((d) => setBatchId((d.batches || [])[0]?.id || null)).catch(() => {});
+    api('/videos/config').then((d) => setVdoReady(!!d.configured)).catch(() => {});
   }, []);
 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 2500); };
@@ -165,7 +171,40 @@ export default function CurriculumEditor({ programId, onClose }) {
                 ))}
               </div>
 
-              {selTopic.contentType !== 'text' && (
+              {/* A video lesson picks its source; a PDF lesson just has a URL. */}
+              {selTopic.contentType === 'video' && vdoReady && (
+                <>
+                  <label className="ce-label">Video source</label>
+                  <div className="ce-types">
+                    {[['url', 'Direct URL'], ['vdocipher', 'VdoCipher (DRM)']].map(([src, label]) => (
+                      <button
+                        key={src}
+                        className={`ce-type ${(selTopic.videoSource || 'url') === src ? 'on' : ''}`}
+                        onClick={() => setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: src })}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {selTopic.contentType === 'video' && vdoReady && selTopic.videoSource === 'vdocipher' ? (
+                <>
+                  <label className="ce-label">
+                    VdoCipher video <span className="muted">(encrypted playback, watermarked with the student's name)</span>
+                  </label>
+                  <div className="row">
+                    <input
+                      className="ce-field"
+                      placeholder="Video ID — or pick one from the library"
+                      value={selTopic.vdoVideoId || ''}
+                      onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { vdoVideoId: e.target.value.trim() })}
+                    />
+                    <button className="btn sm" onClick={() => setPicking(true)}>Library…</button>
+                  </div>
+                </>
+              ) : selTopic.contentType !== 'text' && (
                 <>
                   <label className="ce-label">{selTopic.contentType === 'video' ? 'Video URL' : 'PDF URL'}</label>
                   <input className="ce-field" placeholder="https://…" value={selTopic.contentUrl} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { contentUrl: e.target.value })} />
@@ -197,6 +236,17 @@ export default function CurriculumEditor({ programId, onClose }) {
         </section>
       </div>
       </>
+      )}
+
+      {picking && selTopic && (
+        <VdoLibrary
+          onClose={() => setPicking(false)}
+          onPick={(v) => {
+            setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: 'vdocipher', vdoVideoId: v.id });
+            setPicking(false);
+            flash(`Attached “${v.title || v.id}”. Save to publish it.`);
+          }}
+        />
       )}
     </div>
   );

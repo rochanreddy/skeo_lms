@@ -61,31 +61,6 @@ export async function postFile(path, file) {
   return data;
 }
 
-// Upload a File → returns { url, name }. Used for resume/submissions.
-export const uploadFile = (file) => postFile('/uploads', file);
-
-// A resume field holds either a link the user pasted or a file we stored. Only
-// the second kind needs a token to read, so the two render differently.
-export const isStoredFile = (url) => /^\/uploads\//.test(url || '');
-
-// Open one of our stored files in a new tab. It sits behind requireAuth, so a
-// plain <a href> would 401 -- the bytes have to be fetched with the token and
-// handed to the browser as a blob.
-export async function openStoredFile(path) {
-  const res = await fetch(`${API}${path}`, {
-    headers: { ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) },
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Could not open that file.');
-  }
-  const url = URL.createObjectURL(await res.blob());
-  window.open(url, '_blank', 'noopener');
-  // The tab has the blob by now; releasing the handle keeps it out of memory.
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
-
-
 // Download an authenticated file (CSV reports) and trigger a browser save.
 export async function downloadFile(path, fallbackName = 'report.csv') {
   const res = await fetch(`${API}${path}`, {

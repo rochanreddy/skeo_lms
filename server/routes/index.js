@@ -11,13 +11,13 @@ import quizRoutes from './quizzes.js';
 import libraryRoutes from './library.js';
 import jobRoutes from './jobs.js';
 import statsRoutes from './stats.js';
-import uploadRoutes from './uploads.js';
 import progressRoutes from './progress.js';
 import notificationRoutes from './notifications.js';
 import announcementRoutes from './announcements.js';
 import gradeRoutes from './grades.js';
 import searchRoutes from './search.js';
 import reportRoutes from './reports.js';
+import videoRoutes from './videos.js';
 
 const router = Router();
 
@@ -37,12 +37,12 @@ router.use('/quizzes', quizRoutes);
 router.use('/library', libraryRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/stats', statsRoutes);
-router.use('/uploads', uploadRoutes);
 router.use('/progress', progressRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/announcements', announcementRoutes);
 router.use('/grades', gradeRoutes);
 router.use('/search', searchRoutes); // universal ⌘K search across everything you can see
 router.use('/reports', reportRoutes); // admin CSV exports
+router.use('/videos', videoRoutes); // VdoCipher: per-viewer playback OTPs + admin library
 
 export default router;

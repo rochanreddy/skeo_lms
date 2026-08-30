@@ -63,20 +63,6 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(201).json({ submission: sub });
 });
 
-// GET /api/skeo/submissions/mine — the student's own (non-deleted) submissions.
-router.get('/mine', requireAuth, async (req, res) => {
-  const submissions = await Submission.find({ studentId: req.user._id, isDeleted: false })
-    .populate('assignmentId', 'title type dueDate')
-    .sort({ updatedAt: -1 });
-  res.json({ submissions });
-});
-
-// Legacy alias, kept for the existing frontend.
-router.get('/me', requireAuth, async (req, res) => {
-  const submissions = await Submission.find({ studentId: req.user._id, isDeleted: false }).populate('assignmentId', 'title type');
-  res.json({ submissions });
-});
-
 // GET /api/skeo/submissions/assignment/:assignmentId — admin lists submissions
 // for one assignment (used by the existing grading UI).
 router.get('/assignment/:assignmentId', requireAuth, async (req, res) => {
