@@ -42,7 +42,8 @@ const get = (path, token) =>
   fetch(`${API}${path}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
 
 // Logging in once and sharing the tokens keeps the suite from rate-limiting
-// itself: /login allows 10 attempts a minute per IP.
+// itself: /login now counts failed attempts per account (8 a minute), and the
+// suite deliberately makes a couple of those.
 let adminToken;
 let studentToken;
 
