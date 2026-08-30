@@ -54,8 +54,7 @@ export default function Login({ onLogin }) {
 
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={submit}>
-          <h1>Sign in to Skeo</h1>
-          <p className="sub">Welcome back — pick up exactly where you left off.</p>
+          <h1>Welcome to Skeo</h1>
 
           <div className="field">
             <label htmlFor="login-email">Email</label>
