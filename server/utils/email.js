@@ -24,6 +24,6 @@ export async function sendMail({ to, subject, text, html }) {
     return { dev: true };
   }
   const transport = await getTransport();
-  const from = process.env.SMTP_FROM || `Menler LMS <${process.env.SMTP_USER}>`;
+  const from = process.env.SMTP_FROM || `Skeo LMS <${process.env.SMTP_USER}>`;
   return transport.sendMail({ from, to, subject, text, html });
 }

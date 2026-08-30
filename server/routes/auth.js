@@ -91,7 +91,7 @@ router.post('/forgot', async (req, res) => {
       user.resetExpires = new Date(Date.now() + 1000 * 60 * 30);
       await user.save();
       const link = `${APP_URL()}/reset?token=${raw}&email=${encodeURIComponent(email)}`;
-      if (isSmtpConfigured()) await sendMail({ to: email, subject: 'Reset your Menler LMS password', text: `Reset your password:\n\n${link}\n\nExpires in 30 minutes.` });
+      if (isSmtpConfigured()) await sendMail({ to: email, subject: 'Reset your Skeo LMS password', text: `Reset your password:\n\n${link}\n\nExpires in 30 minutes.` });
       else console.log('[forgot] SMTP off — reset link:', link);
     }
     return res.json({ ok: true });
