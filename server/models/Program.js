@@ -8,6 +8,13 @@ const topicSchema = new mongoose.Schema(
     title: { type: String, required: true },
     contentType: { type: String, enum: ['video', 'pdf', 'text'], default: 'text' },
     contentUrl: { type: String, default: '' },
+    // Where a video lesson's picture comes from. 'url' is the old behaviour --
+    // contentUrl handed straight to a <video> tag. 'vdocipher' means the bytes
+    // live in VdoCipher under vdoVideoId and are only ever reached through a
+    // short-lived, per-viewer OTP minted by routes/videos.js; nothing playable
+    // is stored here, so a leaked curriculum dump leaks no video.
+    videoSource: { type: String, enum: ['url', 'vdocipher'], default: 'url' },
+    vdoVideoId: { type: String, default: '', trim: true, index: true },
     body: { type: String, default: '' },
     // Where this particular lecture meets. Set by hand and deliberately dumb:
     // a live meeting URL while the class is running, swapped for a YouTube URL once the
