@@ -3,6 +3,8 @@ import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
 
 import { connectDb } from './db.js';
 import routes from './routes/index.js';
@@ -27,7 +29,22 @@ const allowedOrigins = new Set(
     .filter(Boolean),
 );
 
-app.use(express.json());
+// Security headers. This API answers JSON to a separate origin and serves no
+// HTML of its own, so the browser-facing policies are pointed at that: no
+// framing, no sniffing, no referrer leakage. CSP is off because there is no
+// document here to constrain -- the frontend ships its own.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'no-referrer' },
+  }),
+);
+app.use(compression());
+
+// A body big enough to matter here is a bug or an attack; resumes travel as
+// multipart and are capped separately in routes/uploads.js.
+app.use(express.json({ limit: '256kb' }));
 app.use(
   cors({
     origin(origin, cb) {
