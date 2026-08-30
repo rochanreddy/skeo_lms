@@ -45,7 +45,7 @@ async function run() {
   const julBatch = await Batch.create({ programId: program._id, name: program.title, status: 'ongoing' });
   console.log(`✓ course: ${program.title}`);
 
-  // ── Students, split across the two batches ──
+  // ── Students, all on the one course ──
   const studPass = 'student123';
   const hash = await hashPassword(studPass);
   const students = [];
@@ -68,11 +68,11 @@ async function run() {
       { text: 'A prompt is…', options: ['The model weights', 'The input you give the model', 'A GPU'], correctIndex: 1 },
     ],
   });
-  for (let i = 0; i < julStudents.length; i += 1) {
+  for (let i = 0; i < students.length; i += 1) {
     const answers = [0, i % 2 === 0 ? 0 : 1, 1]; // some get Q2 wrong
     const score = [quiz.questions[0].correctIndex, quiz.questions[1].correctIndex, quiz.questions[2].correctIndex]
       .reduce((s, c, idx) => s + (answers[idx] === c ? 1 : 0), 0);
-    await QuizAttempt.create({ quizId: quiz._id, studentId: julStudents[i]._id, answers, score, total: quiz.questions.length });
+    await QuizAttempt.create({ quizId: quiz._id, studentId: students[i].u._id, answers, score, total: quiz.questions.length });
   }
   console.log('✓ quiz "Week 1 · AI basics" with attempts');
 
