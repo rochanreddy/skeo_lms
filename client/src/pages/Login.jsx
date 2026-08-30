@@ -46,7 +46,7 @@ export default function Login({ onLogin }) {
       <div className="auth-hero">
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
-          <h2>Learn AI. Build Real Products. Get Hired.</h2>
+          <h2><span>Build.</span><span>Learn.</span><span>Monetize.</span></h2>
           <p>Master Claude and modern AI tools through hands-on fellowships, real-world projects and career support.</p>
         </div>
         <div />
