@@ -3,7 +3,7 @@
 // attempts. Idempotent — it clears its own demo data first, then recreates.
 //   npm run seed:demo
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../utils/password.js';
 import { connectDb } from '../db.js';
 import { User } from '../models/User.js';
 import { Program } from '../models/Program.js';
@@ -47,7 +47,7 @@ async function run() {
 
   // ── Students, split across the two batches ──
   const studPass = 'student123';
-  const hash = await bcrypt.hash(studPass, 12);
+  const hash = await hashPassword(studPass);
   const students = [];
   for (let i = 0; i < STUDENTS.length; i += 1) {
     const [name, handle] = STUDENTS[i];

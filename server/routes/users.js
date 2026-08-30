@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../utils/password.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { User, ROLES } from '../models/User.js';
 import { Batch } from '../models/Batch.js';
@@ -42,7 +42,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
     fullName: fullName || '',
     phone: phone || '',
     role,
-    passwordHash: await bcrypt.hash(temp, 12),
+    passwordHash: await hashPassword(temp),
     mustChangePassword: true,
   });
   res.status(201).json({ user: user.toPublic(), tempPassword: temp, custom: !!password });
@@ -55,7 +55,7 @@ router.post('/:id/reset-password', requireAuth, requireRole('admin'), async (req
   if (!user) return res.status(404).json({ error: 'User not found.' });
   const { password } = req.body || {};
   const temp = password || crypto.randomBytes(6).toString('hex');
-  user.passwordHash = await bcrypt.hash(temp, 12);
+  user.passwordHash = await hashPassword(temp);
   user.resetTokenHash = '';
   user.resetExpires = null;
   user.mustChangePassword = true; // force a fresh password on next login

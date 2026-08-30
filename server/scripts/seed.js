@@ -1,6 +1,6 @@
 // Seed a first LMS admin + sample programs.  Run:  npm run seed
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../utils/password.js';
 import { connectDb } from '../db.js';
 import { User } from '../models/User.js';
 import { Program } from '../models/Program.js';
@@ -15,7 +15,7 @@ async function run() {
   if (!admin) {
     admin = await User.create({
       email: ADMIN_EMAIL,
-      passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 12),
+      passwordHash: await hashPassword(ADMIN_PASSWORD),
       fullName: 'Skeo Admin',
       role: 'admin',
       emailVerified: true,

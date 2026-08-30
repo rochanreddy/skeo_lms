@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+import { hashPassword, needsRehash, verifyPassword } from '../utils/password.js';
 
 import { User, ROLES } from '../models/User.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
@@ -25,7 +25,7 @@ router.post('/register', async (req, res) => {
 
     const user = await User.create({
       email: clean,
-      passwordHash: await bcrypt.hash(String(password), 12),
+      passwordHash: await hashPassword(password),
       fullName: fullName || '',
       phone: phone || '',
       role: 'student',
@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
     if (!rateLimit(`login:${req.ip}`, 10, 60_000)) return res.status(429).json({ error: 'Too many attempts. Try again shortly.' });
     const { email, password } = req.body || {};
     const user = await User.findOne({ email: String(email || '').toLowerCase().trim() });
-    const ok = user && user.passwordHash && (await bcrypt.compare(String(password || ''), user.passwordHash));
+    const ok = user && (await verifyPassword(password, user.passwordHash));
     if (!ok) return res.status(401).json({ error: 'Invalid email or password.' });
     // Retired/unknown roles (e.g. legacy 'partner' accounts) cannot sign in.
     if (!ROLES.includes(user.role)) {
@@ -57,6 +57,17 @@ router.post('/login', async (req, res) => {
         code: 'blocked',
       });
     }
+    // Every account created before utils/password.js was hashed at the old,
+    // four-times-costlier setting, and would keep paying it at every login for
+    // the life of the account. A correct password is the one moment the
+    // plaintext is available to rewrite it, so take it -- in the background,
+    // because the user's response should not wait on a housekeeping write.
+    if (needsRehash(user.passwordHash)) {
+      hashPassword(password)
+        .then((passwordHash) => User.updateOne({ _id: user._id }, { $set: { passwordHash } }))
+        .catch((e) => console.error('rehash failed for', user._id, e));
+    }
+
     return res.json({ user: user.toPublic(), accessToken: signAccessToken(user), refreshToken: signRefreshToken(user) });
   } catch (err) {
     console.error('login error:', err);
@@ -112,7 +123,7 @@ router.post('/reset', async (req, res) => {
       resetExpires: { $gt: new Date() },
     });
     if (!user) return res.status(400).json({ error: 'This reset link is invalid or has expired.' });
-    user.passwordHash = await bcrypt.hash(String(password), 12);
+    user.passwordHash = await hashPassword(password);
     user.resetTokenHash = '';
     user.resetExpires = null;
     await user.save();
