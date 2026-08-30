@@ -21,7 +21,7 @@ import reportRoutes from './reports.js';
 
 const router = Router();
 
-router.get('/', (_req, res) => res.json({ ok: true, service: 'menler-lms', version: 2 }));
+router.get('/', (_req, res) => res.json({ ok: true, service: 'skeo-lms', version: 2 }));
 
 // Phase 1
 router.use('/auth', authRoutes);
