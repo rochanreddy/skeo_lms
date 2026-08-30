@@ -23,6 +23,11 @@ const get = (p, token) => fetch(API + p, { headers: { authorization: `Bearer ${t
 
 const admin = await (await post('/auth/login', { email: 'admin@skeo.in', password: 'ChangeMe123!' })).json();
 const stud  = await (await post('/auth/login', { email: 'load7@skeo.test', password: 'LoadTest123!' })).json();
+if (!admin.accessToken || !stud.accessToken) {
+  console.error('Could not sign in. This needs the same seeded database as the load test:');
+  console.error('  node scripts/seed.js  &&  node loadtest/seed.mjs');
+  process.exit(1);
+}
 const aT = admin.accessToken, sT = stud.accessToken, sId = stud.user.id || stud.user._id;
 
 // Warm the cache hard, so a stale entry would definitely exist.
