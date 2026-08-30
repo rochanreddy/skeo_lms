@@ -1477,8 +1477,23 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 ::-webkit-scrollbar-thumb { background: #d5d1e6; border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: #bdb7d8; background-clip: content-box; }
 
-/* ── Text selection in the brand ── */
+/* ── Text selection in the brand ──
+   Two pairings, because the app has two kinds of surface. On paper, a soft
+   purple wash under ink. On the dark stage, the same idea inverted: forcing
+   ink onto the dark surfaces left the selected text all but invisible. */
 ::selection { background: rgba(108,74,242,.2); color: var(--ink); }
+
+.auth-hero ::selection,
+.path-hero ::selection,
+.lesson ::selection,
+.dock ::selection,
+.md-pre ::selection,
+.avatar::selection,
+.auth-hero::selection,
+.path-hero::selection,
+.lesson::selection,
+.dock::selection,
+.md-pre::selection { background: rgba(185,173,246,.34); color: var(--parchment); }
 
 /* ── Accessibility ── Honour a stated preference for less motion: keep the
    state changes, drop the movement. */
