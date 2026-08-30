@@ -5,21 +5,9 @@ import bcrypt from 'bcryptjs';
 import { User, ROLES } from '../models/User.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
 import { isSmtpConfigured, sendMail } from '../utils/email.js';
+import { hit as rateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
-
-// ── Tiny in-memory rate limiter (per IP+route) ──
-const hits = new Map();
-function rateLimit(key, max, windowMs) {
-  const now = Date.now();
-  const rec = hits.get(key);
-  if (!rec || now > rec.reset) {
-    hits.set(key, { count: 1, reset: now + windowMs });
-    return true;
-  }
-  rec.count += 1;
-  return rec.count <= max;
-}
 
 const hashToken = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
 const APP_URL = () => (process.env.SKEO_APP_URL || 'http://localhost:5175').replace(/\/+$/, '');
