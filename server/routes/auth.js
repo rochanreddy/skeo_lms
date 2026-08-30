@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { hashPassword, needsRehash, verifyPassword } from '../utils/password.js';
 
 import { User, ROLES } from '../models/User.js';
+import { forget } from '../middleware/auth.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
 import { isSmtpConfigured, sendMail } from '../utils/email.js';
 import { clear, hit as rateLimit, record, tooMany } from '../middleware/rateLimit.js';
@@ -91,6 +92,7 @@ router.post('/login', async (req, res) => {
     if (needsRehash(user.passwordHash)) {
       hashPassword(password)
         .then((passwordHash) => User.updateOne({ _id: user._id }, { $set: { passwordHash } }))
+        .then(() => forget(user._id))
         .catch((e) => console.error('rehash failed for', user._id, e));
     }
 
@@ -161,6 +163,7 @@ router.post('/reset', async (req, res) => {
     user.resetTokenHash = '';
     user.resetExpires = null;
     await user.save();
+    forget(user._id);
     return res.json({ ok: true });
   } catch (err) {
     console.error('reset error:', err);

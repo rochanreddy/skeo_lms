@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { requireAuth } from '../middleware/auth.js';
+import { forget } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.patch('/password', requireAuth, async (req, res) => {
   u.passwordHash = await hashPassword(newPassword);
   u.mustChangePassword = false;
   await u.save();
+  forget(u._id);
   res.json({ ok: true, user: u.toPublic() });
 });
 
@@ -36,6 +38,7 @@ router.patch('/', requireAuth, async (req, res) => {
   if (professional !== undefined) u.professional = professional;
   if (resumeUrl !== undefined) u.resumeUrl = resumeUrl;
   await u.save();
+  forget(u._id);
   res.json({ user: u.toPublic() });
 });
 

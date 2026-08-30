@@ -2,6 +2,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import { hashPassword } from '../utils/password.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { forget } from '../middleware/auth.js';
 import { User, ROLES } from '../models/User.js';
 import { Batch } from '../models/Batch.js';
 import { Assignment } from '../models/Assignment.js';
@@ -60,6 +61,7 @@ router.post('/:id/reset-password', requireAuth, requireRole('admin'), async (req
   user.resetExpires = null;
   user.mustChangePassword = true; // force a fresh password on next login
   await user.save();
+  forget(user._id);
   res.json({ ok: true, tempPassword: temp, custom: !!password });
 });
 
@@ -210,6 +212,9 @@ router.patch('/:id/blocks', requireAuth, requireRole('admin'), async (req, res) 
   user.blocked = blocked;
   user.markModified('blocked');
   await user.save();
+  // A block is the one change that has to bite immediately, so drop the cached
+  // record rather than waiting for it to expire.
+  forget(user._id);
   res.json({ ok: true, user: user.toPublic() });
 });
 
@@ -228,6 +233,7 @@ router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   if (fullName !== undefined) user.fullName = String(fullName);
   if (phone !== undefined) user.phone = String(phone);
   await user.save();
+  forget(user._id);
   res.json({ ok: true, user: user.toPublic() });
 });
 
