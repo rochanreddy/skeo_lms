@@ -22,7 +22,7 @@ function rateLimit(key, max, windowMs) {
 }
 
 const hashToken = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
-const APP_URL = () => (process.env.SKEO_APP_URL || 'http://localhost:5174').replace(/\/+$/, '');
+const APP_URL = () => (process.env.SKEO_APP_URL || 'http://localhost:5175').replace(/\/+$/, '');
 
 // POST /api/skeo/auth/register — self-signup is forced to role=student.
 router.post('/register', async (req, res) => {
