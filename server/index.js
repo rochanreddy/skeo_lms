@@ -6,6 +6,7 @@ import cors from 'cors';
 
 import { connectDb } from './db.js';
 import routes from './routes/index.js';
+import { notFound, errorHandler } from './middleware/errors.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4100); // 4100 avoids clashing with the marketing API (4000) in local dev.
@@ -38,6 +39,20 @@ app.use(
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/skeo', routes);
+
+// Errors last: an unmatched path is a 404, and anything a route throws lands
+// in errorHandler rather than Express's default (which prints a stack unless
+// NODE_ENV happens to be set).
+app.use(notFound);
+app.use(errorHandler);
+
+// A rejected promise nobody awaited should not take the process down silently
+// or leave it running in a half-dead state. Log it; let the platform decide.
+process.on('unhandledRejection', (reason) => console.error('[fatal] unhandled rejection:', reason));
+process.on('uncaughtException', (err) => {
+  console.error('[fatal] uncaught exception:', err);
+  process.exit(1);
+});
 
 async function start() {
   try {
