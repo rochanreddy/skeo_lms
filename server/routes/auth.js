@@ -15,6 +15,7 @@ const APP_URL = () => (process.env.SKEO_APP_URL || 'http://localhost:5175').repl
 // POST /api/skeo/auth/register — self-signup is forced to role=student.
 router.post('/register', async (req, res) => {
   try {
+    if (!rateLimit(`register:${req.ip}`, 5, 60_000)) return res.status(429).json({ error: 'Too many attempts. Try again shortly.' });
     const { email, password, fullName, phone } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
     if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
