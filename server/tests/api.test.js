@@ -196,3 +196,44 @@ test('the service no longer identifies as the old menler-lms fork', async () => 
   const body = await (await get('/')).json();
   assert.notEqual(body.service, 'menler-lms');
 });
+
+// ── VdoCipher ──
+// The account secret is the whole security story here: it never leaves the
+// server, and a student can only ever obtain an OTP for a video attached to a
+// lesson they are allowed to see. These check the gates, not the upstream —
+// they pass whether or not VDOCIPHER_API_SECRET is set.
+
+test('the video library and uploads are admin-only, and closed to anonymous callers', async () => {
+  for (const path of ['/videos', '/videos/aaaaaaaaaaaaaaaa']) {
+    assert.equal((await get(path)).status, 401, `${path} answered without a token`);
+    assert.equal((await get(path, studentToken)).status, 403, `a student was not forbidden from ${path}`);
+  }
+
+  const anon = await fetch(`${API}/videos/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'x' }),
+  });
+  assert.equal(anon.status, 401);
+});
+
+test('a student cannot mint a playback OTP for a video no lesson of theirs carries', async () => {
+  const r = await fetch(`${API}/videos/deadbeefdeadbeef/otp`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${studentToken}` },
+  });
+  // 404 (not entitled — deliberately indistinguishable from "no such video")
+  // or 503 when this instance has no VdoCipher secret. Never 200.
+  assert.ok([404, 503].includes(r.status), `unentitled OTP request answered ${r.status}`);
+
+  const anon = await fetch(`${API}/videos/deadbeefdeadbeef/otp`, { method: 'POST' });
+  assert.equal(anon.status, 401);
+});
+
+test('the OTP route refuses a malformed video id without reaching the upstream', async () => {
+  const r = await fetch(`${API}/videos/not%20an%20id/otp`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${studentToken}` },
+  });
+  assert.ok([404, 503].includes(r.status));
+});
