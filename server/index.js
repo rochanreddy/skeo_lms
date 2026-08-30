@@ -9,6 +9,7 @@ import compression from 'compression';
 import { connectDb } from './db.js';
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errors.js';
+import { rateLimit } from './middleware/rateLimit.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4200); // 4200 is Skeo's own port -- 4100 belongs to menler-lms, 4000 to the marketing API.
@@ -52,6 +53,14 @@ app.use(
       return cb(null, false);
     },
   }),
+);
+
+// A ceiling on the whole API. Set well above what the UI does in normal use,
+// so it only ever catches a runaway client or a scraper; /health is left out
+// deliberately so an uptime probe can never be throttled.
+app.use(
+  '/api/skeo',
+  rateLimit({ bucket: 'api', max: 300, windowMs: 60_000 }),
 );
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
