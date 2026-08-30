@@ -9,7 +9,7 @@ import routes from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errors.js';
 
 const app = express();
-const port = Number(process.env.PORT || 4100); // 4100 avoids clashing with the marketing API (4000) in local dev.
+const port = Number(process.env.PORT || 4200); // 4200 is Skeo's own port -- 4100 belongs to menler-lms, 4000 to the marketing API.
 
 // The API runs behind a TLS-terminating proxy in production, so req.protocol and
 // req.ip are only truthful once the forwarding headers are trusted.
