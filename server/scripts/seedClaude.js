@@ -6,16 +6,26 @@
 //
 // Every lesson carries a video (played inline) and a PDF (opened in the
 // in-page viewer) — those two surfaces only.
-//   npm run seed:claude
+//
+// This re-authors a LIVE curriculum, so it is a dry run by default: it prints
+// the changes it would make and writes nothing. Commit them with --write.
+//   npm run seed:claude            # dry run — report only
+//   npm run seed:claude -- --write # commit
+//
+// Re-authoring merges into the existing tree rather than replacing it, so
+// lesson ids (and the completion ticks, module blocks and gate quizzes keyed
+// on them) survive, as does any media an admin attached. Running it twice in a
+// row must report zero changes.
 import 'dotenv/config';
 import { connectDb } from '../db.js';
 import { Program } from '../models/Program.js';
+import { Progress } from '../models/Progress.js';
 import { Batch } from '../models/Batch.js';
 import { User } from '../models/User.js';
 import { Assignment } from '../models/Assignment.js';
-import { Submission } from '../models/Submission.js';
 import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
+import { mergeModules, idsOf } from '../utils/curriculumMerge.js';
 
 // Stand-in media so the flow is clickable end to end. Swap per lesson later.
 const VIDEO = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4';
@@ -392,16 +402,22 @@ const QUIZZES = [
     ['Diligence at capstone time means…', ['Shipping fast without review', 'Reviewing before you put your name on it', 'Letting Claude decide'], 1],
   ]],
 ];
-
 function buildModules() {
   return MODULES.map((m, mi) => ({
     title: m.title,
     order: mi,
+    // The module's page: markdown shown when the week is opened. Not a lesson —
+    // nothing to complete, and totalTopics() never counts it. Empty until the
+    // framing copy is authored.
+    description: m.page || '',
     // One chapter per module so the sidebar shows a flat lesson list — the
-    // client hides a lone chapter titled "Lessons".
+    // client hides a lone chapter titled "Lessons", and a chapter with no page
+    // stays a plain label rather than becoming a dropdown.
     chapters: [{
       title: 'Lessons',
       order: 0,
+      description: '',
+      pageLabel: '',
       topics: m.lessons.map((l, li) => ({
         title: `${l.code} · ${l.title}`,
         contentType: 'video',
@@ -417,62 +433,124 @@ function buildModules() {
   }));
 }
 
+const sameQuestions = (a, b) =>
+  a.length === b.length && a.every((q, i) =>
+    q.text === b[i].text
+    && q.correctIndex === b[i].correctIndex
+    && (q.options || []).join('|') === (b[i].options || []).join('|'));
+
+// Never write to a database without being told to. The default is a dry run
+// that reports exactly what would change; --write is the only way to commit.
+const WRITE = process.argv.includes('--write');
+
 async function run() {
   await connectDb();
+  const log = [];
+  let changes = 0;
+  const note = (line) => { log.push(line); changes += 1; };
 
   // ── Retire the old programmes ──
   const old = await Program.find({ title: { $in: ['Kickstarter', 'Fellowship'] } }).select('_id title');
   if (old.length) {
-    const ids = old.map((p) => p._id);
-    const oldQuizzes = await Quiz.find({ programId: { $in: ids } }).select('_id');
-    await QuizAttempt.deleteMany({ quizId: { $in: oldQuizzes.map((q) => q._id) } });
-    await Quiz.deleteMany({ programId: { $in: ids } });
-    await Program.deleteMany({ _id: { $in: ids } });
-    console.log(`• removed ${old.length} old programme(s): ${old.map((p) => p.title).join(', ')}`);
+    note(`- remove ${old.length} old programme(s): ${old.map((p) => p.title).join(', ')}`);
+    if (WRITE) {
+      const ids = old.map((p) => p._id);
+      const oldQuizzes = await Quiz.find({ programId: { $in: ids } }).select('_id');
+      await QuizAttempt.deleteMany({ quizId: { $in: oldQuizzes.map((q) => q._id) } });
+      await Quiz.deleteMany({ programId: { $in: ids } });
+      await Program.deleteMany({ _id: { $in: ids } });
+    }
   }
 
   // ── The Claude programme ──
-  const modules = buildModules();
+  const desired = buildModules();
   let program = await Program.findOne({ title: 'Claude' });
-  if (!program) program = await Program.create({ title: 'Claude', type: 'cohort', published: true });
-  program.modules = modules;
-  program.description = 'Everything you need to work well with Claude — foundations, prompting, the visual layer, connectors, delegation and the enterprise picture.';
-  program.published = true;
-  await program.save();
+  if (!program) {
+    note('- create the "Claude" programme');
+    if (WRITE) program = await Program.create({ title: 'Claude', type: 'cohort', published: true });
+  }
 
-  const lessons = modules.reduce((n, m) => n + m.chapters[0].topics.length, 0);
-  console.log(`✓ Claude: ${modules.length} modules · ${lessons} lessons (each with a video + PDF)`);
+  const before = idsOf(program?.modules || []);
+  const { modules: merged, log: treeLog } = mergeModules(program?.modules || [], desired);
+  const after = idsOf(merged);
+  if (treeLog.length) { log.push('- curriculum:'); log.push(...treeLog); changes += treeLog.length; }
+
+  // Anything the re-author dropped: ids that existed before and don't now.
+  const orphanTopics = [...before.topics].filter((id) => !after.topics.has(id));
+  const orphanModules = [...before.modules].filter((id) => !after.modules.has(id));
+
+  const description = 'Everything you need to work well with Claude — foundations, prompting, the visual layer, connectors, delegation and the enterprise picture.';
+  if (program && (program.description !== description || !program.published)) {
+    note('- update the programme description / published flag');
+  }
+
+  if (WRITE && program) {
+    program.modules = merged;
+    program.description = description;
+    program.published = true;
+    await program.save();
+  }
+  const liveModules = WRITE && program ? program.modules : merged;
+  const lessonCount = merged.reduce((n, m) => n + m.chapters.reduce((c, ch) => c + ch.topics.length, 0), 0);
+  const keptTopics = [...after.topics].filter((id) => before.topics.has(id)).length;
+  const keptModules = [...after.modules].filter((id) => before.modules.has(id)).length;
+  console.log(`\n  Claude: ${merged.length} modules, ${lessonCount} lessons`);
+  console.log(`  ids preserved: ${keptTopics}/${before.topics.size} lessons, ${keptModules}/${before.modules.size} modules`);
+
+  // ── Prune what the re-author left dangling ──
+  // A completion tick naming a lesson that no longer exists is invisible in the
+  // UI but still counts toward Progress.completedTopics.length, so it has to go.
+  if (orphanTopics.length) {
+    const stale = await Progress.countDocuments({ completedTopics: { $in: orphanTopics } });
+    if (stale) {
+      note(`- prune ticks on ${orphanTopics.length} dropped lesson(s) across ${stale} student record(s)`);
+      if (WRITE) await Progress.updateMany({}, { $pull: { completedTopics: { $in: orphanTopics } } });
+    }
+  }
+  if (orphanModules.length) {
+    const blocked = await User.countDocuments({ 'blocked.moduleIds': { $in: orphanModules } });
+    if (blocked) {
+      note(`- clear module blocks on ${orphanModules.length} dropped module(s) for ${blocked} user(s)`);
+      if (WRITE) await User.updateMany({}, { $pull: { 'blocked.moduleIds': { $in: orphanModules } } });
+    }
+  }
 
   // ── Collapse to ONE course ──
   // There are no cohorts in this product. A single Batch record still backs the
   // course server-side (assignments, quizzes and announcements hang off a
-  // batchId), but it is never a choice anyone makes. Fold any extras into the
-  // oldest one, move their students and work across, then delete them.
+  // batchId), but it is never a choice anyone makes.
   const all = await Batch.find({}).sort({ createdAt: 1 });
   let course = all[0];
   if (!course) {
-    course = await Batch.create({ programId: program._id, name: program.title, status: 'ongoing' });
-    console.log('• created the course record');
+    note('- create the course record');
+    if (WRITE) course = await Batch.create({ programId: program._id, name: program.title, status: 'ongoing' });
   }
   const extras = all.slice(1);
-  for (const b of extras) {
-    await Batch.updateOne({ _id: course._id }, { $addToSet: { studentIds: { $each: b.studentIds || [] } } });
-    await User.updateMany({ batchIds: b._id }, { $addToSet: { batchIds: course._id } });
-    await User.updateMany({ batchIds: b._id }, { $pull: { batchIds: b._id } });
-    // Anything scoped to the retired batch moves across rather than vanishing.
-    await Assignment.updateMany({ batchId: b._id }, { $set: { batchId: course._id } });
-    await Quiz.updateMany({ batchId: b._id }, { $set: { batchId: course._id } });
-    await Batch.deleteOne({ _id: b._id });
+  if (extras.length) {
+    note(`- fold ${extras.length} extra batch(es) into the single course`);
+    if (WRITE) {
+      for (const b of extras) {
+        await Batch.updateOne({ _id: course._id }, { $addToSet: { studentIds: { $each: b.studentIds || [] } } });
+        await User.updateMany({ batchIds: b._id }, { $addToSet: { batchIds: course._id } });
+        await User.updateMany({ batchIds: b._id }, { $pull: { batchIds: b._id } });
+        // Anything scoped to the retired batch moves across rather than vanishing.
+        await Assignment.updateMany({ batchId: b._id }, { $set: { batchId: course._id } });
+        await Quiz.updateMany({ batchId: b._id }, { $set: { batchId: course._id } });
+        await Batch.deleteOne({ _id: b._id });
+      }
+    }
   }
-  if (extras.length) console.log(`• folded ${extras.length} extra batch(es) into the single course`);
+  if (course && program
+    && (String(course.programId) !== String(program._id) || course.name !== program.title || course.status !== 'ongoing')) {
+    note('- point the course record at the Claude programme');
+    if (WRITE) await Batch.updateOne({ _id: course._id }, { $set: { programId: program._id, name: program.title, status: 'ongoing' } });
+  }
 
-  await Batch.updateOne({ _id: course._id }, { $set: { programId: program._id, name: program.title, status: 'ongoing' } });
-  const batches = await Batch.find({});
-  const moved = 1;
   // Enrolment is stored on both sides (batch.studentIds and user.batchIds) and
   // they can drift — a student left in a batch's roster but not their own list
   // then sees that cohort's work as duplicates. Make the user's list the
   // authority and prune the rosters to match.
+  const batches = await Batch.find({});
   let pruned = 0;
   for (const b of batches) {
     const keep = [];
@@ -482,65 +560,88 @@ async function run() {
       else pruned += 1;
     }
     if (keep.length !== (b.studentIds || []).length) {
-      await Batch.updateOne({ _id: b._id }, { $set: { studentIds: keep } });
+      if (WRITE) await Batch.updateOne({ _id: b._id }, { $set: { studentIds: keep } });
       b.studentIds = keep;
     }
   }
-  if (pruned) console.log(`• pruned ${pruned} stale roster entr(ies) that the student's own record didn't confirm`);
-
+  if (pruned) note(`- prune ${pruned} stale roster entr(ies) the student's own record did not confirm`);
   const enrolled = batches.reduce((n, b) => n + (b.studentIds || []).length, 0);
-  console.log(`✓ one course "${program.title}" — ${enrolled} student(s) enrolled`);
+  console.log(`  one course "${program?.title || 'Claude'}" - ${enrolled} student(s) enrolled`);
 
   // ── One gate quiz per module ──
-  // Wipe and rebuild so re-running doesn't stack duplicates. Attempts go too,
-  // which is what you want when re-seeding to re-test the gating flow.
-  const existing = await Quiz.find({ programId: program._id }).select('_id');
-  await QuizAttempt.deleteMany({ quizId: { $in: existing.map((q) => q._id) } });
-  await Quiz.deleteMany({ programId: program._id });
-
-  for (let i = 0; i < program.modules.length; i += 1) {
-    const mod = program.modules[i];
+  // Upserted, not wiped and rebuilt: deleting a quiz takes its attempts with
+  // it, and re-running the authoring step must not cost students their gates.
+  const liveModuleIds = new Set();
+  for (let i = 0; i < liveModules.length; i += 1) {
+    const mod = liveModules[i];
+    const moduleId = String(mod._id);
+    liveModuleIds.add(moduleId);
     const [subject, qs] = QUIZZES[i];
-    await Quiz.create({
-      programId: program._id,
-      moduleId: String(mod._id),
-      title: `Module ${i + 1} quiz — ${subject}`,
-      type: 'quiz',
-      questions: qs.map(([text, options, correctIndex]) => ({ text, options, correctIndex })),
-    });
+    const title = `Module ${i + 1} quiz — ${subject}`;
+    const questions = qs.map(([text, options, correctIndex]) => ({ text, options, correctIndex }));
+    const existing = program ? await Quiz.findOne({ programId: program._id, moduleId }) : null;
+    if (!existing) {
+      note(`- create gate quiz: ${title}`);
+      if (WRITE) await Quiz.create({ programId: program._id, moduleId, title, type: 'quiz', questions });
+    } else if (existing.title !== title || !sameQuestions(existing.questions || [], questions)) {
+      note(`- update gate quiz: ${title}`);
+      if (WRITE) { existing.title = title; existing.questions = questions; await existing.save(); }
+    }
   }
-  console.log(`✓ ${program.modules.length} gate quizzes — attempt one to unlock the next module`);
+  // A gate pointing at a module that no longer exists can never be reached.
+  if (program) {
+    const dangling = (await Quiz.find({ programId: program._id }).select('_id moduleId title'))
+      .filter((q) => q.moduleId && !liveModuleIds.has(String(q.moduleId)));
+    if (dangling.length) {
+      note(`- remove ${dangling.length} gate quiz(zes) whose module is gone`);
+      if (WRITE) {
+        await QuizAttempt.deleteMany({ quizId: { $in: dangling.map((q) => q._id) } });
+        await Quiz.deleteMany({ _id: { $in: dangling.map((q) => q._id) } });
+      }
+    }
+  }
 
-  // ── Sample projects, one per batch, each with video + PDF + brief ──
-  // Rebuilt every run (and their submissions with them) so the Projects tab
-  // always has real content to look at.
-  const seeded = await Assignment.find({ title: { $in: PROJECTS.map((p) => p.title) } }).select('_id');
-  await Submission.deleteMany({ assignmentId: { $in: seeded.map((a) => a._id) } });
-  await Assignment.deleteMany({ _id: { $in: seeded.map((a) => a._id) } });
-
+  // ── Sample projects, one per batch ──
+  // Upserted by title. Dates and media are set once, on creation: re-running
+  // must not move a live deadline or detach an uploaded brief.
   const DAY = 24 * 60 * 60 * 1000;
-  let made = 0;
   for (const b of batches) {
     for (let i = 0; i < PROJECTS.length; i += 1) {
       const p = PROJECTS[i];
-      await Assignment.create({
-        batchId: b._id,
-        type: p.type,
-        title: p.title,
-        description: p.description,
-        videoUrl: VIDEO,
-        pdfUrl: PDF,
-        // Staggered deadlines so the Projects list has a real running order.
-        startDate: new Date(Date.now() - (2 - i) * 7 * DAY),
-        dueDate: new Date(Date.now() + (i + 1) * 7 * DAY),
-        requiredDriveTypes: p.requires,
-      });
-      made += 1;
+      const existing = await Assignment.findOne({ batchId: b._id, title: p.title });
+      if (!existing) {
+        note(`- create ${p.type}: ${p.title}`);
+        if (WRITE) {
+          await Assignment.create({
+            batchId: b._id,
+            type: p.type,
+            title: p.title,
+            description: p.description,
+            videoUrl: VIDEO,
+            pdfUrl: PDF,
+            // Staggered deadlines so the Projects list has a real running order.
+            startDate: new Date(Date.now() - (2 - i) * 7 * DAY),
+            dueDate: new Date(Date.now() + (i + 1) * 7 * DAY),
+            requiredDriveTypes: p.requires,
+          });
+        }
+      } else if (existing.description !== p.description || existing.type !== p.type) {
+        note(`- update ${p.type} brief: ${p.title}`);
+        if (WRITE) { existing.description = p.description; existing.type = p.type; await existing.save(); }
+      }
     }
   }
-  console.log(`✓ ${made} sample projects/assignments — each with a video, a PDF and a brief`);
 
-  console.log('\n✅ Claude programme seeded.');
+  // ── Report ──
+  console.log('');
+  if (changes === 0) {
+    console.log('✅ No changes — the database already matches the curriculum source.');
+  } else {
+    console.log(`${WRITE ? 'Applied' : 'Would apply'} ${changes} change(s):`);
+    for (const line of log) console.log(line);
+    console.log('');
+    console.log(WRITE ? '✅ Written.' : '🔎 Dry run — nothing was written. Re-run with --write to commit.');
+  }
   process.exit(0);
 }
 
