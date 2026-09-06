@@ -287,7 +287,15 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    an `animation` here would win the cascade and never re-fire on close, which
    leaves Presence waiting on an animationend that never comes. The 40px inset
    keeps the old 20px gutter on a phone; max-width still caps it on a desktop. */
-.cmd { width: calc(100% - 40px); max-width: 580px; max-height: 62vh; background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
+/* The four declarations after `overflow` used to travel as Tailwind utilities
+   in the JSX (`top-[12vh] translate-y-0 gap-0 border-0 p-0`), which meant
+   shipping tailwind-merge purely to make them beat DialogContent's defaults.
+   styles.css is unlayered and Tailwind's utilities sit in @layer utilities, so
+   stating them here wins outright — no runtime class arbitration needed.
+   `translate`, not `transform`: Tailwind v4 centres with the `translate`
+   property, and only the same property can override it. */
+.cmd { width: calc(100% - 40px); max-width: 580px; max-height: 62vh; background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;
+  top: 12vh; translate: -50% 0; gap: 0; border: 0; padding: 0; }
 .cmd-input-wrap { display: flex; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--line-soft); color: var(--muted); }
 .cmd-input { flex: 1; border: 0; outline: none; font-family: var(--font); font-size: 17px; color: var(--ink); background: none; }
 .cmd-input::placeholder { color: #8e88a3; }
@@ -324,7 +332,8 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .notif-btn:hover { background: #f4f5f8; color: var(--brand); }
 .notif-ic { display: block; }
 .notif-badge { position: absolute; top: -2px; right: -4px; background: #e11d48; color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: grid; place-items: center; padding: 0 3px; }
-.notif-menu { width: 320px; max-height: 420px; overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+/* padding was `p-0` in the JSX, against PopoverContent's p-4 — see .cmd. */
+.notif-menu { width: 320px; max-height: 420px; overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 0; }
 .notif-head { padding: 12px 16px; font-weight: 700; border-bottom: 1px solid var(--line); font-size: 14px; }
 .notif-empty { padding: 24px 16px; color: var(--muted); text-align: center; font-size: 14px; }
 .notif-item { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid #f2f3f6; padding: 11px 16px; cursor: pointer; font-family: var(--font); }
@@ -594,7 +603,9 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    only what is particular to this one. Centring moved to the popper, so the
    old 20px overlay padding becomes an inset on the panel itself. */
 .cert-overlay { background: rgba(20,18,28,.6); backdrop-filter: blur(4px); z-index: 100; }
-.cert { background: var(--parchment); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); max-width: 660px; width: calc(100% - 40px); }
+/* Was `z-[101] gap-0 border-0 p-0` in the JSX — see the note on .cmd. */
+.cert { background: var(--parchment); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); max-width: 660px; width: calc(100% - 40px);
+  z-index: 101; gap: 0; border: 0; padding: 0; }
 .cert-inner { border: 1px solid var(--purple-line); margin: 16px; padding: 52px 44px; text-align: center; border-radius: var(--radius); position: relative; }
 .cert-inner::before { content: ''; position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 54px; height: 2px; background: var(--purple); border-radius: 0 0 2px 2px; }
 .cert-brand { font-family: var(--display); font-weight: 900; font-size: 19px; color: var(--ink); letter-spacing: -0.025em; }
@@ -699,8 +710,11 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   background: rgba(20,18,28,.42); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   overscroll-behavior: contain; }
 /* 6vw of inset stands in for the 3vw gutter the overlay's padding used to give. */
+/* z-index/gap/border/padding were `z-[131] gap-0 border-0 p-0` in the JSX —
+   see the note on .cmd for why they live here now. */
 .fv { background: var(--card); border-radius: var(--radius); width: calc(100% - 6vw); max-width: 1100px; height: 94vh;
-  box-shadow: 0 30px 80px rgba(20,18,28,.45); display: flex; flex-direction: column; overflow: hidden; }
+  box-shadow: 0 30px 80px rgba(20,18,28,.45); display: flex; flex-direction: column; overflow: hidden;
+  z-index: 131; gap: 0; border: 0; padding: 0; }
 .fv-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px 13px 24px; border-bottom: 1px solid var(--line); }
 .fv-head-copy { flex: 1; min-width: 0; }
 .fv-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .13em; color: var(--purple); font-weight: 700; }
@@ -775,7 +789,11 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .pdfr-zoom { min-width: 44px; }
 @media (max-width: 720px) { .pdfr-bar { gap: 8px; padding: 8px 10px; } .pdfr-find { order: 3; flex-basis: 100%; } .pdfr-stage { padding: 12px 10px 28px; } }
 .lesson-body { padding: 32px 40px; }
-.lesson-video { width: 100%; border-radius: var(--radius-sm); margin-bottom: 18px; display: block; }
+/* aspect-ratio, not intrinsic sizing: without it the element is zero-height
+   until the browser has metadata, and the lesson body jumps when it arrives.
+   The DRM frame below already reserves its box this way — the two video paths
+   should not shift the page differently. */
+.lesson-video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: var(--radius-sm); margin-bottom: 18px; display: block; }
 .lesson-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 20px 40px 30px; border-top: 1px solid var(--stage-line); }
 .lesson-foot .btn.ghost { background: var(--stage-2); color: var(--lavender); }
 .lesson-foot .btn.ghost:hover { background: #2b2735; color: var(--parchment); }
@@ -1863,7 +1881,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   letter-spacing: .13em; text-transform: uppercase; color: var(--purple);
   margin: 0 0 14px;
 }
-.assign-content .lesson-video { width: 100%; border-radius: var(--radius-sm); margin-bottom: 14px; }
+.assign-content .lesson-video { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); margin-bottom: 14px; }
 .assign-pdf { margin-bottom: 14px; }
 .assign-content .assign-desc { margin-top: 0; }
 
@@ -1933,3 +1951,72 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .vdo-thumb-empty { background: var(--line); display: block; }
 .vdo-item-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .vdo-item-title { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Syllabus pages & the three reader states ──────────────────────────────
+   A "page" is curriculum text on a module or chapter rather than on a lesson.
+   In the reader it wears a lesson's exact furniture; in the syllabus it is a
+   row marked with an icon instead of a completion dot, because it can't be
+   ticked. */
+
+/* The position counter moved into the head's top row, opposite the crumb, so
+   a page and a lesson have the same head geometry. */
+.lesson-head-top .lesson-position { margin-top: 0; flex: none; white-space: nowrap; }
+.lesson-head-top .lesson-crumb { min-width: 0; }
+.lesson-head .lesson-actions { margin-top: 18px; }
+
+/* A module can hold four chapters, and all four must be readable at once, or
+   the accordion has just moved the scrolling one level down. Hence the smaller
+   type, the tight padding, and the two-line clamp. */
+.cur-chap.foldable { padding: 0 0 2px; }
+.cur-chap.foldable + .cur-chap.foldable { border-top: 1px solid var(--line-soft); }
+.cur-chap-head {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: 0; padding: 7px 10px 7px 14px; cursor: pointer;
+  text-align: left; font-family: var(--font); border-radius: var(--radius-sm);
+}
+.cur-chap-head:hover { background: var(--line-soft); }
+.cur-chap-head-title {
+  flex: 1; min-width: 0;
+  font-size: 12.5px; font-weight: 600; color: var(--ink-2); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.cur-chap-head.open .cur-chap-head-title { color: var(--ink); }
+.cur-chap-head .cur-caret { flex: none; font-size: 13px; }
+
+/* The page row: an icon where a lesson carries its tick. */
+.cur-page-icon { flex: none; width: 11px; height: 11px; display: grid; place-items: center; color: var(--muted); }
+.cur-page.active .cur-page-icon { color: var(--purple); }
+.cur-topic-title { min-width: 0; overflow-wrap: anywhere; }
+
+/* The module whose page is on the reader. */
+.cur-mod-head.showing .cur-mod-title { color: var(--purple); }
+
+/* Nothing open — the first thing a student sees, since arriving no longer
+   auto-selects a lesson. No chips: nothing is open to point at. */
+.lesson-landing {
+  min-height: 420px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 48px 32px; gap: 6px;
+}
+.lesson-landing-name { font-family: var(--display); font-weight: 700; font-size: 26px; color: var(--parchment); letter-spacing: -0.02em; }
+.lesson-landing-count { font-size: 13px; color: var(--lavender); letter-spacing: .01em; }
+.lesson-landing-hint { margin: 10px 0 0; color: #a29bb8; font-size: 14.5px; max-width: 34ch; line-height: 1.6; }
+/* Only offered where the syllabus isn't already sitting beside you. */
+.lesson-landing-btn { display: none; margin-top: 16px; background: var(--stage-2); color: var(--lavender); border: 1px solid var(--stage-line); }
+.lesson-landing-btn:hover { background: #2b2735; color: var(--parchment); }
+
+@media (max-width: 820px) {
+  .lesson-landing-btn { display: inline-flex; }
+  /* Stacked, the syllabus needs room for a whole module's chapters. */
+  .curriculum { max-height: 420px; }
+}
+
+/* Small phones: nothing may push the page sideways. */
+@media (max-width: 430px) {
+  .lesson-head-top { flex-direction: column; gap: 6px; }
+  .lesson-head-top .lesson-position { align-self: flex-start; }
+  .lesson-landing { padding: 40px 20px; }
+  .lesson-landing-name { font-size: 22px; }
+  .lesson-actions .btn.lesson-action { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
