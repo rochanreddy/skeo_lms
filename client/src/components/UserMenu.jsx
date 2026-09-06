@@ -1,77 +1,54 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Icon from './Icon.jsx';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu.jsx';
+import { Suspense, lazy, useState } from 'react';
+import UserMenuButton from './UserMenuButton.jsx';
 
 // The account menu behind the avatar. Logging out used to be reachable only by
 // opening ⌘K and typing "log out" — which nobody discovers. Clicking your own
 // face is where everyone looks for it, so it lives here.
 //
-// Radix owns the behaviour: outside-click, Escape, focus return to the trigger,
-// arrow-key navigation and typeahead all come from DropdownMenu rather than the
-// hand-rolled listeners this used to carry. `open` is still tracked locally so
-// the trigger keeps its `.on` state and the caret keeps flipping.
+// The menu itself is Radix, which pulls in floating-ui and the whole popper
+// stack — around 40 KB that used to load before first paint for a panel that
+// isn't on screen until you click it. So the trigger ships eagerly as a plain
+// button and the Radix version replaces it on first interaction, mounted
+// already-open so the click that armed it is also the click that opens it.
+// The chunk is prefetched on hover and on focus, both of which precede the
+// click, so in practice it's already there.
+const UserMenuPanel = lazy(() => import('./UserMenuPanel.jsx'));
+const warm = () => { import('./UserMenuPanel.jsx'); };
+
 export default function UserMenu({ user, logout }) {
+  const [armed, setArmed] = useState(false);
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
 
   const name = user.full_name || user.email;
   const initial = (name || '?')[0].toUpperCase();
-  // Admins get "Account" instead of "Profile" in the dock — match the route.
-  const profilePath = user.role === 'admin' ? '/app/account' : '/app/profile';
 
+  // Before the first interaction: the same button, with none of the machinery.
+  if (!armed) {
+    const arm = () => { setArmed(true); setOpen(true); };
+    return (
+      <div className="who">
+        <UserMenuButton
+          name={name}
+          initial={initial}
+          role={user.role}
+          onMouseEnter={warm}
+          onFocus={warm}
+          onClick={arm}
+          // Radix opens a menu on ArrowDown as well as click; match that here
+          // so keyboard users don't find the first press does nothing.
+          onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); arm(); } }}
+        />
+      </div>
+    );
+  }
+
+  // The fallback is the identical button, so nothing moves while the chunk
+  // lands — the only visible change is the menu appearing once it has.
   return (
-    <div className="who">
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild>
-          <button className={`who-btn ${open ? 'on' : ''}`} aria-label="Account menu">
-            <span className="avatar">{initial}</span>
-            <span className="who-name">{name}</span>
-            <span className={`badge badge-${user.role}`}>{user.role}</span>
-            <svg className={`who-caret ${open ? 'up' : ''}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="end" sideOffset={10} className="who-menu">
-          <DropdownMenuLabel className="who-menu-head">
-            <span className="avatar avatar-lg">{initial}</span>
-            <div className="who-menu-id">
-              <div className="who-menu-name">{name}</div>
-              <div className="who-menu-mail">{user.email}</div>
-              <span className={`badge badge-${user.role}`}>{user.role}</span>
-            </div>
-          </DropdownMenuLabel>
-
-          <DropdownMenuSeparator className="who-menu-sep" />
-
-          <DropdownMenuItem className="who-menu-item" onSelect={() => navigate(profilePath)}>
-            <Icon name="profile" />
-            <span>Your profile</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="who-menu-item" onSelect={() => navigate(`${profilePath}#password`)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="4" y="10.5" width="16" height="10" rx="2.5" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
-            </svg>
-            <span>Change password</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator className="who-menu-sep" />
-
-          <DropdownMenuItem className="who-menu-item danger" onSelect={logout}>
-            <Icon name="logout" />
-            <span>Log out</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <Suspense
+      fallback={<div className="who"><UserMenuButton name={name} initial={initial} role={user.role} open /></div>}
+    >
+      <UserMenuPanel user={user} logout={logout} open={open} onOpenChange={setOpen} />
+    </Suspense>
   );
 }
