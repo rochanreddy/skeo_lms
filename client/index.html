@@ -4,12 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Skeo LMS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Inter (UI) + DM Sans (headings, matches the wordmark) load together.
-         DM Serif Display is decorative, so it comes second and never blocks. -->
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@1&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <!-- The fonts are self-hosted (see src/fonts.css and public/fonts). There is
+         no third-party stylesheet to fetch and parse before the files can even
+         be discovered, so the two UI families are preloaded directly and arrive
+         in parallel with the app CSS rather than two hops behind it.
+         DM Serif Display is decorative and used on one line, so it is left to
+         load normally — preloading it would compete with the two that matter. -->
+    <link rel="preload" href="/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-sans-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>
