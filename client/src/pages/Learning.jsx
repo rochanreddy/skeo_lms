@@ -9,6 +9,7 @@ import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
+import { mediaOf, mediaFrom, stripParentContext } from '../lib/syllabus.js';
 
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
 // For admins: just the course content to teach from — they create &
@@ -75,10 +76,14 @@ function Quizzes() {
     const p = (pd.programs || [])[0];
     if (p) {
       // Module order lives on the programme, not the quiz, so fetch the tree
-      // when the list didn't already carry it.
-      const full = p.modules?.length ? p : await api(`/programs/${p._id}`).then((d) => d.program).catch(() => p);
+      // when the list didn't already carry it. The gate quizzes only need the
+      // programme *id*, which we already have — so they go out alongside the
+      // tree rather than waiting a round trip behind it.
+      const [full, gq] = await Promise.all([
+        p.modules?.length ? p : api(`/programs/${p._id}`).then((d) => d.program).catch(() => p),
+        api(`/quizzes?programId=${p._id}`).then((d) => d.quizzes || []).catch(() => []),
+      ]);
       const order = new Map((full.modules || []).map((m, i) => [String(m._id), i]));
-      const gq = await api(`/quizzes?programId=${p._id}`).then((d) => d.quizzes || []).catch(() => []);
       setGates(gq
         .map((q) => ({ ...q, modIndex: order.has(String(q.moduleId)) ? order.get(String(q.moduleId)) : 1e6 }))
         .sort((a, b) => a.modIndex - b.modIndex));
@@ -314,6 +319,46 @@ function QuizReview({ questions }) {
   );
 }
 
+// ── Reader furniture shared by lessons and pages ──────────────────────────
+// A page and a lesson must be indistinguishable in structure, so the chip row
+// below is written once and called from both heads.
+
+// One chip row, rendered from the lesson head and the page head alike.
+// Empty fields render disabled rather than disappearing: a missing button
+// reads as "there is no video", whereas "No class video yet" tells a student
+// to come back.
+function ChipRow({ media, subtitle, onOpen }) {
+  const chips = [
+    { key: 'reading', type: 'pdf', label: 'Reading material', empty: 'No reading yet', url: media.reading },
+    { key: 'notes', type: 'text', label: 'Notes', empty: 'No notes yet', url: media.notes },
+    { key: 'klass', type: 'video', label: 'Class video', empty: 'No class video yet', url: media.klass, external: true },
+  ];
+  return (
+    <div className="lesson-actions">
+      {chips.map((c) => {
+        if (!c.url) {
+          return (
+            <button key={c.key} className="btn sm lesson-action" disabled title={`${c.empty} — check back later`}>
+              <LessonIcon type={c.type} size={15} /> {c.empty}
+            </button>
+          );
+        }
+        // A class link is a meeting or a recording elsewhere; the two file
+        // slots open in the in-page viewer as they always have.
+        return c.external ? (
+          <a key={c.key} className="btn sm lesson-action" href={c.url} target="_blank" rel="noreferrer">
+            <LessonIcon type={c.type} size={15} /> {c.label}
+          </a>
+        ) : (
+          <button key={c.key} className="btn sm lesson-action" onClick={() => onOpen({ label: c.label, subtitle, url: c.url })}>
+            <LessonIcon type={c.type} size={15} /> {c.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function Content() {
   const { user } = useOutletContext();
   const isStudent = user.role === 'student';
@@ -323,7 +368,14 @@ function Content() {
   const [programs, setPrograms] = useState([]);
   const [program, setProgram] = useState(null);
   const [topicId, setTopicId] = useState(null);
+  // The page currently on the reader, if any. One piece of state for both
+  // levels, resolved through a memo below into everything the reader needs.
+  // It never enters the URL — a deep link still names a lesson.
+  const [pageRef, setPageRef] = useState(null); // { kind: 'module'|'chapter', id }
   const [open, setOpen] = useState({});
+  // Only one chapter is unfolded at a time, so a module's chapters all stay on
+  // screen instead of the accordion pushing the scrolling one level down.
+  const [openChap, setOpenChap] = useState(null);
   const [completed, setCompleted] = useState(new Set());
   const [total, setTotal] = useState(0);
   const [cert, setCert] = useState(null);
@@ -362,6 +414,54 @@ function Content() {
   const current = idx >= 0 ? flat[idx] : null;
   const topic = current?.topic || null;
 
+  // Everything a page needs, resolved from pageRef in one place. Null whenever
+  // nothing is open, the reference no longer points at anything (a programme
+  // switch, a module an admin removed), or the target carries no page text —
+  // so a curriculum without pages simply never reaches this state.
+  const page = useMemo(() => {
+    if (!pageRef || !program) return null;
+    const mods = program.modules || [];
+    if (pageRef.kind === 'module') {
+      const mi = mods.findIndex((m) => String(m._id) === String(pageRef.id));
+      const m = mods[mi];
+      if (!m?.description) return null;
+      const topics = (m.chapters || []).flatMap((c) => c.topics || []);
+      return {
+        crumb: m.title,
+        title: 'Week overview',
+        position: `Week ${mi + 1} of ${mods.length}`,
+        body: m.description,
+        media: mediaFrom(topics),
+        startLabel: 'Start week',
+        firstTopicId: topics[0]?._id || null,
+      };
+    }
+    for (let mi = 0; mi < mods.length; mi += 1) {
+      const chaps = mods[mi].chapters || [];
+      const ci = chaps.findIndex((c) => String(c._id) === String(pageRef.id));
+      if (ci < 0) continue;
+      const c = chaps[ci];
+      if (!c.description) return null;
+      const topics = c.topics || [];
+      return {
+        crumb: `${mods[mi].title} · ${c.title}`,
+        title: c.pageLabel || 'Overview',
+        position: `Chapter ${ci + 1} of ${chaps.length}`,
+        body: c.description,
+        media: mediaFrom(topics),
+        startLabel: 'Start session',
+        firstTopicId: topics[0]?._id || null,
+      };
+    }
+    return null;
+  }, [pageRef, program]);
+
+  // Where the thing you're reading about begins, in the flattened lesson list:
+  // Next starts it, Previous goes to the lesson immediately before it began.
+  const pageStart = page?.firstTopicId
+    ? flat.findIndex((f) => String(f.topic._id) === String(page.firstTopicId))
+    : -1;
+
   const loadProgress = (programId) => {
     if (!isStudent || !programId) return;
     api(`/progress/me?programId=${programId}`).then((d) => { setCompleted(new Set(d.completedTopics)); setTotal(d.total); }).catch(() => {});
@@ -378,27 +478,67 @@ function Content() {
   }
 
   async function pick(id, preferTopicId) {
-    const { program: p } = await api(`/programs/${id}`);
-    setProgram(p); setCert(null);
-    const target = preferTopicId ? locate(p, preferTopicId) : null;
-    if (target) {
-      setOpen({ [target.modId]: true, [target.chapId]: true });
-      setTopicId(target.topic._id);
-    } else {
-      // Auto-open + select the very first lesson so the page is never empty.
-      const firstMod = (p.modules || [])[0];
-      const firstChap = firstMod?.chapters?.[0];
-      const firstTopic = firstChap?.topics?.[0];
-      setOpen(firstMod && firstChap ? { [firstMod._id]: true, [firstChap._id]: true } : {});
-      setTopicId(firstTopic?._id || null);
-    }
+    // Progress and the gate quizzes are keyed on the programme id alone, which
+    // we already hold — starting them here rather than after the tree arrives
+    // takes a round trip off the critical path for the whole screen.
     loadProgress(id);
     loadGates(id);
+    const { program: p } = await api(`/programs/${id}`);
+    setProgram(p); setCert(null); setPageRef(null);
+    const target = preferTopicId ? locate(p, preferTopicId) : null;
+    if (target) {
+      // A deep link unfolds the module and the chapter that hold its lesson.
+      setOpen({ [target.modId]: true });
+      setOpenChap(String(target.chapId));
+      setTopicId(target.topic._id);
+    } else {
+      // Nothing is selected on arrival. The reader shows its landing panel and
+      // the student chooses a week — auto-selecting lesson 1 used to bury the
+      // syllabus under content nobody had asked for.
+      setOpen({}); setOpenChap(null); setTopicId(null);
+    }
   }
-  const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
+
+  // Showing a page clears the lesson, and takes ?topic= with it: a page is not
+  // addressable, so leaving a stale lesson id in the URL would make Back and a
+  // copied link disagree with what's on screen.
+  function showPage(ref) {
+    setPageRef(ref);
+    setTopicId(null);
+    if (program) setParams({ program: program._id }, { replace: true });
+  }
+
+  // Pressing a module opens it and shows its page. Pressing the one already
+  // open, while its page is showing, folds it away and returns the reader to
+  // the landing state.
+  function pressModule(m) {
+    const id = String(m._id);
+    const showingPage = pageRef?.kind === 'module' && String(pageRef.id) === id;
+    // Fold it away when pressing the module that's already open while its page
+    // is showing — or, for a module that has no page, on any second press,
+    // which is the plain accordion it was before pages existed.
+    if (open[id] && (showingPage || !m.description)) {
+      setOpen((o) => ({ ...o, [id]: false }));
+      setOpenChap(null);
+      if (showingPage) setPageRef(null);
+      return;
+    }
+    setOpen((o) => ({ ...o, [id]: true }));
+    setOpenChap(null); // opening a module folds any chapter unfolded inside it
+    if (m.description) showPage({ kind: 'module', id });
+  }
+
+  // Unfolding a chapter must NOT touch the reader. You open a week to read its
+  // overview; looking at what a session contains shouldn't take that away
+  // before you've chosen anything inside it.
+  const pressChapter = (c) =>
+    setOpenChap((cur) => (String(cur) === String(c._id) ? null : String(c._id)));
+
   function selectTopic(f) {
     setTopicId(f.topic._id);
-    setOpen((o) => ({ ...o, [f.modId]: true, [f.chapId]: true }));
+    setPageRef(null);
+    setOpen((o) => ({ ...o, [f.modId]: true }));
+    setOpenChap(String(f.chapId));
     // replace, not push — Prev/Next shouldn't fill the back button with lessons.
     if (program) setParams({ program: program._id, topic: String(f.topic._id) }, { replace: true });
   }
@@ -432,7 +572,12 @@ function Content() {
     if (String(urlTopic) === String(topicId)) return;
     if (urlProgram && urlProgram !== program._id) { pick(urlProgram, urlTopic); return; }
     const target = locate(program, urlTopic);
-    if (target) { setTopicId(target.topic._id); setOpen((o) => ({ ...o, [target.modId]: true, [target.chapId]: true })); }
+    if (target) {
+      setTopicId(target.topic._id);
+      setPageRef(null);
+      setOpen((o) => ({ ...o, [target.modId]: true }));
+      setOpenChap(String(target.chapId));
+    }
   }, [urlProgram, urlTopic]);
 
   async function toggleComplete(tid) {
@@ -447,8 +592,6 @@ function Content() {
   const done = Math.min(completed.size, total);
   const pct = total ? Math.round((done / total) * 100) : 0;
   const isDone = topic && completed.has(topic._id);
-  // Two surfaces per lesson and no more: a video player and a PDF.
-  const pdfUrl = topic?.readingUrl || (topic?.contentType === 'pdf' ? topic.contentUrl : '') || '';
   // A DRM lesson wins over every plain URL on the topic: if the admin put the
   // recording in VdoCipher, that is where it is watched.
   const vdoId = topic?.contentType === 'video' && topic?.videoSource === 'vdocipher' ? (topic.vdoVideoId || '') : '';
@@ -486,7 +629,7 @@ function Content() {
       ) : (
         <div className="learn-grid">
           {/* Curriculum sidebar */}
-          <aside className="curriculum">
+          <aside className="curriculum" id="learn-syllabus">
             {(program.modules || []).map((m, mi) => {
               const mTopics = (m.chapters || []).flatMap((c) => c.topics || []);
               const mDone = mTopics.filter((t) => completed.has(t._id)).length;
@@ -495,9 +638,10 @@ function Content() {
               return (
                 <div key={m._id} className={`cur-mod ${locked ? 'locked' : ''}`}>
                   <button
-                    className="cur-mod-head"
-                    onClick={() => !locked && toggle(m._id)}
+                    className={`cur-mod-head ${pageRef?.kind === 'module' && String(pageRef.id) === String(m._id) ? 'showing' : ''}`}
+                    onClick={() => !locked && pressModule(m)}
                     disabled={locked}
+                    aria-expanded={!locked && !!open[m._id]}
                     title={locked ? 'Attempt the previous module’s quiz to unlock this one' : undefined}
                   >
                     <span className="cur-mod-idx">{locked ? <LineIcon name="key" size={13} /> : String(mi + 1).padStart(2, '0')}</span>
@@ -505,22 +649,46 @@ function Content() {
                     {!locked && isStudent && mTopics.length > 0 && <span className="cur-mod-count">{mDone}/{mTopics.length}</span>}
                     {locked ? <span className="cur-mod-count">Locked</span> : <span className={`cur-caret ${open[m._id] ? 'up' : ''}`}>⌄</span>}
                   </button>
-                  {!locked && open[m._id] && (m.chapters || []).map((c) => (
-                    <div key={c._id} className="cur-chap">
-                      {(m.chapters.length > 1 || c.title !== 'Lessons') && <div className="cur-chap-title">{c.title}</div>}
-                      {(c.topics || []).map((t) => {
-                        const active = t._id === topicId;
-                        const tdone = completed.has(t._id);
-                        return (
-                          <button key={t._id} className={`cur-topic ${active ? 'active' : ''} ${tdone ? 'done' : ''}`} onClick={() => selectTopic({ topic: t, modId: m._id, chapId: c._id })}>
-                            {/* The dot carries state here exactly as it does on the Path. */}
-                            <span className="cur-tick" />
-                            <span className="cur-topic-title">{t.title}</span>
+                  {!locked && open[m._id] && (m.chapters || []).map((c) => {
+                    // Only a chapter that has a page becomes a dropdown of its
+                    // own. One without stays exactly as it was — a plain label
+                    // with its lessons always visible.
+                    const hasPage = !!c.description;
+                    const unfolded = !hasPage || String(openChap) === String(c._id);
+                    const shortTitle = stripParentContext(c.title, m.title);
+                    const showingPage = pageRef?.kind === 'chapter' && String(pageRef.id) === String(c._id);
+                    return (
+                      <div key={c._id} className={`cur-chap ${hasPage ? 'foldable' : ''}`}>
+                        {hasPage ? (
+                          <button className={`cur-chap-head ${unfolded ? 'open' : ''}`} onClick={() => pressChapter(c)} aria-expanded={unfolded}>
+                            <span className="cur-chap-head-title">{shortTitle}</span>
+                            <span className={`cur-caret ${unfolded ? 'up' : ''}`}>⌄</span>
                           </button>
-                        );
-                      })}
-                    </div>
-                  ))}
+                        ) : (
+                          (m.chapters.length > 1 || c.title !== 'Lessons') && <div className="cur-chap-title">{shortTitle}</div>
+                        )}
+                        {unfolded && hasPage && (
+                          <button className={`cur-topic cur-page ${showingPage ? 'active' : ''}`} onClick={() => showPage({ kind: 'chapter', id: String(c._id) })}>
+                            {/* An icon, not a tick: a page can't be completed,
+                                so it must not offer an empty checkbox. */}
+                            <span className="cur-page-icon"><LineIcon name="book" size={12} /></span>
+                            <span className="cur-topic-title">{c.pageLabel || 'Overview'}</span>
+                          </button>
+                        )}
+                        {unfolded && (c.topics || []).map((t) => {
+                          const active = t._id === topicId;
+                          const tdone = completed.has(t._id);
+                          return (
+                            <button key={t._id} className={`cur-topic ${active ? 'active' : ''} ${tdone ? 'done' : ''}`} onClick={() => selectTopic({ topic: t, modId: m._id, chapId: c._id })}>
+                              {/* The dot carries state here exactly as it does on the Path. */}
+                              <span className="cur-tick" />
+                              <span className="cur-topic-title">{t.title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
                   {/* The gate sits at the foot of its module — the last thing
                       you reach, and the thing that opens the next one. */}
                   {!locked && open[m._id] && gate && (
@@ -543,30 +711,17 @@ function Content() {
 
           {/* Lesson viewer */}
           <section className="lesson">
-            {topic && (
+            {topic ? (
               <>
                 <div className="lesson-head">
                   <div className="lesson-head-top">
                     <div className="lesson-crumb">{current.mod}{current.chap && current.chap !== 'Lessons' ? ` · ${current.chap}` : ''}</div>
+                    {/* Same numbers the old line read from — position in the
+                        flattened lesson list, so it tracks as you move around. */}
+                    <div className="lesson-position">Lesson {idx + 1} of {flat.length}</div>
                   </div>
                   <h2 className="lesson-title">{topic.title}</h2>
-                  {/* Same numbers the old chip read from — position in the
-                      flattened lesson list, so it tracks as you move around. */}
-                  <div className="lesson-position">Lesson {idx + 1} of {flat.length}</div>
-
-                  {/* One action. The video plays in the body below; the PDF is
-                      the only thing that needs opening. */}
-                  <div className="lesson-actions">
-                    {pdfUrl ? (
-                      <button className="btn sm lesson-action" onClick={() => setViewer({ label: 'PDF', subtitle: topic.title, url: pdfUrl })}>
-                        <LessonIcon type="pdf" size={15} /> PDF
-                      </button>
-                    ) : (
-                      <button className="btn sm lesson-action" disabled title="No PDF attached to this lesson yet">
-                        <LessonIcon type="pdf" size={15} /> No PDF yet
-                      </button>
-                    )}
-                  </div>
+                  <ChipRow media={mediaOf(topic)} subtitle={topic.title} onOpen={setViewer} />
                 </div>
 
                 <div className="lesson-body">
@@ -588,6 +743,43 @@ function Content() {
                   <button className="btn ghost sm" disabled={idx >= flat.length - 1} onClick={() => flat[idx + 1] && selectTopic(flat[idx + 1])}>Next →</button>
                 </div>
               </>
+            ) : page ? (
+              /* A page: a lesson's exact furniture, minus the parts a page
+                 can't have — no video, and nothing to mark complete. */
+              <>
+                <div className="lesson-head">
+                  <div className="lesson-head-top">
+                    <div className="lesson-crumb">{page.crumb}</div>
+                    <div className="lesson-position">{page.position}</div>
+                  </div>
+                  <h2 className="lesson-title">{page.title}</h2>
+                  <ChipRow media={page.media} subtitle={page.crumb} onOpen={setViewer} />
+                </div>
+
+                <div className="lesson-body"><Markdown text={page.body} /></div>
+
+                <div className="lesson-foot">
+                  <button className="btn ghost sm" disabled={pageStart <= 0} onClick={() => flat[pageStart - 1] && selectTopic(flat[pageStart - 1])}>← Previous</button>
+                  <button className="btn on-stage" disabled={pageStart < 0} onClick={() => flat[pageStart] && selectTopic(flat[pageStart])}>{page.startLabel} →</button>
+                </div>
+              </>
+            ) : (
+              /* Nothing open. Arriving at Learning selects nothing, so this is
+                 the first thing a student sees. No chips — nothing is open for
+                 them to point at. */
+              <div className="lesson-landing">
+                <div className="lesson-landing-name">{program.title}</div>
+                <div className="lesson-landing-count">
+                  {flat.length} lesson{flat.length === 1 ? '' : 's'}, {(program.modules || []).length} week{(program.modules || []).length === 1 ? '' : 's'}
+                </div>
+                <p className="lesson-landing-hint">Open a week in the syllabus to choose what to read.</p>
+                <button
+                  className="btn sm lesson-landing-btn"
+                  onClick={() => document.getElementById('learn-syllabus')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                >
+                  Open the syllabus
+                </button>
+              </div>
             )}
           </section>
         </div>
@@ -615,7 +807,11 @@ function LessonVideo({ url }) {
       </div>
     );
   }
-  return <video key={attempt} src={url} controls className="lesson-video" onError={() => setFailed(true)} />;
+  // preload="none": the browser's default fetches metadata the moment the
+  // element mounts, so every lesson with a video paid for a range request
+  // nobody had asked to play. The box is sized by CSS, so holding off costs
+  // no layout — .lesson-video carries the same 16:9 the DRM frame does.
+  return <video key={attempt} src={url} controls preload="none" className="lesson-video" onError={() => setFailed(true)} />;
 }
 
 // Circular progress indicator.
@@ -638,7 +834,7 @@ function CertificateModal({ cert, onClose }) {
       <DialogContent
         showCloseButton={false}
         overlayClassName="cert-overlay"
-        className="cert z-[101] gap-0 border-0 p-0"
+        className="cert"
         aria-describedby={undefined}
       >
         <DialogTitle className="sr-only">Certificate of Completion</DialogTitle>
@@ -664,9 +860,19 @@ function CertificateModal({ cert, onClose }) {
 
 function Assignments() {
   const [items, setItems] = useState([]);
-  const load = () => api('/assignments?scope=mine').then((d) => setItems(d.assignments || [])).catch(() => {});
+  // Before the first response an empty list means "not known yet" — announcing
+  // "no assignments" and then replacing it reads as a bug, not as loading.
+  const [loading, setLoading] = useState(true);
+  const load = () => api('/assignments?scope=mine').then((d) => setItems(d.assignments || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
+  if (loading) {
+    return (
+      <div className="list">
+        {[0, 1].map((n) => <div key={n} className="panel skeleton-row" style={{ height: 160 }} />)}
+      </div>
+    );
+  }
   if (items.length === 0) return <p className="muted">No assignments yet. They appear once they're set.</p>;
   return (
     <div className="list">
