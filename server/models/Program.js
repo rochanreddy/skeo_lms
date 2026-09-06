@@ -30,13 +30,36 @@ const topicSchema = new mongoose.Schema(
   { _id: true },
 );
 
+// A "page" is curriculum text attached to a module or a chapter itself rather
+// than to a lesson. It is deliberately NOT a topic: there is nothing to mark
+// complete, it takes no contentUrl, and totalTopics() in routes/progress.js
+// never sees it, so framing prose can't pad a completion percentage. The
+// reader gives it a lesson's exact furniture (crumb, title, chips, footer) so
+// the two don't read as two different designs.
 const chapterSchema = new mongoose.Schema(
-  { title: { type: String, required: true }, order: { type: Number, default: 0 }, topics: { type: [topicSchema], default: [] } },
+  {
+    title: { type: String, required: true },
+    order: { type: Number, default: 0 },
+    // Markdown shown when the chapter itself is opened.
+    description: { type: String, default: '' },
+    // What to call that page, in the syllabus row and as the page title. An
+    // assignment chapter sets 'Brief' — "Overview" is a poor word for the one
+    // thing a student opens an assignment to read. Empty falls back to
+    // 'Overview' in the client, so authors only set it when it differs.
+    pageLabel: { type: String, default: '' },
+    topics: { type: [topicSchema], default: [] },
+  },
   { _id: true },
 );
 
 const moduleSchema = new mongoose.Schema(
-  { title: { type: String, required: true }, order: { type: Number, default: 0 }, chapters: { type: [chapterSchema], default: [] } },
+  {
+    title: { type: String, required: true },
+    order: { type: Number, default: 0 },
+    // Same idea one level up: markdown shown when the module is opened.
+    description: { type: String, default: '' },
+    chapters: { type: [chapterSchema], default: [] },
+  },
   { _id: true },
 );
 
