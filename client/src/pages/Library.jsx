@@ -14,8 +14,11 @@ export default function Library() {
   const [form, setForm] = useState({ title: '', category: 'Note', url: '', description: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  // Until the first load lands, an empty list means "not known yet", not
+  // "nothing here" — saying the latter reads as broken rather than slow.
+  const [loading, setLoading] = useState(true);
 
-  const load = () => api('/library').then((d) => setItems(d.items || [])).catch(() => {});
+  const load = () => api('/library').then((d) => setItems(d.items || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
   async function add(e) {
@@ -68,7 +71,8 @@ export default function Library() {
       </div>
 
       <div className="lib-grid">
-        {shown.map((i) => (
+        {loading && [0, 1, 2, 3].map((n) => <div key={n} className="lib-card skeleton-row" style={{ height: 132 }} />)}
+        {!loading && shown.map((i) => (
           <a key={i._id} className="lib-card" href={i.url || '#'} target={i.url ? '_blank' : undefined} rel="noreferrer">
             <span className="badge">{i.category}</span>
             <strong>{i.title}</strong>
@@ -76,7 +80,7 @@ export default function Library() {
             <span className="lib-open">{i.url ? 'Open →' : 'No link'}</span>
           </a>
         ))}
-        {shown.length === 0 && <p className="muted">No resources yet.</p>}
+        {!loading && shown.length === 0 && <p className="muted">No resources yet.</p>}
       </div>
     </div>
   );
