@@ -1,28 +1,33 @@
 // A small, safe Markdown renderer — no deps, no dangerouslySetInnerHTML.
 // Supports: #/##/### headings, **bold**, *italic*, `code`, ```code blocks```,
 // [links](url), - / * / 1. lists, > quotes, --- rules, and paragraphs.
+import { useMemo } from 'react';
 
-let keySeed = 0;
-const k = () => `md${keySeed++}`;
+// Keys are positional, never a counter. A module-level seed used to hand every
+// render a fresh set of keys, so React could match nothing against the previous
+// tree and tore down the whole rendered document on each parent state change —
+// taking the reader's text selection with it. Position is stable across renders
+// of the same text, which is exactly what reconciliation wants.
 
 // Inline: split a line into React nodes for bold/italic/code/links.
 function inline(text) {
   const nodes = [];
   const re = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
-  let last = 0, m;
+  let last = 0, m, n = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) nodes.push(text.slice(last, m.index));
-    if (m[2] != null) nodes.push(<strong key={k()}>{m[2]}</strong>);
-    else if (m[3] != null) nodes.push(<em key={k()}>{m[3]}</em>);
-    else if (m[4] != null) nodes.push(<code key={k()}>{m[4]}</code>);
-    else if (m[5] != null) nodes.push(<a key={k()} href={/^https?:\/\//.test(m[6]) ? m[6] : '#'} target="_blank" rel="noreferrer">{m[5]}</a>);
+    const key = `i${n++}`;
+    if (m[2] != null) nodes.push(<strong key={key}>{m[2]}</strong>);
+    else if (m[3] != null) nodes.push(<em key={key}>{m[3]}</em>);
+    else if (m[4] != null) nodes.push(<code key={key}>{m[4]}</code>);
+    else if (m[5] != null) nodes.push(<a key={key} href={/^https?:\/\//.test(m[6]) ? m[6] : '#'} target="_blank" rel="noreferrer">{m[5]}</a>);
     last = m.index + m[0].length;
   }
   if (last < text.length) nodes.push(text.slice(last));
   return nodes;
 }
 
-export default function Markdown({ text = '' }) {
+function render(text) {
   // Normalise "•" bullets (common in pasted/seeded/PDF content) into real
   // markdown list items so they render point-wise instead of as a paragraph.
   const lines = String(text)
@@ -31,6 +36,9 @@ export default function Markdown({ text = '' }) {
     .split('\n');
   const out = [];
   let i = 0;
+  // Block index doubles as the key — the nth block of a given text is always
+  // the nth block, so nothing moves under React between renders.
+  const k = () => `b${out.length}`;
 
   while (i < lines.length) {
     let line = lines[i];
@@ -77,7 +85,7 @@ export default function Markdown({ text = '' }) {
         i++;
       }
       const List = ordered ? 'ol' : 'ul';
-      out.push(<List key={k()} className="md-list">{items.map((it) => <li key={k()}>{inline(it)}</li>)}</List>);
+      out.push(<List key={k()} className="md-list">{items.map((it, li) => <li key={li}>{inline(it)}</li>)}</List>);
       continue;
     }
 
@@ -91,4 +99,10 @@ export default function Markdown({ text = '' }) {
   }
 
   return <div className="md">{out}</div>;
+}
+
+// Parsing is pure in `text`, so a parent re-render that didn't change the text
+// shouldn't re-run the tokeniser or rebuild the tree.
+export default function Markdown({ text = '' }) {
+  return useMemo(() => render(text), [text]);
 }
