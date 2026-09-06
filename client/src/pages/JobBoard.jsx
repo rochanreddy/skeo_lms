@@ -15,7 +15,10 @@ export default function JobBoard() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  const load = () => api('/jobs').then((d) => setJobs(d.jobs || [])).catch(() => {});
+  // An empty list before the first response is "not known yet", not "none".
+  const [loading, setLoading] = useState(true);
+
+  const load = () => api('/jobs').then((d) => setJobs(d.jobs || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
   async function post(e) {
@@ -76,8 +79,9 @@ export default function JobBoard() {
       </div>
 
       <div className="list" style={{ marginTop: 12 }}>
-        {shown.length === 0 && <p className="muted">No openings yet.</p>}
-        {shown.map((j) => (
+        {loading && [0, 1, 2].map((n) => <div key={n} className="panel skeleton-row" style={{ height: 104 }} />)}
+        {!loading && shown.length === 0 && <p className="muted">No openings yet.</p>}
+        {!loading && shown.map((j) => (
           <div key={j._id} className="panel">
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
