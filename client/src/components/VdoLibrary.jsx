@@ -138,7 +138,7 @@ export default function VdoLibrary({ onPick, onClose }) {
           <div className="vdo-list">
             {videos.map((v) => (
               <button key={v.id} className="vdo-item" onClick={() => onPick(v)}>
-                {v.poster ? <img className="vdo-thumb" src={v.poster} alt="" /> : <span className="vdo-thumb vdo-thumb-empty" />}
+                {v.poster ? <img className="vdo-thumb" src={v.poster} alt="" width="84" height="48" loading="lazy" decoding="async" /> : <span className="vdo-thumb vdo-thumb-empty" />}
                 <span className="vdo-item-main">
                   <span className="vdo-item-title">{v.title || v.id}</span>
                   <span className="muted">{mins(v.length)} · {v.status || 'unknown'}</span>
