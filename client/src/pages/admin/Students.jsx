@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
 
+const PAGE = 50; // rows drawn per batch — see shownCount below
+
 // Admin: add students and see everyone. Add a student here (creates the account),
 // or enrol them straight into a cohort under Batches (which also auto-creates).
 export default function AdminStudents() {
@@ -13,11 +15,17 @@ export default function AdminStudents() {
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [activeQuery, setActiveQuery] = useState(''); // the query the shown list reflects
+  const [loading, setLoading] = useState(true);
+  // The roll only grows, and every row is a panel with nested elements. Render
+  // a page of them and extend on demand rather than committing the whole list
+  // to the DOM on arrival — the data is all here either way, so search, counts
+  // and the empty states are unaffected.
+  const [shownCount, setShownCount] = useState(PAGE);
 
   const load = (q = '') => api(`/users?role=student${q ? `&search=${encodeURIComponent(q)}` : ''}`)
     .then((d) => setStudents(d.users || []))
     .catch(() => {})
-    .finally(() => setActiveQuery(q));
+    .finally(() => { setActiveQuery(q); setLoading(false); setShownCount(PAGE); });
   useEffect(() => { load(); }, []);
 
   async function create(e) {
@@ -69,7 +77,8 @@ export default function AdminStudents() {
       </form>
 
       <div className="list">
-        {students.map((s) => (
+        {loading && [0, 1, 2, 3, 4].map((n) => <div key={n} className="panel skeleton-row" style={{ height: 72 }} />)}
+        {!loading && students.slice(0, shownCount).map((s) => (
           <div className="panel list-row row-click" key={s.id} onClick={() => navigate(`/app/students/${s.id}`)}>
             <div>
               <strong>{s.full_name || '—'}</strong>
@@ -82,7 +91,12 @@ export default function AdminStudents() {
             </div>
           </div>
         ))}
-        {students.length === 0 && (
+        {!loading && students.length > shownCount && (
+          <button className="btn sm ghost" onClick={() => setShownCount((n) => n + PAGE)}>
+            Show more — {students.length - shownCount} remaining
+          </button>
+        )}
+        {!loading && students.length === 0 && (
           activeQuery
             ? <div className="empty"><div className="empty-icon">🔍</div><strong>No matches for “{activeQuery}”</strong>Try a different name or email.</div>
             : <div className="empty"><div className="empty-icon">🎒</div><strong>No students yet</strong>Add one above, or enrol them straight into a cohort under Batches.</div>
