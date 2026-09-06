@@ -1,11 +1,18 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { navFor } from '../nav.jsx';
 import Icon from './Icon.jsx';
 import NotificationBell from './NotificationBell.jsx';
 import SkeoWordmark from './SkeoWordmark.jsx';
-import CommandPalette from './CommandPalette.jsx';
 import UserMenu from './UserMenu.jsx';
+
+// The palette is a modal that nothing renders until it's asked for, and it
+// drags in the whole Radix Dialog stack (focus trap, scroll lock, portal).
+// None of that belongs on first paint. The search field below is a plain
+// button, so the entry point stays instant; the chunk is warmed on hover and
+// on focus, which is always at least one interaction ahead of the click.
+const CommandPalette = lazy(() => import('./CommandPalette.jsx'));
+const warmPalette = () => { import('./CommandPalette.jsx'); };
 
 // Show the right modifier in the shortcut hint rather than always "⌘".
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
@@ -17,13 +24,27 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(na
 export default function AppShell({ user, setUser, logout }) {
   const tabs = navFor(user.role);
   const [cmdOpen, setCmdOpen] = useState(false);
+  // Latches on the first open and stays latched — see the mount note below.
+  const [everOpened, setEverOpened] = useState(false);
   const [stuck, setStuck] = useState(false);
   const location = useLocation();
+
+  useEffect(() => { if (cmdOpen) setEverOpened(true); }, [cmdOpen]);
 
   // Landing on a new section should start at the top of it.
   useEffect(() => { setCmdOpen(false); window.scrollTo({ top: 0 }); }, [location.pathname]);
 
-  // ⌘K / Ctrl-K from anywhere, and "/" when not already typing.
+  // ⌘K / Ctrl-K from anywhere, and "/" when not already typing. The chunk is
+  // fetched once the shell is idle so the shortcut never waits on the network —
+  // it has no on-screen trigger to hover first.
+  useEffect(() => {
+    // requestIdleCallback is still missing on older Safari — a bare reference
+    // would throw, so it's feature-detected rather than assumed.
+    const idle = typeof requestIdleCallback === 'function';
+    const id = idle ? requestIdleCallback(warmPalette) : setTimeout(warmPalette, 1500);
+    return () => (idle ? cancelIdleCallback(id) : clearTimeout(id));
+  }, []);
+
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen((v) => !v); return; }
@@ -51,7 +72,14 @@ export default function AppShell({ user, setUser, logout }) {
 
         {/* A field, not an icon. Search is the fastest route to anything in the
             product, so it should look like something you can type into. */}
-        <button className="search-trigger" onClick={() => setCmdOpen(true)} aria-label="Search" title="Search (⌘K)">
+        <button
+          className="search-trigger"
+          onClick={() => setCmdOpen(true)}
+          onMouseEnter={warmPalette}
+          onFocus={warmPalette}
+          aria-label="Search"
+          title="Search (⌘K)"
+        >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
             <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
           </svg>
@@ -91,7 +119,14 @@ export default function AppShell({ user, setUser, logout }) {
         ))}
       </nav>
 
-      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} tabs={tabs} onLogout={logout} />
+      {/* Mounted from the first open onwards, not on every open: unmounting on
+          close would cut off Radix's exit animation. `null` is the right
+          fallback because a closed modal has no in-page footprint to reserve. */}
+      {everOpened && (
+        <Suspense fallback={null}>
+          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} tabs={tabs} onLogout={logout} />
+        </Suspense>
+      )}
     </div>
   );
 }
