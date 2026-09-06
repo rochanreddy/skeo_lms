@@ -47,11 +47,15 @@ export default function StudentHome() {
 
       // The list usually carries the curriculum tree already; only pay for the
       // detail request when it doesn't, since the Path is built from modules.
+      // Progress is keyed on the programme id, which is known here — so it
+      // goes out beside the tree instead of a round trip behind it.
       if (p) {
-        const full = p.modules?.length ? p : await api(`/programs/${p._id}`).then((d) => d.program).catch(() => p);
+        const [full] = await Promise.all([
+          p.modules?.length ? p : api(`/programs/${p._id}`).then((d) => d.program).catch(() => p),
+          api(`/progress/me?programId=${p._id}`).then((d) => { if (alive) setProgress(d); }).catch(() => {}),
+        ]);
         if (!alive) return;
         setProgram(full);
-        api(`/progress/me?programId=${p._id}`).then((d) => alive && setProgress(d)).catch(() => {});
       }
       setLoading(false);
     });
