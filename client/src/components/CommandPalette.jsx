@@ -139,7 +139,7 @@ export default function CommandPalette({ open, onClose, tabs, onLogout }) {
           still supplies the box. */}
       <DialogContent
         showCloseButton={false}
-        className="cmd top-[12vh] translate-y-0 gap-0 border-0 p-0"
+        className="cmd"
       >
         <DialogTitle className="sr-only">Search</DialogTitle>
         <div className="cmd-input-wrap">

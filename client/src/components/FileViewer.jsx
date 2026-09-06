@@ -31,7 +31,7 @@ function FileViewer({ label, subtitle, url, onClose, allowNewTab = false }) {
       <DialogContent
         showCloseButton={false}
         overlayClassName="fv-overlay"
-        className="fv z-[131] gap-0 border-0 p-0"
+        className="fv"
         aria-describedby={undefined}
       >
         <DialogTitle className="sr-only">{`${label} — ${subtitle}`}</DialogTitle>
