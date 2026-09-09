@@ -22,7 +22,6 @@ export default function StudentHome() {
   const [assignments, setAssignments] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [notes, setNotes] = useState([]);
-  const [addons, setAddons] = useState({ library: 0, jobs: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,14 +32,11 @@ export default function StudentHome() {
       api('/assignments?scope=mine').catch(() => ({ assignments: [] })),
       api('/announcements').catch(() => ({ announcements: [] })),
       api('/notifications').catch(() => ({ items: [] })),
-      api('/library').catch(() => ({ items: [] })),
-      api('/jobs').catch(() => ({ jobs: [] })),
-    ]).then(async ([bd, pd, ad, nd, nt, lib, jb]) => {
+    ]).then(async ([bd, pd, ad, nd, nt]) => {
       if (!alive) return;
       setAssignments(ad.assignments || []);
       setAnnouncements(nd.announcements || []);
       setNotes(nt.items || []);
-      setAddons({ library: (lib.items || []).length, jobs: (jb.jobs || []).length });
 
       const progId = (bd.batches || [])[0]?.programId;
       const p = (pd.programs || []).find((x) => x._id === progId) || (pd.programs || [])[0] || null;
@@ -100,6 +96,8 @@ export default function StudentHome() {
   const totalTopics = stations.reduce((n, s) => n + s.total, 0);
   const doneTopics = stations.reduce((n, s) => n + s.done, 0);
   const pct = totalTopics ? Math.round((doneTopics / totalTopics) * 100) : 0;
+  // Anything with a submission counts as handed in, graded or not.
+  const submittedCount = assignments.filter((a) => a.mySubmission).length;
 
 
   // ── Updates ─── announcements and notifications are one feed to a
@@ -209,99 +207,148 @@ export default function StudentHome() {
         )}
       </section>
 
-      {/* ═══ 02 · PROJECTS ═══════════════════════════════════════════════ */}
+      {/* ═══ 02 · AT A GLANCE ════════════════════════════════════════════
+          Projects, Updates and the standing numbers, three abreast. Each card
+          shows the top of its list and hands off to the page that holds the
+          rest — Home answers "where am I", not "show me everything". */}
       <section className="sh-sec">
-        <SecHead n="02" title="Projects">
-          <button className="sh-more" onClick={() => navigate('/app/learning')}>Open all →</button>
-        </SecHead>
-        {assignments.length === 0 ? (
-          <div className="empty"><strong>Nothing set yet</strong>Projects and assignments show up here when your team publishes them.</div>
-        ) : (
-          <div className="sh-list">
-            {[...assignments].sort(byUrgency).slice(0, 5).map((a) => {
-              const st = projectStatus(a);
-              return (
-                <div className="sh-item" key={a._id} role="button" tabIndex={0}
-                  onClick={() => navigate('/app/learning')}
-                  onKeyDown={(e) => e.key === 'Enter' && navigate('/app/learning')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <span className={`sh-item-mark ${st.mark}`}><LineIcon name={a.type === 'project' ? 'rocket' : 'folder'} size={19} /></span>
-                  <div className="sh-item-body">
-                    <div className="sh-item-title">{a.title}</div>
-                    <div className="sh-item-sub">
-                      <span>{a.type === 'project' ? 'Project' : 'Assignment'}</span>
-                      {a.dueDate && <><span className="sh-sep" /><span>{st.late ? 'Was due ' : 'Due '}{fmtDate(a.dueDate)}</span></>}
-                    </div>
-                  </div>
-                  <div className="sh-item-end">
-                    <span className={`status ${st.cls}`}>{st.label}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+        <SecHead n="02" title="At a glance" />
+        <div className="sh-cards">
 
-      {/* ═══ 03 · UPDATES ════════════════════════════════════════════════ */}
-      <section className="sh-sec">
-        <SecHead n="03" title="Updates" />
-        {updates.length === 0 ? (
-          <div className="empty"><strong>All quiet</strong>Announcements and alerts from your team will collect here.</div>
-        ) : (
-          <div className="sh-list">
-            {updates.map((u) => (
-              <div className="sh-item" key={u.id}>
-                <span className={`sh-item-mark ${u.kind === 'Announcement' ? 'is-amber' : 'is-sky'}`}>
-                  <LineIcon name={u.kind === 'Announcement' ? 'megaphone' : 'bell'} size={19} />
-                </span>
-                <div className="sh-item-body">
-                  <div className="sh-item-title">{u.title}</div>
-                  <div className="sh-item-sub">
-                    <span>{u.kind}</span>
-                    <span className="sh-sep" />
-                    <span>{fmtDate(u.at)}</span>
-                    {u.body && <><span className="sh-sep" /><span>{u.body}</span></>}
-                  </div>
-                </div>
-                {u.unread && <span className="sh-item-end"><span className="dot now" /></span>}
+          {/* Projects — most urgent first, same ordering the full list used. */}
+          <div className="sh-card">
+            <div className="sh-card-head">Projects</div>
+            {assignments.length === 0 ? (
+              <p className="sh-card-empty">Projects and assignments show up here when your team publishes them.</p>
+            ) : (
+              <div className="sh-card-list">
+                {[...assignments].sort(byUrgency).slice(0, 3).map((a) => {
+                  const st = projectStatus(a);
+                  return (
+                    <button className="sh-row" key={a._id} onClick={() => navigate('/app/learning')}>
+                      <span className={`sh-row-mark ${st.mark}`}><LineIcon name={a.type === 'project' ? 'rocket' : 'folder'} size={16} /></span>
+                      <span className="sh-row-body">
+                        <span className="sh-row-title">{a.title}</span>
+                        <span className="sh-row-sub">
+                          {a.type === 'project' ? 'Project' : 'Assignment'}
+                          {a.dueDate && <> · {st.late ? 'Was due ' : 'Due '}{fmtDate(a.dueDate)}</>}
+                        </span>
+                      </span>
+                      <span className={`status ${st.cls}`}>{st.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-            ))}
+            )}
+            <button className="sh-card-more" onClick={() => navigate('/app/learning')}>
+              {assignments.length > 3 ? `Open all ${assignments.length} →` : 'Open all →'}
+            </button>
           </div>
-        )}
+
+          {/* Updates — announcements and notifications, one feed. */}
+          <div className="sh-card">
+            <div className="sh-card-head">Updates</div>
+            {updates.length === 0 ? (
+              <p className="sh-card-empty">Announcements and alerts from your team will collect here.</p>
+            ) : (
+              <div className="sh-card-list">
+                {updates.slice(0, 3).map((u) => (
+                  <div className="sh-row is-static" key={u.id}>
+                    <span className={`sh-row-mark ${u.kind === 'Announcement' ? 'is-amber' : 'is-sky'}`}>
+                      <LineIcon name={u.kind === 'Announcement' ? 'megaphone' : 'bell'} size={16} />
+                    </span>
+                    <span className="sh-row-body">
+                      <span className="sh-row-title">{u.title}</span>
+                      <span className="sh-row-sub">{u.kind} · {fmtDate(u.at)}</span>
+                    </span>
+                    {u.unread && <span className="dot now" />}
+                  </div>
+                ))}
+              </div>
+            )}
+            {updates.length > 3 && <div className="sh-card-more is-note">{updates.length - 3} more</div>}
+          </div>
+
+          {/* Your standing — only figures we actually hold. There is no
+              attendance endpoint, so no attendance row: a permanent "0 of 0"
+              would look like a broken stat rather than an absent feature. */}
+          <div className="sh-card">
+            <div className="sh-card-head">Your standing</div>
+            <div className="sh-stats">
+              <div className="sh-stat">
+                <div className="sh-stat-label">
+                  <strong>Assignments</strong>
+                  <span>submitted</span>
+                </div>
+                <div className="sh-stat-value">{submittedCount}<span>/{assignments.length}</span></div>
+              </div>
+              <div className="sh-stat">
+                <div className="sh-stat-label">
+                  <strong>Lessons</strong>
+                  <span>completed</span>
+                </div>
+                <div className="sh-stat-value">{doneTopics}<span>/{totalTopics}</span></div>
+              </div>
+              <div className="sh-stat">
+                <div className="sh-stat-label">
+                  <strong>Programme</strong>
+                  <span>{stations.length ? `${stations.length} module${stations.length === 1 ? '' : 's'}` : 'not started'}</span>
+                </div>
+                <div className="sh-stat-value">{pct}<span>%</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </section>
 
-      {/* ═══ 04 · AD-ONS ═════════════════════════════════════════════════ */}
+      {/* ═══ 03 · FROM MENLER ════════════════════════════════════════════
+          Promo slots for the main Menler site. Deliberately empty scaffolding:
+          drop a creative into each <MenlerAd>, or hand it an href and an image
+          and it becomes a link. Nothing here fetches or tracks anything. */}
       <section className="sh-sec">
-        <SecHead n="04" title="Ad-ons" />
-        <p className="sh-sub">Everything beyond the coursework — resources, careers and the people around you.</p>
-        <div className="sh-addons">
-          <button className="sh-addon" onClick={() => navigate('/app/library')}>
-            <span className="sh-addon-mark"><LineIcon name="book" size={20} /></span>
-            <span className="sh-addon-title">Library</span>
-            <span className="sh-addon-sub">
-              {addons.library > 0 ? `${addons.library} slide deck${addons.library === 1 ? '' : 's'}, eBook${addons.library === 1 ? '' : 's'} and notes` : 'Slides, eBooks and notes'}
-            </span>
-            <span className="sh-addon-go">Browse →</span>
-          </button>
-          <button className="sh-addon" onClick={() => navigate('/app/jobs')}>
-            <span className="sh-addon-mark"><LineIcon name="briefcase" size={20} /></span>
-            <span className="sh-addon-title">Job Board</span>
-            <span className="sh-addon-sub">
-              {addons.jobs > 0 ? `${addons.jobs} opening${addons.jobs === 1 ? '' : 's'} you can apply to today` : 'Jobs and internships from the team'}
-            </span>
-            <span className="sh-addon-go">View roles →</span>
-          </button>
-          <button className="sh-addon" onClick={() => navigate('/app/grades')}>
-            <span className="sh-addon-mark"><LineIcon name="chart" size={20} /></span>
-            <span className="sh-addon-title">Grades</span>
-            <span className="sh-addon-sub">Every quiz score and graded project in one place.</span>
-            <span className="sh-addon-go">See grades →</span>
-          </button>
+        <SecHead n="03" title="From Menler" />
+        <p className="sh-sub">More from the team behind your programme.</p>
+        <div className="sh-ads">
+          <MenlerAd slot="home-1" />
+          <MenlerAd slot="home-2" />
+          <MenlerAd slot="home-3" />
         </div>
       </section>
     </div>
+  );
+}
+
+// One Menler promo slot.
+//
+// Empty by default, and empty is a valid state — an unfilled slot renders a
+// quiet placeholder rather than collapsing, so the row keeps its shape while
+// creatives are still being written. Fill one by passing `image` (+ `alt`) for
+// a plain creative, or `href` as well to make it a link; `title`/`body` render
+// a text promo when there is no artwork.
+function MenlerAd({ slot, href, image, alt = '', title, body, cta = 'Learn more →' }) {
+  const filled = image || title;
+
+  const inner = image ? (
+    // Dimensions are set in CSS; the attributes keep the box reserved before
+    // the stylesheet lands so a late creative can't shift the row.
+    <img className="sh-ad-img" src={image} alt={alt} width="400" height="225" loading="lazy" decoding="async" />
+  ) : (
+    <>
+      <span className="sh-ad-title">{title}</span>
+      {body && <span className="sh-ad-body">{body}</span>}
+      {href && <span className="sh-ad-cta">{cta}</span>}
+    </>
+  );
+
+  if (!filled) {
+    return <div className="sh-ad is-empty" data-slot={slot} aria-hidden="true"><span>Ad slot</span></div>;
+  }
+
+  return href ? (
+    <a className="sh-ad" data-slot={slot} href={href} target="_blank" rel="noreferrer sponsored">{inner}</a>
+  ) : (
+    <div className="sh-ad" data-slot={slot}>{inner}</div>
   );
 }
 
@@ -319,11 +366,7 @@ function SecHead({ n, title, children }) {
 }
 
 // ── formatting ────────────────────────────────────────────────────────────
-const fmtLong = (d) => new Date(d).toLocaleString([], {
-  weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-});
 const fmtDate = (d) => new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short' });
-const cleanBatch = (name) => name.replace(/^Demo — /, '');
 
 // Graded → Submitted → Overdue → To do, each with its own dot colour.
 function projectStatus(a) {

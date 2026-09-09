@@ -1798,35 +1798,115 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   color: var(--ink); letter-spacing: -0.02em;
 }
 
-/* ── 06 Ad-ons — the extras, as three equal doors ───────────────────────── */
-.sh-addons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-@media (max-width: 860px) { .sh-addons { grid-template-columns: 1fr; } }
-.sh-addon {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+/* ── 02 At a glance — Projects, Updates and standing, three abreast ─────── */
+.sh-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+@media (max-width: 1040px) { .sh-cards { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px)  { .sh-cards { grid-template-columns: 1fr; } }
+.sh-card {
+  display: flex; flex-direction: column;
   background: var(--card); border: 1px solid var(--line);
-  border-radius: var(--radius); padding: 24px 22px 22px;
-  text-align: left; font-family: var(--font); cursor: pointer;
-  transition: border-color .16s, box-shadow .16s, transform .16s;
+  border-radius: var(--radius); padding: 20px 20px 16px;
 }
-.sh-addon:hover {
-  border-color: var(--purple); box-shadow: var(--shadow);
-  transform: translateY(-2px);
+/* The heading and its short purple underline, as on the standing card. */
+.sh-card-head {
+  font-family: var(--display); font-size: 14.5px; font-weight: 700;
+  color: var(--purple); letter-spacing: -0.01em;
+  padding-bottom: 9px; margin-bottom: 14px; position: relative;
 }
-.sh-addon-mark {
-  width: 42px; height: 42px; border-radius: 13px;
+.sh-card-head::after {
+  content: ''; position: absolute; left: 0; bottom: 0;
+  width: 34px; height: 2px; background: var(--purple); border-radius: 1px;
+}
+.sh-card-empty { font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0; }
+.sh-card-list { display: flex; flex-direction: column; gap: 4px; }
+
+/* A row inside a card. Narrower than .sh-item, and the title truncates:
+   three of these have to sit in a third of the width without reflowing. */
+.sh-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px; margin: 0 -8px; border: 0; border-radius: 10px;
+  background: none; font-family: var(--font); text-align: left; cursor: pointer;
+  transition: background .14s;
+}
+.sh-row:hover { background: var(--line-soft); }
+.sh-row.is-static { cursor: default; }
+.sh-row.is-static:hover { background: none; }
+.sh-row-mark {
+  width: 30px; height: 30px; border-radius: 9px; flex: none;
   display: grid; place-items: center;
   background: var(--purple-soft); color: var(--purple);
 }
-.sh-addon:nth-child(2) .sh-addon-mark { background: var(--a3-soft); color: var(--a3-ink); }
-.sh-addon:nth-child(3) .sh-addon-mark { background: var(--a5-soft); color: var(--a5-ink); }
-.sh-addon-title {
-  font-family: var(--display); font-size: 17px; font-weight: 700;
+.sh-row-mark.is-green { background: var(--green-soft); color: var(--a6-ink); }
+.sh-row-mark.is-rose  { background: var(--a4-soft);   color: var(--a4-ink); }
+.sh-row-mark.is-sky   { background: var(--a5-soft);   color: var(--a5-ink); }
+.sh-row-mark.is-amber { background: var(--a3-soft);   color: var(--a3-ink); }
+.sh-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sh-row-title {
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sh-row-sub {
+  font-size: 11.5px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sh-row .status { flex: none; }
+/* Pinned to the foot so all three cards agree on where the last line sits. */
+.sh-card-more {
+  margin-top: auto; padding-top: 14px; align-self: flex-start;
+  border: 0; background: none; font-family: var(--font);
+  font-size: 12.5px; font-weight: 700; letter-spacing: .04em;
+  color: var(--purple); cursor: pointer;
+}
+.sh-card-more:hover { text-decoration: underline; }
+.sh-card-more.is-note { color: var(--muted); font-weight: 500; letter-spacing: 0; cursor: default; }
+
+/* Standing — a ruled table of figures, hairlines between rows only. */
+.sh-stats { display: flex; flex-direction: column; }
+.sh-stat {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 13px 0; border-top: 1px solid var(--line-soft);
+}
+.sh-stat:first-child { border-top: 0; padding-top: 2px; }
+.sh-stat-label { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.sh-stat-label strong { font-size: 14px; font-weight: 700; color: var(--ink); }
+.sh-stat-label span { font-size: 11.5px; color: var(--muted); }
+.sh-stat-value {
+  font-family: var(--display); font-size: 26px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.03em; flex: none;
+}
+.sh-stat-value span { font-size: 15px; color: var(--muted); font-weight: 600; }
+
+/* ── 03 From Menler — promo slots, three across ─────────────────────────── */
+.sh-ads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 860px) { .sh-ads { grid-template-columns: 1fr; } }
+.sh-ad {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden;
+  padding: 20px 18px; text-decoration: none; text-align: left;
+  transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+a.sh-ad:hover { border-color: var(--purple); box-shadow: var(--shadow); transform: translateY(-2px); }
+/* A creative fills the card edge to edge — the padding is for text promos. */
+.sh-ad:has(.sh-ad-img) { padding: 0; }
+.sh-ad-img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.sh-ad-title {
+  font-family: var(--display); font-size: 16px; font-weight: 700;
   color: var(--ink); letter-spacing: -0.02em;
 }
-.sh-addon-sub { font-size: 13px; color: var(--muted); line-height: 1.45; }
-.sh-addon-go {
-  margin-top: auto; font-size: 12.5px; font-weight: 700;
-  letter-spacing: .04em; color: var(--purple);
+.sh-ad-body { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.sh-ad-cta {
+  margin-top: auto; padding-top: 6px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .04em; color: var(--purple);
+}
+/* An unfilled slot holds its shape rather than collapsing the row. */
+.sh-ad.is-empty {
+  align-items: center; justify-content: center; min-height: 132px;
+  border-style: dashed; background: none;
+}
+.sh-ad.is-empty span {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); opacity: .55;
 }
 
 /* The six sections arrive in order rather than all at once. */
