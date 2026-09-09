@@ -474,10 +474,19 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .path-figure-sub { font-size: 12.5px; color: var(--lavender); margin-top: 8px; letter-spacing: .02em; }
 
 /* Stations stretch to a common height so a module title that wraps to two
-   lines doesn't drop its state caption below the others' (see .path-state). */
-.path { position: relative; display: flex; align-items: stretch; gap: 0; padding: 30px 0 0; overflow-x: auto; scrollbar-width: none; }
+   lines doesn't drop its state caption below the others' (see .path-state).
+
+   A grid, not flex: every module has to be visible at once, because the whole
+   point of the path is seeing the shape of the programme. Under flex each
+   station claimed a 150px minimum, so eight of them wanted 1200px, overflowed
+   the slab and pushed the last module into a scroller nobody thinks to drag.
+   Equal fractional columns divide whatever width there is instead, so the
+   count no longer decides whether you can see the end of your own course.
+   The 96px floor is the point below which a label stops being readable at all
+   -- past that (a very long programme on a phone) it scrolls, deliberately. */
+.path { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(96px, 1fr); align-items: stretch; padding: 30px 0 0; overflow-x: auto; scrollbar-width: none; }
 .path::-webkit-scrollbar { display: none; }
-.path-station { position: relative; flex: 1 1 0; min-width: 150px; max-width: 260px; display: flex; flex-direction: column; align-items: center; gap: 9px; background: none; border: 0; padding: 0 10px; font-family: var(--font); cursor: pointer; }
+.path-station { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 9px; background: none; border: 0; padding: 0 6px; font-family: var(--font); cursor: pointer; }
 /* The rule between stations. Travelled sections glow; the road ahead is faint. */
 .path-station::before { content: ''; position: absolute; top: 6px; right: 50%; width: 100%; height: 2px; background: rgba(255,255,255,.13); }
 .path-station:first-child::before { display: none; }
@@ -490,15 +499,19 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .path-code { font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.3); margin-top: 6px; transition: color .2s; }
 .path-station.done .path-code { color: #4ade80; }
 .path-station.now .path-code { color: var(--lavender); }
-/* Module names run long — clamp to three lines so stations stay level. */
-.path-label { font-size: 13.5px; font-weight: 600; color: rgba(243,241,249,.52); text-align: center; line-height: 1.35; max-width: 100%; transition: color .2s;
+/* Module names run long — clamp to three lines so stations stay level. The
+   size is fluid because the column width now depends on how many modules the
+   programme has: 13.5px when there is room, easing down to 11.5px when eight
+   of them are sharing a laptop's width. overflow-wrap keeps an unbroken title
+   from widening its own column. */
+.path-label { font-size: clamp(11.5px, 1.02vw, 13.5px); font-weight: 600; color: rgba(243,241,249,.52); text-align: center; line-height: 1.35; max-width: 100%; overflow-wrap: anywhere; transition: color .2s;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .path-station.done .path-label { color: rgba(243,241,249,.78); }
 .path-station.now .path-label { color: var(--parchment); }
 .path-station:hover .path-label { color: var(--parchment); }
 /* margin-top:auto pins the caption to the bottom of the stretched station, so
    every station's caption sits on one line however long its title ran. */
-.path-state { margin-top: auto; font-size: 10.5px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; color: rgba(185,173,246,.45); }
+.path-state { margin-top: auto; font-size: clamp(9.5px, .8vw, 10.5px); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-align: center; color: rgba(185,173,246,.45); }
 .path-station.done .path-state { color: #4ade80; }
 .path-station.now .path-state { color: var(--lavender); }
 
