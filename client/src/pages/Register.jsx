@@ -17,8 +17,8 @@ export default function Register({ onLogin }) {
     setErr('');
     setBusy(true);
     try {
-      const { accessToken, user } = await api('/auth/register', { method: 'POST', body: form });
-      setToken(accessToken);
+      const { accessToken, refreshToken, user } = await api('/auth/register', { method: 'POST', body: form });
+      setToken(accessToken, refreshToken);
       onLogin(user);
       nav('/app');
     } catch (e2) {

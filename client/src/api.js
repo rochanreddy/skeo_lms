@@ -5,12 +5,30 @@
 // only symptom was every request failing as a network error.
 const API = (import.meta.env.VITE_API_URL || 'http://localhost:4200/api/skeo').replace(/\/+$/, '');
 
+const TOKEN_KEY = 'skeo_token';
+const REFRESH_KEY = 'skeo_refresh';
+
 export function getToken() {
-  return localStorage.getItem('skeo_token') || '';
+  return localStorage.getItem(TOKEN_KEY) || '';
 }
-export function setToken(t) {
-  if (t) localStorage.setItem('skeo_token', t);
-  else localStorage.removeItem('skeo_token');
+export function getRefreshToken() {
+  return localStorage.getItem(REFRESH_KEY) || '';
+}
+
+/**
+ * Store the session. Three shapes, deliberately:
+ *   setToken(access, refresh) — signing in, both are new
+ *   setToken(access)          — after a refresh, keep the refresh token we have
+ *   setToken('')              — signing out, drop both
+ */
+export function setToken(t, refreshToken) {
+  if (t) {
+    localStorage.setItem(TOKEN_KEY, t);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+  }
+  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
   // Whoever we were, we aren't any more — nothing read as them may be reused.
   clearApiCache();
 }
@@ -37,7 +55,46 @@ export function clearApiCache() {
   inflight.clear();
 }
 
-async function request(path, { method = 'GET', body } = {}) {
+// ── Silent access-token renewal ──────────────────────────────────────────
+//
+// Access tokens last 2h; the refresh token issued alongside them lasts 30d.
+// Without this the 2h expiry was a hard logout — the user was bounced to the
+// sign-in screen and paid another bcrypt hash, which on a one-core box is the
+// most expensive thing the API does.
+//
+// Single-flight: a burst of requests all expiring at once must mint ONE new
+// token between them, not one each.
+let refreshing = null;
+
+async function renewAccessToken() {
+  if (!getRefreshToken()) return false;
+  if (!refreshing) {
+    refreshing = (async () => {
+      const res = await fetch(`${API}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: getRefreshToken() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.accessToken) {
+        // The refresh token itself is rejected — expired, or the account was
+        // blocked or retired. The session is genuinely over; don't loop.
+        if (data.code === 'blocked') {
+          window.dispatchEvent(new CustomEvent('skeo:blocked', { detail: { message: data.error } }));
+        }
+        setToken('');
+        return false;
+      }
+      localStorage.setItem(TOKEN_KEY, data.accessToken);
+      return true;
+    })()
+      .catch(() => false) // a network failure here is not proof the session ended
+      .finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+async function request(path, { method = 'GET', body, retriedAuth = false } = {}) {
   let lastErr;
   // Retry transient NETWORK failures (connection reset before the request lands —
   // common on localhost). HTTP error responses are NOT retried.
@@ -58,6 +115,13 @@ async function request(path, { method = 'GET', body } = {}) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        // An expired access token → renew once and replay. Skipped for /auth/*,
+        // where a 401 means "wrong password", not "stale token".
+        if (res.status === 401 && !retriedAuth && !path.startsWith('/auth/') && getRefreshToken()) {
+          if (await renewAccessToken()) {
+            return request(path, { method, body, retriedAuth: true });
+          }
+        }
         // Admin blocked this account mid-session → tell the app shell so it can
         // swap to the "account blocked" screen instead of a dead error toast.
         if (data.code === 'blocked') {
@@ -106,14 +170,21 @@ export function api(path, opts = {}) {
 }
 
 // POST a File (multipart, field "file") to any endpoint → parsed JSON.
+// These two bypass request() because their bodies aren't JSON, so they renew an
+// expired token themselves — otherwise an upload begun after the 2h mark fails
+// on a session that is actually still good.
 export async function postFile(path, file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  const res = await fetch(`${API}${path}`, {
-    method: 'POST',
-    headers: { ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) },
-    body: fd,
-  });
+  const send = () => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) },
+      body: fd,
+    });
+  };
+  let res = await send();
+  if (res.status === 401 && (await renewAccessToken())) res = await send();
   const data = await res.json().catch(() => ({}));
   clearApiCache(); // an upload is a write like any other
   if (!res.ok) throw new Error(data.error || 'Upload failed');
@@ -122,9 +193,11 @@ export async function postFile(path, file) {
 
 // Download an authenticated file (CSV reports) and trigger a browser save.
 export async function downloadFile(path, fallbackName = 'report.csv') {
-  const res = await fetch(`${API}${path}`, {
+  const send = () => fetch(`${API}${path}`, {
     headers: { ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) },
   });
+  let res = await send();
+  if (res.status === 401 && (await renewAccessToken())) res = await send();
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'Download failed');

@@ -30,8 +30,8 @@ export default function Login({ onLogin }) {
     setErr('');
     setBusy(true);
     try {
-      const { accessToken, user } = await api('/auth/login', { method: 'POST', body: { email, password } });
-      setToken(accessToken);
+      const { accessToken, refreshToken, user } = await api('/auth/login', { method: 'POST', body: { email, password } });
+      setToken(accessToken, refreshToken);
       onLogin(user);
       nav('/app');
     } catch (e2) {
