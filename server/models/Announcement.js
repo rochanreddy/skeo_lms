@@ -12,4 +12,9 @@ const announcementSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Both reads are "these batches, newest first, capped at 50" — one batch, or
+// the $in set of every batch the caller belongs to. Sorting from the index
+// keeps that off the in-memory sort path as the archive grows.
+announcementSchema.index({ batchId: 1, createdAt: -1 });
+
 export const Announcement = mongoose.model('Announcement', announcementSchema, 'skeo_announcements');
