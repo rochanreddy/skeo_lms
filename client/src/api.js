@@ -1,6 +1,9 @@
 // Thin fetch wrapper — this is the ENTIRE link between the frontend and the
 // backend: it sends requests to VITE_API_URL with the stored Bearer token.
-const API = (import.meta.env.VITE_API_URL || 'http://localhost:4100/api/skeo').replace(/\/+$/, '');
+// 4200 is Skeo's own port. It used to fall back to 4100, which is menler-lms:
+// with VITE_API_URL unset the app pointed at a different product's API, and the
+// only symptom was every request failing as a network error.
+const API = (import.meta.env.VITE_API_URL || 'http://localhost:4200/api/skeo').replace(/\/+$/, '');
 
 export function getToken() {
   return localStorage.getItem('skeo_token') || '';
