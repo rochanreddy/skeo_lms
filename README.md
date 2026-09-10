@@ -57,8 +57,8 @@ migrated and cannot sign in — `ROLES` in `server/models/User.js` is the single
 source of truth, and anything outside it is refused at the auth chokepoint.
 
 **Who does what.** Students learn, submit and ask. Admins do everything else:
-run programmes and batches, enrol students, schedule sessions and webinars, mark
-attendance, set assignments, author quizzes, grade, and answer the forum.
+run programmes and batches, enrol students, set assignments, author quizzes,
+grade submissions, post announcements, and run the job board.
 
 ## API
 Mounted at `/api/skeo`.
