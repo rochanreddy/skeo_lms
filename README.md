@@ -42,10 +42,9 @@ npm run dev                 # http://localhost:5175
 
 Open http://localhost:5175 and log in with the seeded admin.
 
-Optional: `npm run seed:demo` fills a batch with students, sessions, attendance,
-a quiz and forum activity so the dashboards have something to show. It needs the
-admin from `npm run seed` to exist first, since the admin authors the demo
-announcements and forum answers.
+Optional: `npm run seed:demo` fills a batch with students, a course, and a quiz
+with attempts, so the dashboards have something to show. It needs the admin from
+`npm run seed` to exist first, since the admin owns the demo batch.
 
 ## Roles
 `student` · `admin` — a user has exactly one. Signup is student-only; admins are
