@@ -65,9 +65,12 @@ Mounted at `/api/skeo`.
 - `POST /api/skeo/auth/register | login | refresh | forgot | reset`
 - `GET | PATCH /api/skeo/me`
 - `GET /api/skeo/programs` · `GET /api/skeo/programs/:id` · `POST|PATCH` (admin only)
-- `batches` · `sessions` · `attendance` · `assignments` · `submissions` · `quizzes`
-  · `grades` · `announcements` · `forum` · `library` · `webinars` · `uploads`
-  · `reports` · `stats` · `search` · `users` · `notifications` · `videos`
+- `batches` · `assignments` · `submissions` · `quizzes` · `grades` · `progress`
+  · `announcements` · `library` · `jobs` · `reports` · `stats` · `search`
+  · `users` · `notifications` · `videos`
+
+`routes/index.js` is the list that counts — if a name is not mounted there, it
+does not exist.
 
 ## Video (VdoCipher)
 Lesson videos can either be a plain URL (played by the browser's own `<video>`)
