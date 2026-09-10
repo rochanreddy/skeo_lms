@@ -43,8 +43,9 @@ app.use(
 );
 app.use(compression());
 
-// A body big enough to matter here is a bug or an attack; resumes travel as
-// multipart and are capped separately in routes/uploads.js.
+// A body big enough to matter here is a bug or an attack. The one thing that
+// legitimately exceeds it is a curriculum document, which travels as multipart
+// and is capped separately where it is handled (15 MB, routes/programs.js).
 app.use(express.json({ limit: '256kb' }));
 app.use(
   cors({
