@@ -25,34 +25,48 @@ router.get('/admin-dashboard', requireAuth, requireRole('admin'), async (_req, r
     User.countDocuments({ 'blocked.lms': true }),
   ]);
 
-  const [batchDocs, assignmentDocs, submissionAgg, recentStudents] = await Promise.all([
-    Batch.find().select('name status studentIds').sort({ createdAt: -1 }),
-    Assignment.find().select('type'),
+  // Every one of these is a histogram, so every one of them is counted in the
+  // database. They used to be `find()`s whose documents were counted in JS:
+  // that pulled every assignment, and every batch WITH its full studentIds
+  // array, across the wire to produce a handful of integers.
+  const WEEK = 7 * 24 * 3600 * 1000;
+  const now = Date.now();
+  const since = new Date(now - 8 * WEEK);
+
+  const [batchDocs, assignmentAgg, submissionAgg, signupAgg] = await Promise.all([
+    // $size on the server, so the roster itself never leaves the database.
+    Batch.aggregate([
+      { $sort: { createdAt: -1 } },
+      { $project: { name: 1, status: 1, students: { $size: { $ifNull: ['$studentIds', []] } } } },
+    ]),
+    Assignment.aggregate([{ $group: { _id: '$type', n: { $sum: 1 } } }]),
     Submission.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
-    User.find({ role: 'student', createdAt: { $gte: new Date(Date.now() - 8 * 7 * 24 * 3600 * 1000) } }).select('createdAt'),
+    // Bucket by whole weeks since signup: 0 = the last 7 days, 7 = eight weeks
+    // back. Matches the loop below, which walks oldest → newest.
+    User.aggregate([
+      { $match: { role: 'student', createdAt: { $gte: since } } },
+      { $group: { _id: { $floor: { $divide: [{ $subtract: [new Date(now), '$createdAt'] }, WEEK] } }, n: { $sum: 1 } } },
+    ]),
   ]);
 
   const count = (agg, key) => agg.find((a) => a._id === key)?.n || 0;
 
   // Weekly signup buckets, oldest → newest.
-  const WEEK = 7 * 24 * 3600 * 1000;
-  const now = Date.now();
   const signups = Array.from({ length: 8 }, (_, i) => {
     const start = now - (8 - i) * WEEK;
-    const end = start + WEEK;
     const label = new Date(start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    return { label, count: recentStudents.filter((u) => { const t = u.createdAt.getTime(); return t >= start && t < end; }).length };
+    return { label, count: count(signupAgg, 7 - i) };
   });
 
   res.json({
     stats: { students, batches, programs, quizzes, blockedUsers },
     batchStatus: ['ongoing', 'upcoming', 'past'].map((s) => ({ label: s, count: batchDocs.filter((b) => b.status === s).length })),
-    assignmentTypes: ['assignment', 'project'].map((t) => ({ label: t, count: assignmentDocs.filter((a) => a.type === t).length })),
+    assignmentTypes: ['assignment', 'project'].map((t) => ({ label: t, count: count(assignmentAgg, t) })),
     submissionStatus: [
       { label: 'graded', count: count(submissionAgg, 'graded') },
       { label: 'awaiting review', count: count(submissionAgg, 'submitted') },
     ],
-    perBatch: batchDocs.map((b) => ({ name: b.name.replace(/^Demo — /, ''), count: b.studentIds.length })),
+    perBatch: batchDocs.map((b) => ({ name: b.name.replace(/^Demo — /, ''), count: b.students })),
     signups,
   });
 });
