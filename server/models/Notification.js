@@ -13,4 +13,10 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// The bell reads exactly one shape: this user's notifications, newest first,
+// capped at 30. On userId alone Mongo had to fetch every notification the user
+// had ever received and sort them in memory; this serves the sort from the
+// index and stops at 30.
+notificationSchema.index({ userId: 1, createdAt: -1 });
+
 export const Notification = mongoose.model('Notification', notificationSchema, 'skeo_notifications');
