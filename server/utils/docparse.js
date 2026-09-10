@@ -143,8 +143,18 @@ export async function parseDocToModules(buffer, filename = '') {
   let blocks;
   if (ext === 'docx') blocks = await blocksFromDocx(buffer);
   else if (ext === 'pdf') {
-    const { text } = await new PDFParse({ data: new Uint8Array(buffer) }).getText();
-    blocks = blocksFromPdf(text || '');
+    // PDFParse owns a PDF.js worker and the page buffers behind it, and they
+    // outlive this call unless destroy() is called -- pdf-parse's own CLI does
+    // it in a finally for exactly this reason, and every import leaked one
+    // until this was added. In a finally, so a malformed PDF that throws
+    // inside getText() is cleaned up too.
+    const parser = new PDFParse({ data: new Uint8Array(buffer) });
+    try {
+      const { text } = await parser.getText();
+      blocks = blocksFromPdf(text || '');
+    } finally {
+      await parser.destroy();
+    }
   } else {
     blocks = blocksFromText(buffer.toString('utf8'));
   }
