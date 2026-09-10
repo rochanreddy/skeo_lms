@@ -40,9 +40,13 @@ export function clearApiCache() {
 async function request(path, { method = 'GET', body } = {}) {
   let lastErr;
   // Retry transient NETWORK failures (connection reset before the request lands —
-  // common on localhost). HTTP error responses are NOT retried. All our writes
-  // are idempotent, so a retry is safe.
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  // common on localhost). HTTP error responses are NOT retried.
+  //
+  // GETs only. A write that never came back may still have been applied, and
+  // the create endpoints (/batches, /programs, /announcements, /jobs, /library)
+  // carry no uniqueness constraint — replaying one duplicates the record.
+  const attempts = method === 'GET' ? 3 : 1;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       const res = await fetch(`${API}${path}`, {
         method,
@@ -72,7 +76,7 @@ async function request(path, { method = 'GET', body } = {}) {
       // failure and was retried three times with backoff.
       if (e.http) throw e;
       lastErr = e; // network error → retry
-      await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+      if (attempt < attempts - 1) await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
     }
   }
   throw lastErr;
