@@ -12,6 +12,8 @@ import Login from './pages/Login.jsx';
 const Register = lazy(() => import('./pages/Register.jsx'));
 const ForcePasswordChange = lazy(() => import('./pages/ForcePasswordChange.jsx'));
 const Blocked = lazy(() => import('./pages/Blocked.jsx'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 
 // What's on screen while /me is in flight. The topbar and the page frame don't
 // depend on the answer, so they paint immediately rather than after a round
@@ -94,6 +96,13 @@ export default function App() {
         path="/signup"
         element={user ? <Navigate to="/app" /> : <Suspense fallback={<AppSkeleton />}><Register onLogin={setUser} /></Suspense>}
       />
+      <Route
+        path="/forgot"
+        element={user ? <Navigate to="/app" /> : <Suspense fallback={<AppSkeleton />}><ForgotPassword /></Suspense>}
+      />
+      {/* Where the emailed reset link lands. Reachable while signed in too: the
+          link may be opened in a browser that still holds someone's session. */}
+      <Route path="/reset" element={<Suspense fallback={<AppSkeleton />}><ResetPassword /></Suspense>} />
       <Route
         path="/app"
         element={user ? <AppShell user={user} setUser={setUser} logout={logout} /> : <Navigate to="/login" />}

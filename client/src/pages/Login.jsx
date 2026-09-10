@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, setToken } from '../api.js';
 import SkeoWordmark from '../components/SkeoWordmark.jsx';
 
@@ -24,6 +24,9 @@ export default function Login({ onLogin }) {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  // ResetPassword sends people here with ?reset=1 once the new password is saved.
+  const justReset = params.get('reset') === '1';
 
   async function submit(e) {
     e.preventDefault();
@@ -55,6 +58,9 @@ export default function Login({ onLogin }) {
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={submit}>
           <h1>Welcome to Skeo</h1>
+          {justReset && (
+            <div className="auth-notice" role="status">Password updated. Sign in with your new one.</div>
+          )}
 
           <div className="field">
             <label htmlFor="login-email">Email</label>
@@ -83,6 +89,7 @@ export default function Login({ onLogin }) {
           </div>
           {err && <div id="login-error" className="error auth-error" role="alert">{err}</div>}
           <button className="btn" disabled={busy}>{busy ? 'Signing in…' : 'Sign in →'}</button>
+          <p className="auth-alt"><Link to="/forgot">Forgot your password?</Link></p>
 
           {SHOW_DEMOS && (
             <div className="demo-box">
