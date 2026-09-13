@@ -22,13 +22,15 @@ const PATHS = {
   logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></>,
   grades: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="m9 15 1.5 1.5L14 13" /></>,
   jobs: <><rect x="2.5" y="7" width="19" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path className="ico-draw" pathLength="1" d="M2.5 12h19" /><path className="ico-draw" pathLength="1" d="M10.5 12h3" /></>,
+  // The lifebuoy — the one icon everyone already reads as "help".
+  support: <><circle cx="12" cy="12" r="9" /><circle className="ico-draw" pathLength="1" cx="12" cy="12" r="3.6" /><path className="ico-draw" pathLength="1" d="m5.64 5.64 3.82 3.82M14.54 14.54l3.82 3.82M18.36 5.64l-3.82 3.82M9.46 14.54l-3.82 3.82" /></>,
 };
 
 const ALIAS = {
   'Home': 'home', 'Learning': 'learning', 'Library': 'library',
   'Profile': 'profile', 'Programs': 'programs', 'Course': 'batches',
   'Students': 'students', 'Account': 'account', 'Grades': 'grades',
-  'Job Board': 'jobs',
+  'Job Board': 'jobs', 'Support': 'support', 'Help & support': 'support',
 };
 
 export default function Icon({ name }) {
