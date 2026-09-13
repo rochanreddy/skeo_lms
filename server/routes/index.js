@@ -19,6 +19,7 @@ import searchRoutes from './search.js';
 import reportRoutes from './reports.js';
 import videoRoutes from './videos.js';
 import supportRoutes from './support.js';
+import webinarRoutes from './webinars.js';
 
 const router = Router();
 
@@ -46,5 +47,6 @@ router.use('/search', searchRoutes); // universal ⌘K search across everything 
 router.use('/reports', reportRoutes); // admin CSV exports
 router.use('/videos', videoRoutes); // VdoCipher: per-viewer playback OTPs + admin library
 router.use('/support', supportRoutes); // help requests: students raise them, admins answer
+router.use('/webinars', webinarRoutes); // masterclasses an admin pushes to the whole school
 
 export default router;
