@@ -39,7 +39,7 @@ function Highlight({ text, q }) {
   );
 }
 
-export default function CommandPalette({ open, onClose, tabs, onLogout }) {
+export default function CommandPalette({ open, onClose, tabs, user, onLogout }) {
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const [remote, setRemote] = useState([]);
@@ -57,8 +57,13 @@ export default function CommandPalette({ open, onClose, tabs, onLogout }) {
       icon: t.label,
       run: () => navigate(t.path ? `/app/${t.path}` : '/app'),
     }));
-    return [...go, { id: 'logout', label: 'Log out', group: 'Account', icon: 'logout', run: onLogout }];
-  }, [tabs, navigate, onLogout]);
+    // Support has no dock tab for a student, so ⌘K is the other way in —
+    // reachable by name from anywhere, which is the point of it.
+    const help = user?.role === 'admin'
+      ? []
+      : [{ id: 'support', label: 'Help & support', group: 'Account', icon: 'support', run: () => navigate('/app/support') }];
+    return [...go, ...help, { id: 'logout', label: 'Log out', group: 'Account', icon: 'logout', run: onLogout }];
+  }, [tabs, navigate, onLogout, user?.role]);
 
   // Debounced remote search. The request is tagged so a slow early response can
   // never overwrite the results of a later keystroke.

@@ -124,7 +124,7 @@ export default function AppShell({ user, setUser, logout }) {
           fallback because a closed modal has no in-page footprint to reserve. */}
       {everOpened && (
         <Suspense fallback={null}>
-          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} tabs={tabs} onLogout={logout} />
+          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} tabs={tabs} user={user} onLogout={logout} />
         </Suspense>
       )}
     </div>
