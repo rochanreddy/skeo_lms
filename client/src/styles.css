@@ -2193,3 +2193,43 @@ a.sh-ad:hover { border-color: var(--purple); box-shadow: var(--shadow); transfor
   .support-search { width: 100%; }
   .support-ticket-head { flex-direction: column; gap: 10px; }
 }
+
+/* ── Webinars ───────────────────────────────────────────────────────────────
+   A masterclass card is a signpost: WHEN on the left, because that's what
+   decides whether you act on it now, and one button through to the page that
+   holds everything else. A card with no date drops the rail entirely. */
+.webinar-page { display: flex; flex-direction: column; gap: 26px; max-width: 1080px; }
+.webinar-page > .page-head { margin-bottom: 0; } /* the column gap already spaces it */
+.webinar-page .list { margin-top: 0; }
+.webinar-page .ruled-head { font-size: 13px; margin-bottom: 14px; }
+.webinar-form-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+
+.webinar { display: flex; gap: 24px; align-items: flex-start; }
+/* The rail. A fixed width so every card's title starts on the same line down
+   the page, whatever the date says. */
+.webinar-when {
+  flex: none; width: 96px; display: flex; flex-direction: column; gap: 3px;
+  padding-right: 22px; border-right: 1px solid var(--line-soft);
+}
+.webinar-when-day { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--purple); }
+.webinar-when-time { font-family: var(--display); font-size: 21px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
+.webinar-main { min-width: 0; flex: 1; }
+.webinar-title { font-size: 18px; margin: 8px 0 0; letter-spacing: -0.025em; overflow-wrap: anywhere; }
+/* Where the button actually goes. Small, grey, and the truth. */
+.webinar-host { font-size: 12.5px; color: var(--muted); margin-top: 5px; overflow-wrap: anywhere; }
+.webinar-desc { margin: 12px 0 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere; }
+.webinar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+/* Been and gone — kept for the record, so it stops competing with what's next. */
+.webinar.past { background: transparent; box-shadow: none; }
+.webinar.past .webinar-when-day { color: var(--muted); }
+.webinar.past .webinar-when-time, .webinar.past .webinar-title { color: var(--ink-2); }
+
+@media (max-width: 640px) {
+  /* Stacked, the rail becomes a header line — a vertical date block with the
+     card's full width behind it just looks like a mistake. */
+  .webinar { flex-direction: column; gap: 14px; }
+  .webinar-when { width: auto; flex-direction: row; align-items: baseline; gap: 10px; padding: 0 0 12px; border-right: 0; border-bottom: 1px solid var(--line-soft); align-self: stretch; }
+  .webinar-when-time { font-size: 17px; }
+  .webinar-actions .btn { flex: 1; justify-content: center; }
+}
