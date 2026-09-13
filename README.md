@@ -58,8 +58,8 @@ source of truth, and anything outside it is refused at the auth chokepoint.
 
 **Who does what.** Students learn, submit and ask. Admins do everything else:
 run programmes and batches, enrol students, set assignments, author quizzes,
-grade submissions, post announcements, run the job board, and answer support
-requests.
+grade submissions, post announcements, run the job board, publish masterclasses,
+and answer support requests.
 
 ## API
 Mounted at `/api/skeo`.
@@ -68,10 +68,25 @@ Mounted at `/api/skeo`.
 - `GET /api/skeo/programs` · `GET /api/skeo/programs/:id` · `POST|PATCH` (admin only)
 - `batches` · `assignments` · `submissions` · `quizzes` · `grades` · `progress`
   · `announcements` · `library` · `jobs` · `reports` · `stats` · `search`
-  · `users` · `notifications` · `videos` · `support`
+  · `users` · `notifications` · `videos` · `support` · `webinars`
 
 `routes/index.js` is the list that counts — if a name is not mounted there, it
 does not exist.
+
+## Webinars
+**Webinars** is a tab for both roles, and the same board seen from two sides.
+An admin pastes the link to a masterclass's own landing page, gives it a title,
+and every student is notified in the app.
+
+The card is a signpost, not a copy of that page: the speaker, the agenda and
+the registration form already live there, so nothing is re-keyed here and
+there is no second version to keep in sync. Registration happens on the
+landing page — the LMS neither hosts the session nor takes the sign-up.
+
+A date is optional. Give one and the board sorts the schedule, says how far
+off a session is, and moves it into **Past sessions** once it's been; leave it
+out and the card is simply a link that stays up. Links are stored
+scheme-checked (http/https only, a bare `lu.ma/x` gets the `https://` it meant).
 
 ## Support
 A student who hits a problem with the LMS raises it from **their avatar menu →
