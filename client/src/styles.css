@@ -2120,3 +2120,76 @@ a.sh-ad:hover { border-color: var(--purple); box-shadow: var(--shadow); transfor
   .lesson-landing-name { font-size: 22px; }
   .lesson-actions .btn.lesson-action { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* ── Support ────────────────────────────────────────────────────────────────
+   One layout, two readers: the student who raised the request and the admin
+   working the queue see the same card and the same thread. A ticket is a
+   panel that opens in place — answering never costs you your place in the
+   list, which is the whole reason the queue isn't master/detail. */
+.support-page { display: flex; flex-direction: column; gap: 22px; max-width: 1080px; }
+.support-page > .page-head { margin-bottom: 0; } /* the column gap already spaces it */
+.support-page .list { margin-top: 0; }
+
+/* The card header is the toggle, so it has to be a button — and then has to be
+   un-styled back into a row. */
+.support-ticket-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  width: 100%; padding: 0; border: 0; background: none; text-align: left;
+  font-family: var(--font); color: inherit; cursor: pointer;
+}
+.support-ticket-head:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--radius-sm); }
+.support-ticket-title { font-family: var(--display); font-size: 16.5px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
+.support-ticket-meta { font-size: 12.5px; color: var(--muted); margin-top: 5px; overflow-wrap: anywhere; }
+.support-ticket-side { display: flex; align-items: center; gap: 10px; flex: none; }
+.support-chev { color: var(--muted); display: grid; place-items: center; transition: transform .2s; }
+.support-chev.up { transform: rotate(180deg); }
+.support-ticket.open { border-color: var(--purple-line); }
+.support-who-link { margin-top: 14px; font-size: 13.5px; }
+
+/* Status, in the queue's own words. Amber is waiting, purple is answered,
+   green is done — the same three tones status pills use everywhere else. */
+.badge-wait { background: var(--a3-soft); color: var(--a3-ink); }
+.badge-replied { background: var(--purple-soft); color: var(--a1-ink); }
+.badge-done { background: var(--a6-soft); color: var(--a6-ink); }
+
+/* ── The thread ── */
+.support-thread { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+.support-msg { display: flex; align-items: flex-start; gap: 12px; }
+.avatar-sm { width: 28px; height: 28px; font-size: 12px; flex: none; }
+.support-msg.mine .avatar { background: var(--purple); }
+.support-msg-main { min-width: 0; flex: 1; }
+.support-msg-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 5px; }
+.support-msg-who { font-size: 13px; font-weight: 650; color: var(--ink); }
+.support-msg-time { font-size: 11.5px; color: var(--muted); }
+/* pre-wrap: people write bug reports in line breaks, and nothing else here is
+   markup. `overflow-wrap` stops a pasted URL from widening the card. */
+.support-msg-body {
+  background: var(--line-soft); border-radius: var(--radius-sm); border-top-left-radius: 4px;
+  padding: 11px 14px; font-size: 14px; line-height: 1.6; color: var(--ink-2);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.support-msg.mine .support-msg-body { background: var(--purple-soft); color: var(--ink); }
+
+.support-reply { margin-top: 4px; }
+.support-reply textarea { resize: vertical; min-height: 76px; }
+.support-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.support-sent { font-size: 13.5px; color: var(--a6-ink); }
+
+/* ── The queue's toolbar ── */
+.support-toolbar { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.support-search {
+  flex: none; width: 280px; margin-bottom: 10px; padding: 9px 13px;
+  border: 1px solid var(--line); border-radius: var(--pill);
+  font-size: 13.5px; font-family: var(--font); background: var(--card); color: var(--ink);
+}
+.support-search:focus { outline: none; border-color: var(--purple); box-shadow: var(--ring); }
+/* The count rides inside the tab rather than beside it, so switching tabs
+   never shifts the row. */
+.tab-count { margin-left: 7px; padding: 1px 7px; border-radius: var(--pill); background: var(--line-soft); color: var(--muted); font-size: 11.5px; font-weight: 700; }
+.tab.active .tab-count { background: var(--purple-soft); color: var(--purple); }
+
+@media (max-width: 700px) {
+  .support-toolbar { align-items: stretch; }
+  .support-search { width: 100%; }
+  .support-ticket-head { flex-direction: column; gap: 10px; }
+}
