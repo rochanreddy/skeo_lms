@@ -18,6 +18,7 @@ import gradeRoutes from './grades.js';
 import searchRoutes from './search.js';
 import reportRoutes from './reports.js';
 import videoRoutes from './videos.js';
+import supportRoutes from './support.js';
 
 const router = Router();
 
@@ -44,5 +45,6 @@ router.use('/grades', gradeRoutes);
 router.use('/search', searchRoutes); // universal ⌘K search across everything you can see
 router.use('/reports', reportRoutes); // admin CSV exports
 router.use('/videos', videoRoutes); // VdoCipher: per-viewer playback OTPs + admin library
+router.use('/support', supportRoutes); // help requests: students raise them, admins answer
 
 export default router;
