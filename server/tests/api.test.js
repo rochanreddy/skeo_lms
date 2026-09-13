@@ -95,6 +95,7 @@ const SHARED = [
   '/jobs',
   '/notifications',
   '/announcements',
+  '/support',
   '/search?q=a',
 ];
 const ADMIN_ONLY = [
