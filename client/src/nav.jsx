@@ -16,6 +16,7 @@ const AdminHome = lazy(() => import('./pages/admin/Home.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
 const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
 const Support = lazy(() => import('./pages/Support.jsx'));
+const Webinars = lazy(() => import('./pages/Webinars.jsx'));
 const AdminSupport = lazy(() => import('./pages/admin/Support.jsx'));
 
 // Routes that exist for a role but don't get a dock tab (detail/drill-down
@@ -48,6 +49,7 @@ export function navFor(role) {
         { label: 'Home', path: '', Component: StudentHome },
         { label: 'Learning', path: 'learning', Component: Learning },
         { label: 'Grades', path: 'grades', Component: StudentGrades },
+        { label: 'Webinars', path: 'webinars', Component: Webinars },
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Job Board', path: 'jobs', Component: JobBoard },
       ];
@@ -58,6 +60,7 @@ export function navFor(role) {
         { label: 'Course', path: 'course', Component: AdminCourse },
         { label: 'Students', path: 'students', Component: AdminStudents },
         { label: 'Support', path: 'support', Component: AdminSupport },
+        { label: 'Webinars', path: 'webinars', Component: Webinars },
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Job Board', path: 'jobs', Component: JobBoard },
       ];
