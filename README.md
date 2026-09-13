@@ -58,7 +58,8 @@ source of truth, and anything outside it is refused at the auth chokepoint.
 
 **Who does what.** Students learn, submit and ask. Admins do everything else:
 run programmes and batches, enrol students, set assignments, author quizzes,
-grade submissions, post announcements, and run the job board.
+grade submissions, post announcements, run the job board, and answer support
+requests.
 
 ## API
 Mounted at `/api/skeo`.
@@ -67,10 +68,24 @@ Mounted at `/api/skeo`.
 - `GET /api/skeo/programs` · `GET /api/skeo/programs/:id` · `POST|PATCH` (admin only)
 - `batches` · `assignments` · `submissions` · `quizzes` · `grades` · `progress`
   · `announcements` · `library` · `jobs` · `reports` · `stats` · `search`
-  · `users` · `notifications` · `videos`
+  · `users` · `notifications` · `videos` · `support`
 
 `routes/index.js` is the list that counts — if a name is not mounted there, it
 does not exist.
+
+## Support
+A student who hits a problem with the LMS raises it from **their avatar menu →
+Help & support** (or ⌘K → "Help & support"). It is deliberately not a dock tab:
+it is wanted on the day something breaks, not every day.
+
+What they send becomes a ticket with a thread, not an email. Every admin is
+notified, any admin can answer, and the reply lands back in the same thread with
+a notification for the student. A ticket is `open` (waiting on us), `answered`
+(waiting on them) or `resolved` — a reply from either side moves it, and either
+side can resolve or reopen it.
+
+Admins work the queue from the **Support** tab, which opens on what still needs
+a reply.
 
 ## Video (VdoCipher)
 Lesson videos can either be a plain URL (played by the browser's own `<video>`)
