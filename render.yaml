@@ -1,0 +1,117 @@
+# Render Blueprint for the Skeo LMS API.
+#
+# Modelled on menler-lms/render.yaml, which is where the reasoning behind most
+# of these choices was worked out. The two differences worth knowing:
+#
+#   * No persistent disk. The only upload path here is the programme importer,
+#     and it uses multer.memoryStorage() with a 15 MB cap (routes/programs.js),
+#     so nothing is ever written to the filesystem. Render's ephemeral disk is
+#     therefore not a problem — do NOT add one "to be safe"; it costs money and
+#     pins the service to a single instance.
+#
+#   * Mail does not work here yet. See the SMTP note at the foot of this file
+#     before relying on anything that sends email.
+#
+# The client (client/, Vite + React) is not described here — it is static and
+# belongs on Vercel next to the marketing site.
+services:
+  - type: web
+    name: skeo-lms
+    runtime: node
+    # Singapore for the same reason menler-lms is: the Atlas cluster and the
+    # students are both in India. A US region puts ~335ms on the wire for every
+    # call, and Render cannot move a service between regions after creation —
+    # this is the one setting here that is genuinely irreversible.
+    region: singapore
+    # Not `free`. A free instance sleeps after 15 minutes idle and takes ~50s to
+    # wake, which lands on whichever student opens the app first each morning.
+    # For something people have paid for, that is not a saving.
+    plan: starter
+    branch: main
+    # Two independent npm projects live in this repo; only server/ is deployed.
+    rootDir: server
+    # `npm ci` not `npm install` — the lockfile is the point of a reproducible
+    # deploy. @node-rs/bcrypt is a native module and resolves to a prebuilt
+    # linux-x64 binary here; no build toolchain is needed for it.
+    buildCommand: npm ci
+    startCommand: npm start
+    # index.js awaits connectDb() before app.listen(), so the port does not open
+    # until Atlas is connected. That makes a plain 200 from /health an honest
+    # readiness signal, and it is what holds traffic off a deploy that cannot
+    # reach the database.
+    healthCheckPath: /health
+    autoDeploy: true
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Read twice over: index.js splits it into the CORS allowlist, and the
+      # mailer puts it in login and password-reset links. Get it wrong and every
+      # browser call from the app is refused by CORS, which looks like the API
+      # being down rather than like a misconfigured origin.
+      #
+      # Set this to wherever the LMS client actually ends up. The value below
+      # assumes it lands at lms.skeoai.com; add the Vercel preview origin too if
+      # you want previews to be able to call production.
+      - key: SKEO_APP_URL
+        value: https://lms.skeoai.com
+
+      # sync:false = Render prompts for the value on first deploy rather than
+      # storing it in git. None of these may be committed.
+      #
+      # MONGODB_URI: the same Atlas cluster as the marketing site, but this app
+      # writes skeo_* collections. Use a database user scoped to what it needs.
+      #
+      # JWT_SECRET: changing it later logs every user out at once, because every
+      # token and device-session row in flight is signed with the old value.
+      # Generate it once, keep it, and do not reuse menler-lms's.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+      # Video and document integrations. Both are optional — the app starts
+      # without them and the features that need them fail closed rather than
+      # taking the process down.
+      - key: VDOCIPHER_API_SECRET
+        sync: false
+      - key: VDOCIPHER_WATERMARK
+        sync: false
+      - key: GOOGLE_DRIVE_API_KEY
+        sync: false
+
+      # ---------------------------------------------------------------------
+      # MAIL — read this before trusting it
+      #
+      # utils/email.js sends over SMTP through nodemailer, and Render (like most
+      # managed hosts) firewalls outbound 25/465/587. The result is not an auth
+      # error you would notice: the connection hangs until it times out, and
+      # because the transport sets no timeouts at all, the request hangs with
+      # it. Correct credentials do not help. menler-lms hit exactly this and
+      # moved to Resend's HTTPS API (port 443, never blocked) — see
+      # menler-outreach/server/utils/mailer.js, which documents the same trap.
+      #
+      # So: these four are here because they are what the code reads today, and
+      # setting them is what you would do if the LMS were hosted somewhere that
+      # allows SMTP. On Render they will not deliver. Port utils/email.js to the
+      # Resend API before anything depends on mail arriving — which includes the
+      # whole pay-then-email-credentials flow.
+      # ---------------------------------------------------------------------
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+      # Deliberately absent:
+      #   PORT            — Render injects it; index.js reads process.env.PORT
+      #                     and only falls back to 4200 for local dev. Setting
+      #                     it here fights the platform's port detection.
+      #   SKEO_SEED_EMAIL — read only by scripts/seed.js, never by the running
+      #   SKEO_SEED_PASSWORD  server. They belong on your laptop, not the host.
