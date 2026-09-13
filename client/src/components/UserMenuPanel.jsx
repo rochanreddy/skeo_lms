@@ -54,6 +54,19 @@ export default function UserMenuPanel({ user, logout, open, onOpenChange }) {
             <span>Change password</span>
           </DropdownMenuItem>
 
+          {/* Where a student goes when the LMS itself is the problem. Admins
+              don't get it here — Support is a dock tab for them, because for
+              them it's a queue to work rather than a way out of a dead end. */}
+          {user.role !== 'admin' && (
+            <>
+              <DropdownMenuSeparator className="who-menu-sep" />
+              <DropdownMenuItem className="who-menu-item" onSelect={() => navigate('/app/support')}>
+                <Icon name="support" />
+                <span>Help &amp; support</span>
+              </DropdownMenuItem>
+            </>
+          )}
+
           <DropdownMenuSeparator className="who-menu-sep" />
 
           <DropdownMenuItem className="who-menu-item danger" onSelect={logout}>
