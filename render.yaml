@@ -23,10 +23,15 @@ services:
     # call, and Render cannot move a service between regions after creation —
     # this is the one setting here that is genuinely irreversible.
     region: singapore
-    # Not `free`. A free instance sleeps after 15 minutes idle and takes ~50s to
-    # wake, which lands on whichever student opens the app first each morning.
-    # For something people have paid for, that is not a saving.
-    plan: starter
+    # Free while this is being stood up, because a card is the one thing that
+    # should not stand between a repo and its first deploy.
+    #
+    # Know what it costs, though: a free instance sleeps after 15 minutes idle
+    # and takes ~50s to wake. That wake lands on whoever opens the app first
+    # each morning, and on a cohort that has paid for the course it will read
+    # as the site being broken. Move to `starter` before students are let in —
+    # it is a one-line change here, or a click in the dashboard.
+    plan: free
     branch: main
     # Two independent npm projects live in this repo; only server/ is deployed.
     rootDir: server
