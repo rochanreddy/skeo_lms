@@ -82,33 +82,29 @@ services:
         sync: false
 
       # ---------------------------------------------------------------------
-      # MAIL — read this before trusting it
+      # MAIL
       #
-      # utils/email.js sends over SMTP through nodemailer, and Render (like most
-      # managed hosts) firewalls outbound 25/465/587. The result is not an auth
-      # error you would notice: the connection hangs until it times out, and
-      # because the transport sets no timeouts at all, the request hangs with
-      # it. Correct credentials do not help. menler-lms hit exactly this and
-      # moved to Resend's HTTPS API (port 443, never blocked) — see
-      # menler-outreach/server/utils/mailer.js, which documents the same trap.
+      # Resend, not SMTP. Render firewalls outbound 25/465/587, and the
+      # failure is not an auth error you would notice: the connection hangs
+      # until it times out and takes the request with it. Correct SMTP
+      # credentials do not help. Resend goes out over 443, which is never
+      # blocked. utils/email.js tries Resend, then SMTP, then the console.
       #
-      # So: these four are here because they are what the code reads today, and
-      # setting them is what you would do if the LMS were hosted somewhere that
-      # allows SMTP. On Render they will not deliver. Port utils/email.js to the
-      # Resend API before anything depends on mail arriving — which includes the
-      # whole pay-then-email-credentials flow.
+      # MAIL_FROM must be on a domain verified in the Resend dashboard. Leave
+      # it unset and the fallback is onboarding@resend.dev, which only
+      # delivers to the Resend account owner's own address — it looks like it
+      # works in testing and reaches nobody in production.
+      #
+      #   MAIL_FROM = Skeo <noreply@your-verified-domain>
+      #
+      # SMTP_* are deliberately absent. They are still read as a fallback, so
+      # they work on a host that allows SMTP, but setting them here would only
+      # produce the hang described above.
       # ---------------------------------------------------------------------
-      - key: SMTP_HOST
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_PORT
+      - key: MAIL_FROM
         sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      - key: SMTP_FROM
-        sync: false
-
       # Deliberately absent:
       #   PORT            — Render injects it; index.js reads process.env.PORT
       #                     and only falls back to 4200 for local dev. Setting

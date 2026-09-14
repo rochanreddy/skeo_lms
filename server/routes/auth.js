@@ -5,7 +5,7 @@ import { hashPassword, needsRehash, verifyPassword } from '../utils/password.js'
 import { User, ROLES } from '../models/User.js';
 import { forget } from '../middleware/auth.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
-import { isSmtpConfigured, sendMail } from '../utils/email.js';
+import { sendMail, trySendMail } from '../utils/email.js';
 import { clear, hit as rateLimit, record, tooMany } from '../middleware/rateLimit.js';
 
 const router = Router();
@@ -138,8 +138,21 @@ router.post('/forgot', async (req, res) => {
       user.resetExpires = new Date(Date.now() + 1000 * 60 * 30);
       await user.save();
       const link = `${APP_URL()}/reset?token=${raw}&email=${encodeURIComponent(email)}`;
-      if (isSmtpConfigured()) await sendMail({ to: email, subject: 'Reset your Skeo LMS password', text: `Reset your password:\n\n${link}\n\nExpires in 30 minutes.` });
-      else console.log('[forgot] SMTP off — reset link:', link);
+      /* sendMail picks its own way out — Resend, then SMTP, then the console —
+         so this no longer asks whether SMTP specifically is configured. It used
+         to, and once the mailer gained the Resend path that question would have
+         answered "no" on a host where mail works perfectly well.
+
+         trySendMail rather than sendMail: a reset that cannot be delivered must
+         not become a 500, because the response here is deliberately identical
+         whether or not the address exists. An error escaping would leak which
+         addresses are real. */
+      const mail = await trySendMail({
+        to: email,
+        subject: 'Reset your Skeo LMS password',
+        text: `Reset your password:\n\n${link}\n\nExpires in 30 minutes.`,
+      });
+      if (!mail.emailed) console.log('[forgot] not delivered (' + (mail.error || 'no transport configured') + ') — reset link:', link);
     }
     return res.json({ ok: true });
   } catch (err) {
