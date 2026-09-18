@@ -1,11 +1,11 @@
 // Tiny dependency-free SVG charts for the admin panel.
-// Palette: validated categorical slots (blue, orange, aqua) on the white card
+// Palette: validated categorical slots (blue, orange, green) on the dark card
 // surface; sequential pairs are two steps of one hue. Legends always carry the
 // values, so no reading depends on color alone.
 
-export const SERIES = ['#6c4af2', '#eb6834', '#1baf7a'];
-export const SEQ = { main: '#6c4af2', light: '#d8cfff' }; // purple + its tint
-export const SEQ_AQUA = { main: '#1baf7a', light: '#b9e9d7' };
+export const SERIES = ['#3d8bff', '#ff8a4c', '#2ecc8a'];
+export const SEQ = { main: '#3d8bff', light: '#274672' }; // blue + its shade
+export const SEQ_AQUA = { main: '#2ecc8a', light: '#1b4a36' };
 
 const polar = (cx, cy, r, angle) => [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
 
@@ -37,7 +37,7 @@ export function Donut({ data, size = 132, thickness = 22, centerLabel, centerSub
   return (
     <div className="donut">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={data.map((d) => `${d.label}: ${d.value}`).join(', ')}>
-        {total === 0 && <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" stroke="#eceaf1" strokeWidth={thickness} />}
+        {total === 0 && <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" stroke="#232833" strokeWidth={thickness} />}
         {/* A single 100% segment is a full ring — an arc can't close on itself. */}
         {total > 0 && visible.length === 1 && (
           <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" stroke={visible[0].color || SERIES[0]} strokeWidth={thickness}>
@@ -86,12 +86,12 @@ export function MiniLine({ points, height = 120, color = SEQ.main }) {
 
   return (
     <svg className="miniline" viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={points.map((p) => `${p.label}: ${p.count}`).join(', ')}>
-      <line x1={padX} x2={w - padX} y1={height - padBottom} y2={height - padBottom} stroke="#e8e5ed" strokeWidth="1" />
+      <line x1={padX} x2={w - padX} y1={height - padBottom} y2={height - padBottom} stroke="#232833" strokeWidth="1" />
       {points.length > 0 && (
         <>
           <path d={area} fill={color} opacity="0.1" />
           <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          <circle cx={x(points.length - 1)} cy={y(last.count)} r="4" fill={color} stroke="#ffffff" strokeWidth="2" />
+          <circle cx={x(points.length - 1)} cy={y(last.count)} r="4" fill={color} stroke="#12151c" strokeWidth="2" />
           <text x={x(points.length - 1)} y={y(last.count) - 8} textAnchor="end" className="miniline-val">{last.count}</text>
         </>
       )}

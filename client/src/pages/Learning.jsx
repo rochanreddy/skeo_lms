@@ -883,10 +883,22 @@ function Assignments() {
 
 // Mirrors the admin-side DRIVE_TYPES list, in student-facing wording.
 const REQUIRED_LABELS = {
-  doc: 'a document (PDF, Word or text file)',
-  slides: 'a slide deck (PPT)',
-  html: 'an HTML file or artifact',
+  doc: 'A document (PDF, Word or text file)',
+  slides: 'A slide deck (PPT)',
+  html: 'An HTML file or artifact',
 };
+
+// "3 days left" for the header — the one number a student actually scans for.
+// Null once the deadline has passed; the overdue state is worded separately.
+function timeLeft(due) {
+  const ms = new Date(due) - Date.now();
+  if (ms <= 0) return null;
+  const days = Math.floor(ms / 86_400_000);
+  if (days >= 1) return `${days} day${days === 1 ? '' : 's'} left`;
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 1) return `${hours} hour${hours === 1 ? '' : 's'} left`;
+  return 'Due within the hour';
+}
 
 function AssignmentCard({ a, onChange }) {
   const { user } = useOutletContext();
@@ -926,117 +938,165 @@ function AssignmentCard({ a, onChange }) {
   const notOpenYet = a.startDate && new Date(a.startDate) > new Date();
   const due = a.dueDate && fmt(a.dueDate);
   const start = a.startDate && fmt(a.startDate);
+  const left = a.dueDate && !sub && timeLeft(a.dueDate);
   const showForm = (!sub || editing) && !notOpenYet;
   // Mirrors the server's rules — the API is still the authority, this just
   // avoids offering an action that would be rejected.
   const editable = !sub?.locked && !overdue && !notOpenYet;
   const required = (a.requiredDriveTypes || []).map((t) => REQUIRED_LABELS[t] || t);
+  const studentName = user?.full_name || user?.fullName || user?.email;
+  const noun = a.type === 'project' ? 'project' : 'assignment';
+  // No video and no PDF means no left column at all — an empty rail beside
+  // the brief reads as something that failed to load.
+  const hasMedia = Boolean(a.videoUrl || a.pdfUrl);
+
+  // One badge in the corner answers "where do I stand" before anything else.
+  const state = !sub
+    ? (notOpenYet ? ['Opens soon', 'badge-muted'] : overdue ? ['Missed', 'badge-blocked'] : ['Not submitted', 'badge-muted'])
+    : sub.status === 'graded' ? ['Graded', 'badge-student']
+    : sub.status === 'submitted' ? ['Submitted', 'badge-submitted']
+    : [sub.status, ''];
 
   return (
     <div className="panel assign-card">
       <div className="assign-head">
-        <div>
-          <div className="assign-title"><strong>{a.title}</strong><span className={`badge ${a.type === 'project' ? 'badge-accent' : ''}`}>{a.type}</span></div>
-          {notOpenYet && <div className="assign-due"><LineIcon name="clock" size={13} /> Opens {start}</div>}
-          {a.dueDate && <div className={`assign-due ${overdue && !sub ? 'overdue' : ''}`}><LineIcon name="clock" size={13} /> Due {due}{overdue ? ' · overdue' : ''}</div>}
+        <div className="assign-headline">
+          <div className="assign-title">
+            <h3>{a.title}</h3>
+            <span className={`badge ${a.type === 'project' ? 'badge-accent' : ''}`}>{a.type}</span>
+          </div>
+          <div className="assign-meta">
+            {start && <span className="assign-meta-item"><LineIcon name="calendar" size={13} /> Opens {start}</span>}
+            {due && (
+              <span className={`assign-meta-item ${overdue && !sub ? 'overdue' : ''}`}>
+                <LineIcon name="clock" size={13} /> Due {due}
+              </span>
+            )}
+            {left && <span className="assign-countdown">{left}</span>}
+            {overdue && !sub && <span className="assign-countdown overdue">Deadline passed</span>}
+          </div>
         </div>
-        {sub && <span className={`badge ${sub.status === 'graded' ? 'badge-student' : sub.status === 'submitted' ? 'badge-submitted' : ''}`}>{sub.status}</span>}
+        <span className={`badge ${state[1]}`}>{state[0]}</span>
       </div>
 
-      {/* Two panes: what to do on the left, how to hand it in on the right. */}
-      <div className="assign-split">
-        <div className="assign-content">
-          {a.videoUrl && <LessonVideo key={`${a._id}-v`} url={a.videoUrl} />}
-          {a.pdfUrl && (
-            <button className="btn sm lesson-action assign-pdf" onClick={() => setPdf({ label: 'PDF', subtitle: a.title, url: a.pdfUrl })}>
-              <LessonIcon type="pdf" size={15} /> PDF
-            </button>
-          )}
-          {a.description
-            ? <div className="assign-desc"><Markdown text={a.description} /></div>
-            : (!a.videoUrl && !a.pdfUrl && <p className="muted">No brief posted for this {a.type} yet.</p>)}
-        </div>
-
-        <div className="assign-submitpane">
-          <h4 className="assign-pane-head">Your submission</h4>
-
-      {/* Current verification state — visible without opening notifications. */}
-      {sub && !editing && (
-        <SubmissionCheckPanel submission={{ ...sub, driveLink: sub.driveLink || sub.url }} audience="student" />
-      )}
-
-      {sub?.status === 'graded' && (
-        <div className="graded">
-          <div className="tile-value">{sub.score != null ? `${sub.score}/10` : '—'}</div>
-          <div><strong>Score</strong>{sub.feedback && <p className="muted">“{sub.feedback}”</p>}</div>
-        </div>
-      )}
-
-      {error && <p className="sub-check-error">{error}</p>}
-
-      {notOpenYet ? (
-        <p className="assign-note">Submissions for this {a.type} open on {start}.</p>
-      ) : showForm ? (
-        <form className="sub-form" onSubmit={submit}>
-          {/* On an edit after a failed check, lead with what needs fixing. */}
-          {editing && (sub?.checkStatus === 'NEEDS_FIXES' || sub?.checkStatus === 'CHECK_FAILED') && sub?.errorDetail && (
-            <div className="sub-form-alert">
-              <CheckBadge status={sub.checkStatus} audience="student" />
-              <p>{sub.errorDetail}</p>
-            </div>
-          )}
-
-          <div className="sub-form-grid">
-            <div className="sub-field">
-              <span className="sub-field-label">Student</span>
-              <span className="sub-field-value">{user?.full_name || user?.fullName || user?.email}</span>
-            </div>
-            <div className="sub-field">
-              <span className="sub-field-label">{a.type === 'project' ? 'Project' : 'Assignment'}</span>
-              <span className="sub-field-value">{a.title}</span>
-            </div>
-            <div className="sub-field">
-              <span className="sub-field-label">Opens</span>
-              <span className="sub-field-value">{start || 'Open now'}</span>
-            </div>
-            <div className="sub-field">
-              <span className="sub-field-label">Last date to submit</span>
-              <span className={`sub-field-value ${overdue ? 'is-overdue' : ''}`}>{due || 'No deadline'}</span>
-            </div>
+      {/* Two columns. Watching and reading on the left — the video, with the
+          brief PDF under it; doing, on the right — read the brief, then hand
+          the work in directly beneath it. The media column sticks, so the
+          video stays put while a student works down the right-hand side. */}
+      <div className={`assign-split ${hasMedia ? '' : 'solo'}`}>
+        {hasMedia && (
+          <div className="assign-media">
+            <h4 className="assign-pane-head">{a.videoUrl ? 'Walkthrough' : 'Resources'}</h4>
+            {a.videoUrl && (
+              <div className="assign-video">
+                <LessonVideo key={`${a._id}-v`} url={a.videoUrl} />
+              </div>
+            )}
+            {a.pdfUrl && (
+              <button type="button" className="assign-resource" onClick={() => setPdf({ label: 'PDF', subtitle: a.title, url: a.pdfUrl })}>
+                <span className="assign-resource-icon"><LessonIcon type="pdf" size={18} /></span>
+                <span className="assign-resource-text">
+                  <strong>{a.type === 'project' ? 'Project' : 'Assignment'} brief</strong>
+                  <span>PDF · opens in the viewer</span>
+                </span>
+                <span className="assign-resource-cta">Open</span>
+              </button>
+            )}
           </div>
+        )}
 
-          {/* What the automated check will look for — shown so the student
-              isn't guessing at what the folder must contain. */}
-          {required.length > 0 && (
-            <p className="muted sub-form-hint">
-              <strong>Your folder must contain:</strong> {required.join(', ')}.
-            </p>
-          )}
+        <div className="assign-work">
+          <section className="assign-content">
+            <h4 className="assign-pane-head">The brief</h4>
+            {a.description
+              ? <div className="assign-brief"><Markdown text={a.description} /></div>
+              : <p className="assign-note">No brief posted for this {noun} yet.</p>}
+          </section>
 
-          <label className="sub-field-label" htmlFor={`drive-${a._id}`}>Google Drive folder link</label>
-          <div className="assign-submit">
-            <input
-              id={`drive-${a._id}`}
-              placeholder="https://drive.google.com/drive/folders/…"
-              value={driveLink}
-              onChange={(e) => setDriveLink(e.target.value)}
-              required
-            />
-            <button className="btn sm" disabled={busy}>{busy ? 'Checking…' : (sub ? 'Save' : 'Submit')}</button>
-            {sub && <button type="button" className="btn sm ghost" onClick={() => { setEditing(false); setError(''); setDriveLink(sub.driveLink || ''); }}>Cancel</button>}
-          </div>
-          <p className="muted sub-form-hint">Share the folder as “Anyone with the link can view”, and include everything the brief asks for.</p>
-        </form>
-      ) : sub?.locked ? (
-        <p className="assign-note">This submission has been reviewed and is locked. Ask your administrator to unlock it if you need to change it.</p>
-      ) : overdue ? (
-        <p className="assign-note">The deadline has passed, so this submission can no longer be changed.</p>
-      ) : (
-        <div className="inline-form">
-          <button type="button" className="btn sm ghost" onClick={() => setEditing(true)} disabled={!editable}>Edit</button>
-          <button type="button" className="btn sm ghost" onClick={remove} disabled={busy || !editable}>Delete</button>
-        </div>
-      )}
+          <aside className="assign-submitpane">
+            <div className="assign-rail">
+              <h4 className="assign-pane-head">Your submission</h4>
+
+              <dl className="assign-dates">
+                <div>
+                  <dt>Opens</dt>
+                  <dd>{start || 'Open now'}</dd>
+                </div>
+                <div>
+                  <dt>Last date to submit</dt>
+                  <dd className={overdue ? 'is-overdue' : ''}>{due || 'No deadline'}</dd>
+                </div>
+              </dl>
+
+              {/* Current verification state — visible without opening notifications. */}
+              {sub && !editing && (
+                <SubmissionCheckPanel submission={{ ...sub, driveLink: sub.driveLink || sub.url }} audience="student" />
+              )}
+
+              {sub?.status === 'graded' && (
+                <div className="graded">
+                  <div className="tile-value">{sub.score != null ? `${sub.score}/10` : '—'}</div>
+                  <div><strong>Score</strong>{sub.feedback && <p className="muted">“{sub.feedback}”</p>}</div>
+                </div>
+              )}
+
+              {error && <p className="sub-check-error">{error}</p>}
+
+              {notOpenYet ? (
+                <p className="assign-note">Submissions for this {noun} open on {start}.</p>
+              ) : showForm ? (
+                <form className="sub-form" onSubmit={submit}>
+                  {/* On an edit after a failed check, lead with what needs fixing. */}
+                  {editing && (sub?.checkStatus === 'NEEDS_FIXES' || sub?.checkStatus === 'CHECK_FAILED') && sub?.errorDetail && (
+                    <div className="sub-form-alert">
+                      <CheckBadge status={sub.checkStatus} audience="student" />
+                      <p>{sub.errorDetail}</p>
+                    </div>
+                  )}
+
+                  {/* What the automated check will look for — shown so the student
+                      isn't guessing at what the folder must contain. */}
+                  {required.length > 0 && (
+                    <div className="assign-reqs">
+                      <span className="sub-field-label">Your folder must contain</span>
+                      <ul className="assign-req-list">
+                        {required.map((r) => <li key={r}><LineIcon name="check" size={15} />{r}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  <label className="sub-field-label" htmlFor={`drive-${a._id}`}>Google Drive folder link</label>
+                  <div className="assign-linkfield">
+                    <LineIcon name="folder" size={16} />
+                    <input
+                      id={`drive-${a._id}`}
+                      type="url"
+                      placeholder="https://drive.google.com/drive/folders/…"
+                      value={driveLink}
+                      onChange={(e) => setDriveLink(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <p className="sub-form-hint">Share the folder as “Anyone with the link can view”, and include everything the brief asks for.</p>
+
+                  <div className="assign-submit">
+                    <button className="btn" disabled={busy}>{busy ? 'Checking…' : (sub ? 'Save changes' : 'Submit for review')}</button>
+                    {sub && <button type="button" className="btn ghost" onClick={() => { setEditing(false); setError(''); setDriveLink(sub.driveLink || ''); }}>Cancel</button>}
+                  </div>
+                  {studentName && <p className="assign-as">Submitting as <strong>{studentName}</strong></p>}
+                </form>
+              ) : sub?.locked ? (
+                <p className="assign-note">This submission has been reviewed and is locked. Ask your administrator to unlock it if you need to change it.</p>
+              ) : overdue ? (
+                <p className="assign-note">The deadline has passed, so this submission can no longer be changed.</p>
+              ) : (
+                <div className="assign-submit">
+                  <button type="button" className="btn ghost sm" onClick={() => setEditing(true)} disabled={!editable}>Edit link</button>
+                  <button type="button" className="btn quiet sm" onClick={remove} disabled={busy || !editable}>Delete</button>
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
       </div>
 

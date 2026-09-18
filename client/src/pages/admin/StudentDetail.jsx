@@ -124,7 +124,7 @@ export default function StudentDetail() {
             data={[
               { label: 'Graded', value: graded.length, color: SEQ.main },
               { label: 'Submitted', value: subs.length - graded.length, color: SEQ.light },
-              { label: 'Not submitted', value: data.assignments.length - subs.length, color: '#eceaf1' },
+              { label: 'Not submitted', value: data.assignments.length - subs.length, color: '#232833' },
             ]}
             centerLabel={`${subs.length}/${data.assignments.length}`}
             centerSub="submitted"

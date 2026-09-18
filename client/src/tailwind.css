@@ -27,92 +27,93 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 @import 'tw-animate-css';
 
-/* Dark = the "stage": lessons and live sessions. There is no global dark mode,
-   so this is opt-in — wrap a stage region in `.dark` and shadcn follows it. */
+/* The whole app is dark. `.dark` is the "stage" (lessons, live sessions) —
+   one step blacker than the page — so wrap a stage region in it and shadcn
+   follows. */
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* ── Surfaces ── */
-  --sk-background: #f7f6f9;        /* --bg   */
-  --sk-foreground: #14121c;        /* --ink  */
-  --sk-card: #ffffff;              /* --card */
-  --sk-card-foreground: #14121c;
-  --sk-popover: #ffffff;
-  --sk-popover-foreground: #14121c;
+  /* ── Surfaces ── four steps of black (see styles.css) */
+  --sk-background: #0b0d12;        /* --bg   */
+  --sk-foreground: #f5f7fb;        /* --ink  */
+  --sk-card: #12151c;              /* --card */
+  --sk-card-foreground: #f5f7fb;
+  --sk-popover: #12151c;
+  --sk-popover-foreground: #f5f7fb;
 
-  /* ── Purple carries every interactive state ── */
-  --sk-primary: #6c4af2;           /* --purple      */
+  /* ── Blue carries every interactive state ── */
+  --sk-primary: #3d8bff;           /* --blue      */
   --sk-primary-foreground: #ffffff;
-  --sk-secondary: #e9e4ff;         /* --purple-soft */
-  --sk-secondary-foreground: #4a2ec4;
-  --sk-accent: #e9e4ff;
-  --sk-accent-foreground: #4a2ec4;
+  --sk-secondary: #14223a;         /* --blue-soft */
+  --sk-secondary-foreground: #8fbcff;
+  --sk-accent: #1c212b;            /* --wash-2: hover rows, highlighted items */
+  --sk-accent-foreground: #f5f7fb;
 
   /* shadcn's `muted` is a SURFACE; styles.css's --muted is TEXT. Both kept. */
-  --sk-muted: #f2f0f5;             /* --line-soft */
-  --sk-muted-foreground: #6f6b78;  /* --muted     */
+  --sk-muted: #1a1e27;             /* --line-soft */
+  --sk-muted-foreground: #8a93a6;  /* --muted     */
 
-  --sk-destructive: #c0362c;       /* the .error red */
+  --sk-destructive: #f0525f;       /* --red */
   --sk-destructive-foreground: #ffffff;
 
-  --sk-border: #e8e5ed;            /* --line */
-  --sk-input: #e8e5ed;
-  --sk-ring: #6c4af2;
+  --sk-border: #232833;            /* --line */
+  --sk-input: #232833;
+  --sk-ring: #3d8bff;
 
   /* Course identity accents --a1..--a6, in registry order. */
-  --sk-chart-1: #6c4af2;
-  --sk-chart-2: #0d9488;
-  --sk-chart-3: #ffcf52;
-  --sk-chart-4: #d81b60;
-  --sk-chart-5: #2563eb;
+  --sk-chart-1: #3d8bff;
+  --sk-chart-2: #14b8a6;
+  --sk-chart-3: #f5b83d;
+  --sk-chart-4: #f43f7a;
+  --sk-chart-5: #60a5fa;
 
-  --sk-sidebar: #ffffff;
-  --sk-sidebar-foreground: #14121c;
-  --sk-sidebar-primary: #6c4af2;
+  --sk-sidebar: #12151c;
+  --sk-sidebar-foreground: #f5f7fb;
+  --sk-sidebar-primary: #3d8bff;
   --sk-sidebar-primary-foreground: #ffffff;
-  --sk-sidebar-accent: #e9e4ff;
-  --sk-sidebar-accent-foreground: #4a2ec4;
-  --sk-sidebar-border: #e8e5ed;
-  --sk-sidebar-ring: #6c4af2;
+  --sk-sidebar-accent: #1c212b;
+  --sk-sidebar-accent-foreground: #f5f7fb;
+  --sk-sidebar-border: #232833;
+  --sk-sidebar-ring: #3d8bff;
 
   /* Falls back to styles.css's --radius (18px) so corners match the cards. */
   --sk-radius: var(--radius, 18px);
 }
 
-/* The stage. Near-black, never a tinted navy, so purple is the only colour. */
+/* The stage: lessons and live sessions. One step below the page — true black. */
 .dark {
-  --sk-background: #14121c;        /* --stage      */
-  --sk-foreground: #f3f1f9;        /* --parchment  */
-  --sk-card: #1e1b28;              /* --stage-2    */
-  --sk-card-foreground: #f3f1f9;
-  --sk-popover: #1e1b28;
-  --sk-popover-foreground: #f3f1f9;
+  --sk-background: #05060a;        /* --stage      */
+  --sk-foreground: #f5f7fb;
+  --sk-card: #101319;              /* --stage-2    */
+  --sk-card-foreground: #f5f7fb;
+  --sk-popover: #101319;
+  --sk-popover-foreground: #f5f7fb;
 
-  --sk-primary: #6c4af2;
+  --sk-primary: #3d8bff;
   --sk-primary-foreground: #ffffff;
-  --sk-secondary: #322e3f;         /* --stage-line */
-  --sk-secondary-foreground: #f3f1f9;
-  --sk-accent: #322e3f;
-  --sk-accent-foreground: #f3f1f9;
+  --sk-secondary: #232833;         /* --stage-line */
+  --sk-secondary-foreground: #f5f7fb;
+  --sk-accent: #232833;
+  --sk-accent-foreground: #f5f7fb;
 
-  --sk-muted: #1e1b28;
-  --sk-muted-foreground: #a9a4b8;
+  --sk-muted: #101319;
+  --sk-muted-foreground: #8a93a6;
 
-  --sk-destructive: #e5695f;
-  --sk-destructive-foreground: #14121c;
+  --sk-destructive: #f0525f;
+  --sk-destructive-foreground: #ffffff;
 
-  --sk-border: #322e3f;
-  --sk-input: #322e3f;
-  --sk-ring: #b9adf6;              /* --lavender reads on near-black */
+  --sk-border: #232833;
+  --sk-input: #232833;
+  --sk-ring: #8fbcff;
 
-  --sk-sidebar: #1e1b28;
-  --sk-sidebar-foreground: #f3f1f9;
-  --sk-sidebar-primary: #b9adf6;
-  --sk-sidebar-primary-foreground: #14121c;
-  --sk-sidebar-accent: #322e3f;
-  --sk-sidebar-accent-foreground: #f3f1f9;
-  --sk-sidebar-border: #322e3f;
-  --sk-sidebar-ring: #b9adf6;
+  --sk-sidebar: #101319;
+  --sk-sidebar-foreground: #f5f7fb;
+  --sk-sidebar-primary: #8fbcff;
+  --sk-sidebar-primary-foreground: #05060a;
+  --sk-sidebar-accent: #232833;
+  --sk-sidebar-accent-foreground: #f5f7fb;
+  --sk-sidebar-border: #232833;
+  --sk-sidebar-ring: #8fbcff;
 }
 
 @theme inline {
@@ -151,12 +152,13 @@
   --color-sidebar-border: var(--sk-sidebar-border);
   --color-sidebar-ring: var(--sk-sidebar-ring);
 
-  /* Brand extras, so `bg-lime` / `text-green` / `font-serif` stay reachable. */
-  --color-lime: #dfff75;
-  --color-yellow: #ffcf52;
-  --color-green: #1d9e75;
-  --color-lavender: #b9adf6;
-  --color-parchment: #f3f1f9;
+  /* Brand extras, so `bg-blue` / `text-green` / `font-serif` stay reachable. */
+  --color-blue: #3d8bff;
+  --color-lime: #c7f25a;
+  --color-yellow: #f5b83d;
+  --color-green: #2ecc8a;
+  --color-lavender: #8fbcff;
+  --color-parchment: #f5f7fb;
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'DM Sans', 'Inter', system-ui, sans-serif;
