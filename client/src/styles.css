@@ -2416,3 +2416,27 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .assign-countdown { background: var(--amber-soft); color: var(--amber-ink); border: 1px solid var(--amber-line); }
 .assign-countdown.overdue { background: var(--red-soft); color: var(--red-ink); border-color: var(--red-line); }
 .assign-req-list li svg { color: var(--green); }
+
+/* ── Job board filters ─────────────────────────────────────────────────
+   A pill that toggles. Deliberately not .chip: that one carries an avatar
+   and a remove button, so it is padded for a person, not a word. */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.filter-chip:hover { color: var(--ink); border-color: var(--line-2, var(--line)); }
+.filter-chip.active {
+  background: var(--purple-soft);
+  border-color: var(--purple);
+  color: var(--purple);
+  font-weight: 600;
+}

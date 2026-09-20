@@ -1,0 +1,47 @@
+import mongoose from 'mongoose';
+import { jobsDb } from '../db.js';
+
+/**
+ * A job scraped by skeo-job-pipeline.
+ *
+ * READ ONLY. This service never writes here — the pipeline owns the data, on
+ * its own cluster, reached with a read-only Atlas user. The schema is
+ * `strict: false` because the pipeline can add a field without this model
+ * knowing, and a stricter definition would silently drop it on read.
+ *
+ * The model is built lazily on first use rather than at import time, because
+ * the connection only exists when JOBS_MONGODB_URI is set, and the LMS has to
+ * start and serve every other route when it isn't.
+ */
+
+const scrapedJobSchema = new mongoose.Schema(
+  {
+    title: String,
+    company: String,
+    location: String,
+    country: String,
+    isRemote: Boolean,
+    url: String,
+    source: String,
+    sources: [String],
+    roleCategory: String,
+    workType: String,
+    experienceLevel: String,
+    postedAt: Date,
+    fetchedAt: Date,
+    lastSeenAt: Date,
+    isActive: Boolean,
+  },
+  { strict: false, collection: 'jobs' },
+);
+
+let model = null;
+
+/** Returns the model, or null when no jobs database is configured. */
+export function ScrapedJob() {
+  const connection = jobsDb();
+  if (!connection) return null;
+
+  if (!model) model = connection.model('ScrapedJob', scrapedJobSchema);
+  return model;
+}

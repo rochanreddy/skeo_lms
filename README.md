@@ -88,6 +88,42 @@ off a session is, and moves it into **Past sessions** once it's been; leave it
 out and the card is simply a link that stays up. Links are stored
 scheme-checked (http/https only, a bare `lu.ma/x` gets the `https://` it meant).
 
+## Job Board
+**Job Board** is a tab for both roles, and the same list seen by both. There is
+no approval step: openings scraped by `skeo-job-pipeline` go straight through,
+and the classifier there decides what is relevant.
+
+It has two halves, shown as one list:
+
+- **The feed** — ten sources, refreshed every morning, read from the pipeline's
+  own Atlas cluster with a **read-only** user (`JOBS_MONGODB_URI`). This service
+  can never write there, deliberately: several products read that feed.
+- **Hand-posted openings** — the roles that never reach a job board, typed in
+  by an admin. They live in this LMS's own `skeo_job_postings`, because our
+  credential for the other cluster is read-only, and they lead page one.
+
+Listings show for **ten days** from the date the role opened, then drop off, so
+the board is always the last ten days rather than an archive nobody prunes. The
+window is applied when the board reads rather than written into a flag, so
+changing `FRESH_DAYS` in `routes/jobs.js` takes effect at once.
+
+Filters cover category (the seven the pipeline classifies into), place
+(India / International / Remote), work type and experience level, plus search.
+Every filter value is checked against `lib/jobTaxonomy.js` before it reaches
+Mongo — these arrive off a query string, and an unchecked one lets a visitor
+send an operator instead of a value.
+
+An admin sees exactly what a student sees. The only extra is posting an opening
+and removing one that was posted by hand; a scraped listing has no record here
+to delete and ages out on its own.
+
+If `JOBS_MONGODB_URI` is unset, or that cluster is unreachable, the board falls
+back to the hand-posted openings and says so rather than erroring.
+
+`node scripts/checkJobsFeed.js` reads the feed the way the board does and prints
+the counts — it tells "the board is empty" apart from "the credential is wrong"
+without starting the API.
+
 ## Support
 A student who hits a problem with the LMS raises it from **their avatar menu →
 Help & support** (or ⌘K → "Help & support"). It is deliberately not a dock tab:
@@ -121,7 +157,9 @@ credential; the bytes never pass through this API.
 ## Deploy
 - **Backend** → Render (new Web Service, root `server/`, start `npm start`).
   Env: `MONGODB_URI`, `JWT_SECRET`, `SKEO_APP_URL=https://<your-frontend-domain>`,
-  `VDOCIPHER_API_SECRET` (for DRM lesson video).
+  `VDOCIPHER_API_SECRET` (for DRM lesson video),
+  `JOBS_MONGODB_URI` (read-only, feeds the job board — use `jobs_reader`, never
+  the pipeline's own credentials).
   `SKEO_APP_URL` is what the CORS allowlist trusts in production — there is no
   hard-coded fallback domain, so the frontend cannot call the API until it is set.
 - **Frontend** → Vercel (root `client/`). Env: `VITE_API_URL=https://<render-app>/api/skeo`.
