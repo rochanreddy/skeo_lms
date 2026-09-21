@@ -240,8 +240,11 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .la-card--build { left: -34px; bottom: 58px; }
 .la-card--live { right: 122px; bottom: -26px; }
 .la-card-row { display: flex; align-items: center; gap: 8px; }
-.la-card-title { font-size: 12.5px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
-.la-card-sub { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: Consolas, Menlo, monospace; }
+/* Dark literals, not --ink and --muted. These two cards are white on purpose,
+   and those tokens resolve to white and mid-grey on this theme — the label
+   would be white on white. A fixed surface needs fixed type. */
+.la-card-title { font-size: 12.5px; font-weight: 700; color: #0b0d12; letter-spacing: -0.01em; }
+.la-card-sub { font-size: 11px; color: #5f6779; margin-top: 1px; font-family: Consolas, Menlo, monospace; }
 /* The tick is drawn with two borders on a rotated box rather than set as a
    character, so it keeps its weight at any size and needs no icon font. */
 .la-tick { width: 15px; height: 15px; border-radius: 50%; background: #16a34a; position: relative; flex: none; }
