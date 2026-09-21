@@ -47,14 +47,13 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="auth">
-      <div className="auth-hero">
+      <div className="auth-hero auth-hero--art">
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
           <h2><span>Build.</span><span>Learn.</span><span>Monetize.</span></h2>
           <p>A hands-on fellowship where you build real products, learn the craft by shipping them, and turn that portfolio into paid work.</p>
         </div>
         <LoginArt />
-        <div />
       </div>
 
       <div className="auth-form-wrap">

@@ -180,82 +180,118 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   background:
     radial-gradient(60% 46% at 72% 58%, rgba(61,139,255,.28), transparent 70%),
     radial-gradient(40% 34% at 22% 14%, rgba(143,188,255,.12), transparent 72%); }
-/* The rule, drawn large — the brand motif, kept from the old hero. */
+/* The rule, drawn large — the brand motif. Absolute, so it is suppressed on
+   the variant that carries the illustration: there the art is the ornament,
+   and a second absolutely-placed decoration is a second thing that can land
+   on top of the laptop at a height nobody tested. */
 .auth-hero::after { content: ''; position: absolute; left: 48px; bottom: 168px; width: 84px; height: 3px; border-radius: 3px; background: var(--lavender); z-index: 2; }
+.auth-hero--art::after { content: none; }
 
 /* ── The sign-in illustration ─────────────────────────────────
-   A laptop with an editor open on it, two white cards in front of it. It sits
-   BEHIND the copy (z-index 0 against the copy's 1) and ignores the pointer, so
-   nothing here can get between someone and the form.
+   A laptop with an editor open on it and two white cards in front.
+
+   IT IS A FLOW ITEM, NOT AN ABSOLUTE ONE. The first version floated it over
+   the hero and picked a `bottom` that looked right on a tall window; on a
+   short one the laptop rose straight through the paragraph. Position it in
+   the column instead and the overlap stops being something to tune and
+   starts being something the layout cannot express: the art gets whatever
+   height is left under the copy, and no more.
+
+   SCALE COMES FROM ONE KNOB. Everything below is in `em` against this
+   element’s own font-size, so the whole illustration — type, chrome, padding,
+   radii, the shadow, the cards — resizes together from a single clamp tied to
+   viewport height. That is what keeps it inside the leftover space on a 650px
+   window without a second set of breakpoint overrides to keep in step.
    ------------------------------------------------------------------------ */
-.login-art { position: absolute; right: -58px; bottom: 34px; width: 540px; pointer-events: none;
-  z-index: 0; user-select: none; }
+.auth-hero--art { justify-content: flex-start; gap: clamp(18px, 3.4vh, 40px); }
+.auth-hero--art .auth-brand,
+.auth-hero--art .auth-hero-copy { flex: none; }
+
+.login-art {
+  flex: 1 1 auto; min-height: 0;          /* exactly the space the copy left */
+  align-self: stretch;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+  margin-right: -3.6em;                   /* the bleed past the panel edge */
+  pointer-events: none; user-select: none; z-index: 0;
+  /* The knob. min() of the two axes because the illustration is bounded by
+     both: height decides whether it clears the copy, width decides how much of
+     the screen is left after the bleed. Taking the smaller means the tighter
+     axis wins and neither has to be handled in its own breakpoint. */
+  font-size: clamp(8px, min(1.32vh, 1.08vw), 12.5px);
+}
 /* Tipped away from the reader on its X axis and turned on its Y, which is how
    a laptop on a desk actually presents itself. The perspective is on the
-   element rather than the parent so the hero's other children are not dragged
+   element rather than the parent so the hero’s other children are not dragged
    into the same 3D context. */
-.la-laptop { transform: perspective(1400px) rotateX(6deg) rotateY(-15deg) rotate(1deg); transform-style: preserve-3d; }
-.la-screen { background: #0e0c16; border: 1px solid #332c47; border-radius: 12px 12px 3px 3px;
-  box-shadow: 0 34px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset; overflow: hidden; }
-.la-chrome { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #15121f; border-bottom: 1px solid #2a2438; }
-.la-dot { width: 9px; height: 9px; border-radius: 50%; background: #3a3350; }
-/* Only the first light is lit. Three coloured dots is somebody else's window
+/* The stage: the laptop’s footprint, untransformed, so the cards have
+   something flat to be placed against. */
+.la-stage { position: relative; width: 44em; flex: none; }
+.la-laptop { width: 100%; transform: perspective(112em) rotateX(6deg) rotateY(-15deg) rotate(1deg); transform-style: preserve-3d; }
+.la-screen { background: #0e0c16; border: 1px solid #2b3345; border-radius: .96em .96em .24em .24em;
+  box-shadow: 0 2.7em 5.6em rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset; overflow: hidden; }
+.la-chrome { display: flex; align-items: center; gap: .48em; padding: .8em 1.12em; background: #12161f; border-bottom: 1px solid #232a38; }
+.la-dot { width: .72em; height: .72em; border-radius: 50%; background: #333c4e; }
+/* Only the first light is lit. Three coloured dots is somebody else’s window
    chrome; one accent reads as ours. */
 .la-dot:first-child { background: var(--lavender); }
-.la-file { margin-left: 10px; font-family: Consolas, Menlo, monospace; font-size: 11px; color: #6e6688; }
+.la-file { margin-left: .8em; font-family: Consolas, Menlo, monospace; font-size: .88em; color: #6b7386; }
 
-.la-code { margin: 0; padding: 16px 18px 20px; font-family: Consolas, Menlo, monospace;
-  font-size: 12.5px; line-height: 1.85; white-space: pre; }
-.la-line { display: flex; gap: 14px; }
+.la-code { margin: 0; padding: 1.28em 1.44em 1.6em; font-family: Consolas, Menlo, monospace;
+  font-size: 1em; line-height: 1.85; white-space: pre; }
+.la-line { display: flex; gap: 1.12em; }
 /* tabular-nums so the gutter does not jitter, and a fixed width so the code
    starts on one column whether the line number is 1 or 14. */
-.la-num { flex: none; width: 12px; text-align: right; color: #453d5e; font-variant-numeric: tabular-nums; }
+.la-num { flex: none; width: 1em; text-align: right; color: #3f4759; font-variant-numeric: tabular-nums; }
 .la-text { position: relative; }
 .la-kw { color: #9dc1ff; }
 .la-fn { color: #7dd3fc; }
 .la-var { color: #fbbf24; }
-.la-cm { color: #5a5274; font-style: italic; }
-.la-op { color: #8b82a8; }
-.la-pl { color: #ded9f0; }
+.la-cm { color: #525b6e; font-style: italic; }
+.la-op { color: #808a9e; }
+.la-pl { color: #d7dde8; }
 /* Steady, not blinking. A caret keeping time in the corner of the sign-in page
    pulls the eye off the password field every second, forever. */
-.la-caret { display: inline-block; width: 7px; height: 14px; margin-left: 2px; vertical-align: -3px;
-  background: var(--lavender); opacity: .85; border-radius: 1px; }
+.la-caret { display: inline-block; width: .56em; height: 1.12em; margin-left: .16em; vertical-align: -.24em;
+  background: var(--lavender); opacity: .85; border-radius: .08em; }
 
 /* The body, foreshortened. scaleX past 1 because a lid tilted back shows its
    base wider than itself, and the trapezium that gives is what sells the angle. */
-.la-base { height: 13px; margin: 0 -14px; border-radius: 0 0 11px 11px;
-  background: linear-gradient(#2b2540, #191527); border: 1px solid #332c47; border-top: 0;
+.la-base { height: 1.04em; margin: 0 -1.12em; border-radius: 0 0 .88em .88em;
+  background: linear-gradient(#242c3c, #151a24); border: 1px solid #2b3345; border-top: 0;
   transform: scaleX(1.035); display: flex; align-items: flex-start; justify-content: center; }
-.la-notch { width: 78px; height: 4px; border-radius: 0 0 4px 4px; background: #120f1c; }
+.la-notch { width: 6.24em; height: .32em; border-radius: 0 0 .32em .32em; background: #0d1017; }
 
 /* The white elements, in front of the screen. Real white on a near-black
-   ground is the loudest thing available, so they are small and there are two. */
-.la-card { position: absolute; background: #fff; border-radius: 12px; padding: 11px 14px;
-  box-shadow: 0 18px 40px rgba(0,0,0,.42); display: flex; align-items: center; gap: 10px; }
-/* Both cards sit low, over the base and the closing lines of the snippet.
-   Higher up they cover the statement the snippet exists to show — a card
-   across `const ship = async (idea) =>` reads as something hidden rather than
-   as something layered. */
-.la-card--build { left: -34px; bottom: 58px; }
-.la-card--live { right: 122px; bottom: -26px; }
-.la-card-row { display: flex; align-items: center; gap: 8px; }
+   ground is the loudest thing available, so they are small and there are two.
+   Placed against the laptop rather than the hero, so they travel with it
+   instead of being re-tuned every time the art moves. */
+.la-card { position: absolute; background: #fff; border-radius: .96em; padding: .88em 1.12em;
+  box-shadow: 0 1.44em 3.2em rgba(0,0,0,.42); display: flex; align-items: center; gap: .8em; white-space: nowrap; }
+/* Both sit low, over the base and the closing lines of the snippet. Higher up
+   they cover the statement the snippet exists to show — a card across
+   `const ship = async (idea) =>` reads as something hidden rather than as
+   something layered. */
+.la-card--build { left: -2.7em; bottom: 4.64em; }
+.la-card--live { right: 9.76em; bottom: -2.08em; }
+.la-card-row { display: flex; align-items: center; gap: .64em; }
 /* Dark literals, not --ink and --muted. These two cards are white on purpose,
    and those tokens resolve to white and mid-grey on this theme — the label
    would be white on white. A fixed surface needs fixed type. */
-.la-card-title { font-size: 12.5px; font-weight: 700; color: #0b0d12; letter-spacing: -0.01em; }
-.la-card-sub { font-size: 11px; color: #5f6779; margin-top: 1px; font-family: Consolas, Menlo, monospace; }
+.la-card-title { font-size: 1em; font-weight: 700; color: #0b0d12; letter-spacing: -0.01em; }
+.la-card-sub { font-size: .88em; color: #5f6779; margin-top: .08em; font-family: Consolas, Menlo, monospace; }
 /* The tick is drawn with two borders on a rotated box rather than set as a
    character, so it keeps its weight at any size and needs no icon font. */
-.la-tick { width: 15px; height: 15px; border-radius: 50%; background: #16a34a; position: relative; flex: none; }
-.la-tick::after { content: ''; position: absolute; left: 5px; top: 2.5px; width: 4px; height: 7.5px;
-  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(43deg); }
-.la-pulse { width: 9px; height: 9px; border-radius: 50%; background: #16a34a; flex: none;
-  box-shadow: 0 0 0 4px rgba(22,163,74,.16); }
+.la-tick { width: 1.2em; height: 1.2em; border-radius: 50%; background: #16a34a; position: relative; flex: none; }
+.la-tick::after { content: ''; position: absolute; left: .4em; top: .2em; width: .32em; height: .6em;
+  border: solid #fff; border-width: 0 .16em .16em 0; transform: rotate(43deg); }
+.la-pulse { width: .72em; height: .72em; border-radius: 50%; background: #16a34a; flex: none;
+  box-shadow: 0 0 0 .32em rgba(22,163,74,.16); }
 
-/* The art is the first thing to go: below this the hero is already narrower
-   than the laptop, and a half-cropped laptop is worse than none. */
-@media (max-width: 1180px) {
+/* Two floors, for two different reasons. Narrower than this and the panel is
+   already slimmer than the laptop; shorter than this and what is left under
+   the copy is not enough to read a screen in. Below either, the hero goes back
+   to being type on a dark ground, which it is perfectly good at. */
+@media (max-width: 1024px), (max-height: 560px) {
   .login-art { display: none; }
 }
 .auth-brand { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
