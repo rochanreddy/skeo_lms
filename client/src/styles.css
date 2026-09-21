@@ -231,7 +231,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    vh never spends. Container units measure the leftover itself. */
 @supports (container-type: size) {
   .login-art { container-type: size; }
-  .la-scene { font-size: clamp(7px, min(2.75cqh, 1.95cqw), 13.5px); }
+  .la-scene { font-size: clamp(7px, min(3.15cqh, 2.25cqw), 16px); }
 }
 .la-scene { position: relative; width: 44em; flex: none;
   margin-right: -3em;                     /* the bleed past the panel edge */ }
@@ -375,10 +375,26 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .auth-brand { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
 /* max-width so the headline never runs under the laptop, which starts at the
    hero's right edge. */
-.auth-hero-copy { position: relative; z-index: 1; max-width: 430px; }
-.auth-hero-copy h2 { font-family: var(--serif); font-style: italic; font-size: 46px; line-height: 1.16; font-weight: 400; color: var(--parchment); letter-spacing: -0.02em; margin-bottom: 18px; }
+/* Wide enough for the paragraph to settle on two or three lines, and never so
+   wide that it runs past the illustration below it. */
+.auth-hero-copy { position: relative; z-index: 1; max-width: 460px; }
+/* Fluid, because this column carries the drawing underneath it. At a fixed
+   46px the headline and its paragraph took the same 271px on a 1080-tall
+   window and on a 768-tall one, and on the short window that is the height the
+   drawing does not get — it was the copy, not the panel, deciding how small
+   the syllabus had to be. Scaling with the viewport hands the height back
+   where it is scarce and changes nothing where it is not. */
+.auth-hero-copy h2 { font-family: var(--serif); font-style: italic;
+  font-size: clamp(34px, 2.6vh + 22px, 46px); line-height: 1.14; font-weight: 400;
+  color: var(--parchment); letter-spacing: -0.02em; margin-bottom: clamp(12px, 2vh, 18px); }
 .auth-hero-copy h2 span { display: block; }
-.auth-hero-copy p { color: var(--lavender); font-size: 16px; line-height: 1.6; }
+/* text-wrap: balance, not pretty. Left alone this paragraph ends with
+   “work.” on a line of its own, and pretty did not find a better break at this
+   measure — it optimises the last line, which was already as good as it could
+   get without moving the ones above it. balance evens all three, which is what
+   a block this short wants anyway. Browsers without it wrap as before. */
+.auth-hero-copy p { color: var(--lavender); font-size: clamp(14px, 0.9vh + 8px, 16px); line-height: 1.6;
+  text-wrap: balance; }
 .auth-form-wrap { display: flex; align-items: center; justify-content: center; padding: 40px; background: var(--bg); }
 .auth-form { width: 100%; max-width: 380px; }
 .auth-back { color: var(--muted); font-size: 14px; text-decoration: none; display: inline-block; margin-bottom: 28px; }
