@@ -2418,17 +2418,21 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .assign-req-list li svg { color: var(--green); }
 
 /* ── Job board ─────────────────────────────────────────────────────────────
-   A board, not a stack of panels. Three parts, and the whole page hangs off
-   them: a search bar across the top, a sticky filter rail down the left, and
-   the listings in the remaining column.
+   A board, not a stack of panels: a search bar, the four filters beside it as
+   menus, and the listings under both.
 
-   The rail is the point. Twenty-odd filter chips laid across the content
-   column pushed the first listing below the fold and made the page read as
-   noise; down the side they are a legend you consult, and the listings start
-   at the top, where a board should start.                                   */
-.jb { display: flex; flex-direction: column; gap: 18px; }
+   The filters are menus because the four vocabularies come to twenty-odd
+   values, and laid out flat — as chips, or as a rail — they are a screenful
+   of chrome before a single opening. Closed, each is one pill carrying its
+   own count, so all four fit on one line whatever gets added to them later.
+
+   The column is capped: the listings are one measure of text, and a title
+   stretched across 1400px puts the company a hand's width from the role.   */
+.jb { display: flex; flex-direction: column; gap: 18px; max-width: 1080px; }
 /* The column gap already spaces the head off the search bar. */
 .jb > .page-head { margin-bottom: 0; }
+/* The narrower column squeezes the head's action; it is two words, not two lines. */
+.jb > .page-head > .btn { flex: none; white-space: nowrap; }
 
 /* ── Search ── One field, the width of the page, with the glass inside it. */
 .jb-search { display: flex; gap: 10px; align-items: center; }
@@ -2443,36 +2447,73 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .jb-search-field input:focus { outline: none; border-color: var(--blue); box-shadow: var(--ring); }
 .jb-search .btn { flex: none; padding: 12px 22px; }
 
-.jb-layout { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 24px; align-items: start; }
+/* ── The filter bar ── four menus and, once anything is on, a way out. */
+.jb-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
-/* ── The filter rail ── No card around it: a card would make the filters look
-   like content. They are chrome, so they sit straight on the ground. */
-.jb-rail { position: sticky; top: 84px; }
-.jb-group + .jb-group { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
-.jb-group-label {
-  font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 11px;
-}
-.jb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-
-/* A pill that toggles. Deliberately not .chip: that one carries an avatar and
-   a remove button, so it is padded for a person, not a word. */
-.filter-chip {
-  display: inline-flex; align-items: center; gap: 6px;
+/* Closed, a filter is one pill. It says its own name and, when it is doing
+   something, how many values it is doing it with. */
+.jb-menu-trigger {
+  display: inline-flex; align-items: center; gap: 7px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--pill);
-  padding: 6px 12px; font-family: var(--font); font-size: 12.5px; color: var(--muted);
-  cursor: pointer; white-space: nowrap; transition: color .14s, border-color .14s, background .14s;
+  padding: 8px 13px; font-family: var(--font); font-size: 13px; font-weight: 500;
+  color: var(--ink-2); cursor: pointer; white-space: nowrap;
+  transition: color .14s, border-color .14s, background .14s;
 }
-.filter-chip:hover { color: var(--ink); border-color: var(--line-2); background: var(--wash); }
-.filter-chip:focus-visible { outline: none; box-shadow: var(--ring); }
-.filter-chip.active { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue-ink); font-weight: 600; }
-.filter-chip.active:hover { background: var(--blue-soft); border-color: var(--blue); }
-.filter-chip svg { width: 12px; height: 12px; flex: none; }
+.jb-menu-trigger:hover { color: var(--ink); border-color: var(--line-2); background: var(--wash); }
+.jb-menu-trigger:focus-visible { outline: none; box-shadow: var(--ring); }
+.jb-menu-trigger svg { width: 13px; height: 13px; flex: none; color: var(--muted-2); transition: transform .18s; }
+.jb-menu-trigger[data-state='open'] svg { transform: rotate(180deg); }
+.jb-menu-trigger.on {
+  background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue-ink); font-weight: 600;
+}
+.jb-menu-trigger.on svg { color: var(--blue-ink); }
+.jb-menu-count {
+  display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: var(--pill); background: var(--blue); color: #fff;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
 
-/* The rail's disclosure, on screens too narrow to carry a rail. */
-.jb-filter-toggle { display: none; }
+/* Placement is Radix's (see the DateTimePicker); only the box is described
+   here, because the tailwind defaults on PopoverContent are the wrong ground. */
+.jb-pop {
+  width: 248px; max-height: 340px; overflow-y: auto; padding: 6px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
+}
+.jb-pop-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 5px 9px 8px; margin-bottom: 3px; border-bottom: 1px solid var(--line-soft);
+}
+.jb-pop-head span {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+}
+.jb-pop-clear {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--blue);
+}
+.jb-pop-clear:hover { text-decoration: underline; }
+.jb-pop-list { display: flex; flex-direction: column; gap: 1px; }
+.jb-opt {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 9px; border: 0; border-radius: 9px; background: none;
+  font-family: var(--font); font-size: 13.5px; color: var(--ink-2);
+  text-align: left; cursor: pointer;
+}
+.jb-opt:hover { background: var(--wash); color: var(--ink); }
+.jb-opt:focus-visible { outline: none; box-shadow: var(--ring); }
+.jb-opt.on { color: var(--ink); font-weight: 600; }
+/* A real box rather than a tick alone: unchecked has to be visible, or the
+   menu reads as a list of links. */
+.jb-opt-box {
+  width: 17px; height: 17px; flex: none; border-radius: 5px;
+  border: 1.5px solid var(--line-2); display: grid; place-items: center;
+  color: #fff; transition: background .14s, border-color .14s;
+}
+.jb-opt.on .jb-opt-box { background: var(--blue); border-color: var(--blue); }
+.jb-opt-box svg { width: 11px; height: 11px; }
 
 /* ── Results header ── the count, and what is currently narrowing it. */
+.jb-results { min-width: 0; }
 .jb-count { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .jb-count strong { font-family: var(--display); font-size: 17px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 .jb-count span { color: var(--muted); font-size: 13.5px; }
@@ -2574,19 +2615,12 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .field-grid > .jb-check { display: flex; align-items: center; gap: 8px; align-self: end; padding-bottom: 11px; }
 .field-grid > .jb-check input { width: auto; margin: 0; }
 
-@media (max-width: 980px) {
-  .jb-layout { grid-template-columns: minmax(0, 1fr); }
-  /* The rail becomes a disclosure: on a phone it is twenty-odd chips standing
-     ahead of the first listing, which is what the rail exists to avoid. */
-  .jb-filter-toggle { display: inline-flex; }
-  .jb-rail { position: static; }
-  .jb-rail:not(.open) { display: none; }
-}
 @media (max-width: 560px) {
+  /* Four triggers no longer fit on a line. Two by two, rather than letting
+     them wrap into a ragged row and a stretched leftover. */
+  .jb-bar { display: grid; grid-template-columns: 1fr 1fr; }
+  .jb-bar > * { justify-content: center; }
+  .jb-bar > .btn { grid-column: 1 / -1; }
+
   .job-card-head { flex-wrap: wrap; }
-  /* The field takes the first line to itself and the two buttons share the
-     second, rather than three full-width bars stacked down the page. */
-  .jb-search { flex-wrap: wrap; }
-  .jb-search-field { flex: 1 1 100%; }
-  .jb-search .btn { flex: 1 1 0; justify-content: center; }
 }

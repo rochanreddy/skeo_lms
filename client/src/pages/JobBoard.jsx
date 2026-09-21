@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover.jsx';
 
 /**
  * The job board.
@@ -21,10 +22,10 @@ import {
  * on their own, so the board is always the last ten days rather than an
  * archive nobody prunes.
  *
- * The page is laid out as a board: search across the top, the filters in a
- * sticky rail down the side, listings filling the rest. The filters used to
- * run across the content column, which put the first opening below the fold —
- * on a page whose whole job is showing openings.
+ * The page is laid out as a board: search across the top, the four filters
+ * beside it as menus, listings filling the rest. Every filter is one row of
+ * chrome whatever its width — laid out flat, the four vocabularies are
+ * twenty-odd chips, which is a screenful before a single opening.
  */
 
 const PLACES = [
@@ -88,6 +89,12 @@ const CheckIcon = () => (
   </svg>
 );
 
+const ChevronIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
 const CloseIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
     <path d="M18 6 6 18M6 6l12 12" />
@@ -103,8 +110,6 @@ export default function JobBoard() {
   const [filters, setFilters] = useState(EMPTY);
   const [searchBox, setSearchBox] = useState('');
   const [page, setPage] = useState(1);
-  // Only ever true on narrow screens, where the rail collapses to a disclosure.
-  const [railOpen, setRailOpen] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
 
   const [data, setData] = useState({ jobs: [], total: 0, pages: 1, facets: null, feedAvailable: true });
@@ -140,6 +145,11 @@ export default function JobBoard() {
     setSearchBox('');
     setPage(1);
     setFilters((f) => ({ ...f, search: '' }));
+  };
+
+  const clearGroup = (key) => {
+    setPage(1);
+    setFilters((f) => ({ ...f, [key]: [] }));
   };
 
   const clearAll = () => {
@@ -232,105 +242,140 @@ export default function JobBoard() {
           />
         </div>
         <button className="btn">Search</button>
-        <button
-          type="button"
-          className="btn quiet jb-filter-toggle"
-          aria-expanded={railOpen}
-          onClick={() => setRailOpen((v) => !v)}
-        >
-          {railOpen ? 'Hide filters' : 'Filters'}
-          {active.length > 0 && !railOpen ? ` (${active.length})` : ''}
-        </button>
       </form>
+
+      {/* The four vocabularies, one row. Each is a menu rather than its chips
+          laid out flat, so adding a category later costs nothing on screen. */}
+      <div className="jb-bar">
+        {groups.map((g) => (
+          <FilterMenu
+            key={g.key}
+            label={g.label}
+            options={g.options}
+            selected={filters[g.key]}
+            onToggle={(v) => toggle(g.key, v)}
+            onClear={() => clearGroup(g.key)}
+          />
+        ))}
+        {active.length > 0 && (
+          <button type="button" className="btn sm ghost" onClick={clearAll}>Clear all</button>
+        )}
+      </div>
 
       {err && <p className="panel error" role="alert">{err}</p>}
 
-      <div className="jb-layout">
-        <aside className={`jb-rail ${railOpen ? 'open' : ''}`} aria-label="Filters">
-          {groups.map((g) => (
-            <div key={g.key} className="jb-group">
-              <div className="jb-group-label">{g.label}</div>
-              <div className="jb-chips">
-                {g.options.map((o) => {
-                  const on = filters[g.key].includes(o.value);
-                  return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      className={`filter-chip ${on ? 'active' : ''}`}
-                      aria-pressed={on}
-                      onClick={() => toggle(g.key, o.value)}
-                    >
-                      {on && <CheckIcon />}
-                      {o.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </aside>
+      <div className="jb-results">
+        <div className="jb-count">
+          <strong>
+            {loading
+              ? 'Loading…'
+              : `${data.total.toLocaleString('en-IN')} ${data.total === 1 ? 'opening' : 'openings'}`}
+          </strong>
+          {!loading && data.pages > 1 && <span>Page {page} of {data.pages}</span>}
+        </div>
 
-        <div>
-          <div className="jb-count">
-            <strong>
-              {loading
-                ? 'Loading…'
-                : `${data.total.toLocaleString('en-IN')} ${data.total === 1 ? 'opening' : 'openings'}`}
-            </strong>
-            {!loading && data.pages > 1 && <span>Page {page} of {data.pages}</span>}
-          </div>
-
-          {active.length > 0 && (
-            <div className="jb-active">
-              {active.map((f) => (
-                <button
-                  key={`${f.key}:${f.value}`}
-                  type="button"
-                  className="jb-active-chip"
-                  onClick={() => dropFilter(f)}
-                  aria-label={`Remove filter ${f.label}`}
-                >
-                  {f.label}
-                  <CloseIcon />
-                </button>
-              ))}
-              <button type="button" className="btn sm ghost" onClick={clearAll}>Clear all</button>
-            </div>
-          )}
-
-          <div className="list">
-            {loading && [0, 1, 2, 3].map((n) => <div key={n} className="skeleton-row tall" />)}
-
-            {!loading && data.jobs.length === 0 && (
-              <div className="empty">
-                <div className="empty-icon" aria-hidden="true">🔍</div>
-                <strong>{active.length ? 'Nothing matches those filters' : 'No openings right now'}</strong>
-                {active.length
-                  ? 'Loosen one of them, or clear them all and start again.'
-                  : 'The board refreshes every morning — check back tomorrow.'}
-              </div>
-            )}
-
-            {!loading && data.jobs.map((j) => (
-              <JobCard key={j.id} job={j} isAdmin={isAdmin} onRemoved={load} labelOf={labelOf} />
+        {/* What is currently narrowing the list. The menus only carry a count,
+            and a count doesn't say which values are on. */}
+        {active.length > 0 && (
+          <div className="jb-active">
+            {active.map((f) => (
+              <button
+                key={`${f.key}:${f.value}`}
+                type="button"
+                className="jb-active-chip"
+                onClick={() => dropFilter(f)}
+                aria-label={`Remove filter ${f.label}`}
+              >
+                {f.label}
+                <CloseIcon />
+              </button>
             ))}
           </div>
+        )}
 
-          {!loading && data.pages > 1 && (
-            <div className="jb-pager">
-              <button className="btn sm quiet" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                ← Previous
-              </button>
-              <span>{page} / {data.pages}</span>
-              <button className="btn sm quiet" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>
-                Next →
-              </button>
+        <div className="list">
+          {loading && [0, 1, 2, 3].map((n) => <div key={n} className="skeleton-row tall" />)}
+
+          {!loading && data.jobs.length === 0 && (
+            <div className="empty">
+              <div className="empty-icon" aria-hidden="true">🔍</div>
+              <strong>{active.length ? 'Nothing matches those filters' : 'No openings right now'}</strong>
+              {active.length
+                ? 'Loosen one of them, or clear them all and start again.'
+                : 'The board refreshes every morning — check back tomorrow.'}
             </div>
           )}
+
+          {!loading && data.jobs.map((j) => (
+            <JobCard key={j.id} job={j} isAdmin={isAdmin} onRemoved={load} labelOf={labelOf} />
+          ))}
         </div>
+
+        {!loading && data.pages > 1 && (
+          <div className="jb-pager">
+            <button className="btn sm quiet" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              ← Previous
+            </button>
+            <span>{page} / {data.pages}</span>
+            <button className="btn sm quiet" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>
+              Next →
+            </button>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+/**
+ * One filter, as a menu.
+ *
+ * Multi-select, so it can't be a <select>: a role can be narrowed to both
+ * contract and freelance at once, and the board has always treated each
+ * vocabulary as a set. The trigger carries the count because a closed menu
+ * that doesn't say it is filtering is a trap.
+ */
+function FilterMenu({ label, options, selected, onToggle, onClear }) {
+  const [open, setOpen] = useState(false);
+  const n = selected.length;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className={`jb-menu-trigger ${n ? 'on' : ''}`}>
+          {label}
+          {n > 0 && <span className="jb-menu-count">{n}</span>}
+          <ChevronIcon />
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent align="start" sideOffset={6} className="jb-pop" aria-label={label}>
+        <div className="jb-pop-head">
+          <span>{label}</span>
+          {n > 0 && (
+            <button type="button" className="jb-pop-clear" onClick={onClear}>Clear</button>
+          )}
+        </div>
+        <div className="jb-pop-list" role="group">
+          {options.map((o) => {
+            const on = selected.includes(o.value);
+            return (
+              <button
+                key={o.value}
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                className={`jb-opt ${on ? 'on' : ''}`}
+                onClick={() => onToggle(o.value)}
+              >
+                <span className="jb-opt-box" aria-hidden="true">{on && <CheckIcon />}</span>
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
