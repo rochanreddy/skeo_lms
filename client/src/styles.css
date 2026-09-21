@@ -188,20 +188,24 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .auth-hero--art::after { content: none; }
 
 /* ── The sign-in illustration ─────────────────────────────────
-   A laptop with an editor open on it and two white cards in front.
+   An editor mid-ship: file tree, code, an integrated terminal and a status
+   bar, with a second panel offset behind it and two notes in front.
 
-   IT IS A FLOW ITEM, NOT AN ABSOLUTE ONE. The first version floated it over
+   FLAT, NOT FAKE-3D. The first version tilted a laptop with a perspective
+   transform. A rotated lid and a flat base never share a vanishing point, and
+   the join reads as two rectangles rather than as an object. Squared-up
+   surfaces, aligned to the pixel, hold up to being looked at; a cheap
+   perspective does not.
+
+   IT IS A FLOW ITEM, NOT AN ABSOLUTE ONE. An earlier version floated it over
    the hero and picked a `bottom` that looked right on a tall window; on a
-   short one the laptop rose straight through the paragraph. Position it in
-   the column instead and the overlap stops being something to tune and
-   starts being something the layout cannot express: the art gets whatever
-   height is left under the copy, and no more.
+   short one it rose straight through the paragraph. In the column it gets
+   whatever height the copy left, and overlap stops being something to tune.
 
    SCALE COMES FROM ONE KNOB. Everything below is in `em` against this
-   element’s own font-size, so the whole illustration — type, chrome, padding,
-   radii, the shadow, the cards — resizes together from a single clamp tied to
-   viewport height. That is what keeps it inside the leftover space on a 650px
-   window without a second set of breakpoint overrides to keep in step.
+   element’s own font-size, so the whole drawing — type, chrome, padding,
+   radii, shadows, the notes — resizes together from a single clamp. Nothing
+   here has its own breakpoint to keep in step with the others.
    ------------------------------------------------------------------------ */
 .auth-hero--art { justify-content: flex-start; gap: clamp(18px, 3.4vh, 40px); }
 .auth-hero--art .auth-brand,
@@ -210,88 +214,134 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .login-art {
   flex: 1 1 auto; min-height: 0;          /* exactly the space the copy left */
   align-self: stretch;
-  display: flex; align-items: flex-end; justify-content: flex-end;
-  margin-right: -3.6em;                   /* the bleed past the panel edge */
+  /* Centred in the leftover, not pinned to its foot. Bottom-anchoring left a
+     band of dead space under the copy on a tall window, which reads as a gap
+     rather than as breathing room. Safe to centre because the scene is sized to
+     fit its box — there is no overflow to push in either direction. */
+  display: flex; align-items: center; justify-content: flex-end;
   pointer-events: none; user-select: none; z-index: 0;
-  /* The knob. min() of the two axes because the illustration is bounded by
-     both: height decides whether it clears the copy, width decides how much of
-     the screen is left after the bleed. Taking the smaller means the tighter
-     axis wins and neither has to be handled in its own breakpoint. */
-  font-size: clamp(8px, min(1.32vh, 1.08vw), 12.5px);
+  /* Fallback knob, for browsers without container queries: viewport units,
+     which are only a proxy — they cannot know how much room the copy left. */
+  font-size: clamp(7.5px, min(1.2vh, 1.02vw), 12px);
 }
-/* Tipped away from the reader on its X axis and turned on its Y, which is how
-   a laptop on a desk actually presents itself. The perspective is on the
-   element rather than the parent so the hero’s other children are not dragged
-   into the same 3D context. */
-/* The stage: the laptop’s footprint, untransformed, so the cards have
-   something flat to be placed against. */
-.la-stage { position: relative; width: 44em; flex: none; }
-.la-laptop { width: 100%; transform: perspective(112em) rotateX(6deg) rotateY(-15deg) rotate(1deg); transform-style: preserve-3d; }
-.la-screen { background: #0e0c16; border: 1px solid #2b3345; border-radius: .96em .96em .24em .24em;
-  box-shadow: 0 2.7em 5.6em rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset; overflow: hidden; }
-.la-chrome { display: flex; align-items: center; gap: .48em; padding: .8em 1.12em; background: #12161f; border-bottom: 1px solid #232a38; }
-.la-dot { width: .72em; height: .72em; border-radius: 50%; background: #333c4e; }
+/* The knob proper. The drawing is bounded by the BOX IT WAS GIVEN, not by the
+   window: the copy above it is a fixed height, so on a short viewport the
+   leftover is tiny while vh is merely small, and on a tall one there is slack
+   that vh never spends. Container units measure the leftover itself, so one
+   expression fills the space when there is space and gets out of the way when
+   there is not. */
+@supports (container-type: size) {
+  .login-art { container-type: size; }
+  .la-scene { font-size: clamp(7.5px, min(3.4cqh, 2.02cqw), 15px); }
+}
+.la-scene { position: relative; width: 46em; flex: none;
+  margin-right: -3.2em;                   /* the bleed past the panel edge */ }
+
+/* The panel behind. Inset at the top so it adds no height, and shown only
+   along the right and bottom edges — one more surface is all the depth this
+   needs, and it is the honest kind. */
+.la-stack { position: absolute; left: 2.2em; right: -1.6em; top: 2.2em; bottom: -1.4em;
+  border-radius: 1em; background: #0f131b; border: 1px solid #1e2534; }
+
+.la-ide { position: relative; border-radius: 1em; overflow: hidden;
+  background: #0c1017; border: 1px solid #222a3a;
+  box-shadow: 0 2.4em 5em rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03) inset; }
+
+/* Title bar — lights, then tabs. */
+.la-bar { display: flex; align-items: center; gap: .5em; padding: .75em 1em 0;
+  background: #10151e; border-bottom: 1px solid #1c2433; }
+.la-dot { width: .7em; height: .7em; border-radius: 50%; background: #2c3546; flex: none; }
 /* Only the first light is lit. Three coloured dots is somebody else’s window
    chrome; one accent reads as ours. */
 .la-dot:first-child { background: var(--lavender); }
-.la-file { margin-left: .8em; font-family: Consolas, Menlo, monospace; font-size: .88em; color: #6b7386; }
+.la-tabs { display: flex; align-items: flex-end; gap: .25em; margin-left: 1em; }
+.la-tab { font-family: Consolas, Menlo, monospace; font-size: .82em; color: #5d6784;
+  padding: .62em .95em; border-radius: .55em .55em 0 0; white-space: nowrap; }
+/* The open tab joins the editor below it: same fill, and no bottom border to
+   cross. That join is the whole reason a tab reads as a tab. */
+.la-tab--on { color: #d7dde8; background: #0c1017; border: 1px solid #1c2433; border-bottom-color: #0c1017;
+  margin-bottom: -1px; }
 
-.la-code { margin: 0; padding: 1.28em 1.44em 1.6em; font-family: Consolas, Menlo, monospace;
-  font-size: 1em; line-height: 1.85; white-space: pre; }
-.la-line { display: flex; gap: 1.12em; }
+/* File tree beside the code. */
+.la-main { display: flex; align-items: stretch; }
+.la-files { flex: none; width: 10.5em; padding: 1em .6em; border-right: 1px solid #171e2a;
+  display: flex; flex-direction: column; gap: .15em; background: #0a0e14; }
+.la-filerow { display: flex; align-items: center; gap: .55em; padding: .4em .6em; border-radius: .45em;
+  font-family: Consolas, Menlo, monospace; font-size: .8em; color: #5d6784; white-space: nowrap; }
+.la-filerow--on { background: #141c28; color: #cfd6e3; }
+.la-fileglyph { width: .55em; height: .55em; border-radius: .12em; background: #2f3a4d; flex: none; }
+.la-filerow--on .la-fileglyph { background: var(--lavender); }
+.la-filerow--dir .la-fileglyph { border-radius: 50%; background: #3b4a5f; }
+
+.la-code { flex: 1 1 auto; min-width: 0; margin: 0; padding: 1em 1.2em 1.1em;
+  font-family: Consolas, Menlo, monospace; font-size: 1em; line-height: 1.85; white-space: pre; }
+.la-line { display: flex; gap: 1.1em; }
 /* tabular-nums so the gutter does not jitter, and a fixed width so the code
    starts on one column whether the line number is 1 or 14. */
-.la-num { flex: none; width: 1em; text-align: right; color: #3f4759; font-variant-numeric: tabular-nums; }
+.la-num { flex: none; width: 1em; text-align: right; color: #39425a; font-variant-numeric: tabular-nums; }
 .la-text { position: relative; }
 .la-kw { color: #9dc1ff; }
 .la-fn { color: #7dd3fc; }
 .la-var { color: #fbbf24; }
-.la-cm { color: #525b6e; font-style: italic; }
-.la-op { color: #808a9e; }
+.la-cm { color: #4e576b; font-style: italic; }
+.la-op { color: #7c8699; }
 .la-pl { color: #d7dde8; }
+
+/* The integrated terminal. */
+.la-term { padding: .85em 1.2em .95em; border-top: 1px solid #171e2a; background: #090d13;
+  font-family: Consolas, Menlo, monospace; font-size: .84em; line-height: 1.95; }
+.la-tline { display: flex; align-items: center; color: #8891a6; white-space: nowrap; }
+.la-tline--ok { color: #6fe3b0; }
+.la-prompt { color: var(--lavender); margin-right: .6em; }
+/* A tick drawn from two borders on a rotated box: it keeps its weight at any
+   size and needs no icon font. */
+.la-tick-sm { width: .34em; height: .68em; margin: 0 .74em 0 .12em; flex: none;
+  border: solid #6fe3b0; border-width: 0 .16em .16em 0; transform: rotate(43deg) translateY(-.1em); }
 /* Steady, not blinking. A caret keeping time in the corner of the sign-in page
    pulls the eye off the password field every second, forever. */
-.la-caret { display: inline-block; width: .56em; height: 1.12em; margin-left: .16em; vertical-align: -.24em;
-  background: var(--lavender); opacity: .85; border-radius: .08em; }
+.la-caret { display: inline-block; width: .5em; height: 1.05em; background: var(--lavender);
+  opacity: .85; border-radius: .08em; }
 
-/* The body, foreshortened. scaleX past 1 because a lid tilted back shows its
-   base wider than itself, and the trapezium that gives is what sells the angle. */
-.la-base { height: 1.04em; margin: 0 -1.12em; border-radius: 0 0 .88em .88em;
-  background: linear-gradient(#242c3c, #151a24); border: 1px solid #2b3345; border-top: 0;
-  transform: scaleX(1.035); display: flex; align-items: flex-start; justify-content: center; }
-.la-notch { width: 6.24em; height: .32em; border-radius: 0 0 .32em .32em; background: #0d1017; }
+/* Status bar. */
+.la-status { display: flex; align-items: center; gap: 1.2em; padding: .55em 1.2em;
+  background: #10151e; border-top: 1px solid #1c2433;
+  font-family: Consolas, Menlo, monospace; font-size: .76em; color: #5d6784; white-space: nowrap; }
+.la-status-gap { flex: 1 1 auto; }
+.la-branch { color: var(--lavender); }
 
-/* The white elements, in front of the screen. Real white on a near-black
-   ground is the loudest thing available, so they are small and there are two.
-   Placed against the laptop rather than the hero, so they travel with it
-   instead of being re-tuned every time the art moves. */
-.la-card { position: absolute; background: #fff; border-radius: .96em; padding: .88em 1.12em;
-  box-shadow: 0 1.44em 3.2em rgba(0,0,0,.42); display: flex; align-items: center; gap: .8em; white-space: nowrap; }
-/* Both sit low, over the base and the closing lines of the snippet. Higher up
-   they cover the statement the snippet exists to show — a card across
-   `const ship = async (idea) =>` reads as something hidden rather than as
-   something layered. */
-.la-card--build { left: -2.7em; bottom: 4.64em; }
-.la-card--live { right: 9.76em; bottom: -2.08em; }
-.la-card-row { display: flex; align-items: center; gap: .64em; }
-/* Dark literals, not --ink and --muted. These two cards are white on purpose,
-   and those tokens resolve to white and mid-grey on this theme — the label
-   would be white on white. A fixed surface needs fixed type. */
-.la-card-title { font-size: 1em; font-weight: 700; color: #0b0d12; letter-spacing: -0.01em; }
-.la-card-sub { font-size: .88em; color: #5f6779; margin-top: .08em; font-family: Consolas, Menlo, monospace; }
-/* The tick is drawn with two borders on a rotated box rather than set as a
-   character, so it keeps its weight at any size and needs no icon font. */
-.la-tick { width: 1.2em; height: 1.2em; border-radius: 50%; background: #16a34a; position: relative; flex: none; }
-.la-tick::after { content: ''; position: absolute; left: .4em; top: .2em; width: .32em; height: .6em;
-  border: solid #fff; border-width: 0 .16em .16em 0; transform: rotate(43deg); }
-.la-pulse { width: .72em; height: .72em; border-radius: 50%; background: #16a34a; flex: none;
-  box-shadow: 0 0 0 .32em rgba(22,163,74,.16); }
+/* The notes in front. White on near-black is the loudest thing available, so
+   they are small and there are two. They sit low, over the terminal and the
+   status bar, because higher up they would cover the statement the snippet
+   exists to show. */
+.la-chip { position: absolute; background: #fff; border-radius: .9em; padding: .7em .95em;
+  box-shadow: 0 1.2em 2.8em rgba(0,0,0,.5); display: flex; align-items: center; gap: .7em;
+  white-space: nowrap; }
+/* Over the empty foot of the file tree, which is the one part of the window
+   with nothing in it. Lower down it sat across the terminal’s first line and
+   hid the command the whole panel is about. */
+.la-chip--review { left: -2.4em; bottom: 10.4em; }
+/* Anchored from the left, not the right: the window bleeds off the panel edge,
+   so anything positioned from ITS right lands in the part nobody can see. */
+.la-chip--paid { left: 12.5em; bottom: -1.6em; }
+/* Dark literals, not --ink and --muted. These cards are white on purpose, and
+   those tokens resolve to white and mid-grey on this theme — the label would
+   be white on white. A fixed surface needs fixed type. */
+.la-chip-title { display: block; font-size: .92em; font-weight: 700; color: #0b0d12; letter-spacing: -0.01em; }
+.la-chip-sub { display: block; font-size: .8em; color: #5f6779; margin-top: .1em;
+  font-family: Consolas, Menlo, monospace; }
+.la-chip-mark { width: 1.7em; height: 1.7em; border-radius: 50%; flex: none;
+  display: grid; place-items: center; font-size: .95em; font-weight: 700;
+  background: #e8f0ff; color: #1f6fe0; }
+.la-tick { width: 1.15em; height: 1.15em; border-radius: 50%; background: #16a34a; position: relative; flex: none; }
+.la-tick::after { content: ''; position: absolute; left: .38em; top: .19em; width: .3em; height: .58em;
+  border: solid #fff; border-width: 0 .15em .15em 0; transform: rotate(43deg); }
 
 /* Two floors, for two different reasons. Narrower than this and the panel is
-   already slimmer than the laptop; shorter than this and what is left under
-   the copy is not enough to read a screen in. Below either, the hero goes back
-   to being type on a dark ground, which it is perfectly good at. */
-@media (max-width: 1024px), (max-height: 560px) {
+   already slimmer than the window; shorter than this and the leftover under
+   the copy is under the smallest the drawing shrinks to, so it would be cropped
+   rather than small. Below either, the hero goes back to being type on a dark
+   ground, which it is perfectly good at. */
+@media (max-width: 1024px), (max-height: 620px) {
   .login-art { display: none; }
 }
 .auth-brand { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
