@@ -7,9 +7,9 @@ import LessonIcon from '../components/LessonIcon.jsx';
 import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
-import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 import { mediaOf, mediaFrom, stripParentContext } from '../lib/syllabus.js';
+import CertificateModal from '../components/CertificateModal.jsx';
 
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
 // For admins: just the course content to teach from — they create &
@@ -823,38 +823,6 @@ function Ring({ pct }) {
       <circle cx="26" cy="26" r={r} className="ring-fg" strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} transform="rotate(-90 26 26)" />
       <text x="26" y="30" textAnchor="middle" className="ring-text">{pct}%</text>
     </svg>
-  );
-}
-
-function CertificateModal({ cert, onClose }) {
-  return (
-    // A real modal: Radix traps focus, closes on Escape and locks the page
-    // scroll. The click-outside-to-close of the old overlay is preserved.
-    <Dialog open onOpenChange={(next) => { if (!next) onClose(); }}>
-      <DialogContent
-        showCloseButton={false}
-        overlayClassName="cert-overlay"
-        className="cert"
-        aria-describedby={undefined}
-      >
-        <DialogTitle className="sr-only">Certificate of Completion</DialogTitle>
-        <div className="cert-inner">
-          <div className="cert-brand">Skeo</div>
-          <div className="cert-kicker">Certificate of Completion</div>
-          <div className="cert-name">{cert.name}</div>
-          <p className="cert-body">has successfully completed</p>
-          <div className="cert-program">{cert.program}</div>
-          <div className="cert-meta">
-            <span>Issued {new Date(cert.issuedAt).toLocaleDateString()}</span>
-            <span>ID {cert.certId}</span>
-          </div>
-        </div>
-        <div className="cert-actions">
-          <button className="btn" onClick={() => window.print()}>Download / Print</button>
-          <button className="btn ghost" onClick={onClose}>Close</button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 

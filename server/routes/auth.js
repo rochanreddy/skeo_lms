@@ -149,7 +149,7 @@ router.post('/forgot', async (req, res) => {
          addresses are real. */
       const mail = await trySendMail({
         to: email,
-        subject: 'Reset your Skeo LMS password',
+        subject: 'Reset your skeo LMS password',
         text: `Reset your password:\n\n${link}\n\nExpires in 30 minutes.`,
       });
       if (!mail.emailed) console.log('[forgot] not delivered (' + (mail.error || 'no transport configured') + ') — reset link:', link);

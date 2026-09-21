@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, setToken } from '../api.js';
 import SkeoWordmark from '../components/SkeoWordmark.jsx';
+import LoginArt from '../components/LoginArt.jsx';
 
 // The demo accounts, as data — the box below fills the form from these instead
 // of asking whoever's driving to retype a password from the screen.
@@ -52,12 +53,13 @@ export default function Login({ onLogin }) {
           <h2><span>Build.</span><span>Learn.</span><span>Monetize.</span></h2>
           <p>A hands-on fellowship where you build real products, learn the craft by shipping them, and turn that portfolio into paid work.</p>
         </div>
+        <LoginArt />
         <div />
       </div>
 
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={submit}>
-          <h1>Welcome to Skeo</h1>
+          <h1>Welcome to skeo</h1>
           {justReset && (
             <div className="auth-notice" role="status">Password updated. Sign in with your new one.</div>
           )}

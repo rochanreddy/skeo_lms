@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { issueCertificate, qrDataUri, verifyUrl } from '../utils/certificates.js';
 import { requireAuth } from '../middleware/auth.js';
 import { Progress } from '../models/Progress.js';
 import { Program } from '../models/Program.js';
@@ -42,14 +43,24 @@ router.get('/certificate', requireAuth, async (req, res) => {
   const p = await Progress.findOne({ studentId: req.user._id, programId });
   const completed = Math.min(p?.completedTopics?.length || 0, total);
   if (!(total > 0 && completed >= total)) return res.json({ eligible: false, completed, total });
-  let issuedAt = p.certificateIssuedAt;
-  if (!issuedAt) { p.certificateIssuedAt = new Date(); await p.save(); issuedAt = p.certificateIssuedAt; }
+  if (!p.certificateIssuedAt) { p.certificateIssuedAt = new Date(); await p.save(); }
+
+  /* A real certificate row, not a number sliced off this Progress document.
+     The old id was `MNLR-` + the last eight characters of p._id: the wrong
+     brand, guessable from any other student’s id, and backed by nothing a
+     stranger could check. issueCertificate is idempotent, so re-opening the
+     modal returns the same code rather than minting a second one. */
+  const { cert } = await issueCertificate({ student: req.user, program });
+
   res.json({
     eligible: true,
-    program: program.title,
-    name: req.user.fullName || req.user.email,
-    issuedAt,
-    certId: `MNLR-${String(p._id).slice(-8).toUpperCase()}`,
+    program: cert.programTitle,
+    name: cert.studentName,
+    issuedAt: cert.issuedAt,
+    certId: cert.code,
+    revoked: Boolean(cert.revokedAt),
+    verifyUrl: verifyUrl(cert.code),
+    qr: await qrDataUri(cert.code),
   });
 });
 

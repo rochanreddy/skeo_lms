@@ -6,7 +6,7 @@ export default function SkeoWordmark({ size = 24, theme = 'light', tagline = '' 
   const word = '#f5f7fb';
   return (
     <span className="skeo-wm" style={{ fontSize: size, color: word }}>
-      <span className="skeo-wm__word">Skeo</span>
+      <span className="skeo-wm__word">skeo</span>
       {tagline && <span className="skeo-wm__tagline" style={{ color: theme === 'dark' ? '#8fbcff' : '#3d8bff' }}>{tagline}</span>}
     </span>
   );

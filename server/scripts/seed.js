@@ -16,7 +16,7 @@ async function run() {
     admin = await User.create({
       email: ADMIN_EMAIL,
       passwordHash: await hashPassword(ADMIN_PASSWORD),
-      fullName: 'Skeo Admin',
+      fullName: 'skeo Admin',
       role: 'admin',
       emailVerified: true,
     });

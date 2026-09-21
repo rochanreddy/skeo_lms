@@ -101,7 +101,7 @@ export function deleteVideo(videoId) {
  */
 export function watermarkFor(user) {
   if ((process.env.VDOCIPHER_WATERMARK || 'on').toLowerCase() === 'off') return null;
-  const who = [user?.fullName, user?.email].filter(Boolean).join(' · ') || 'Skeo LMS';
+  const who = [user?.fullName, user?.email].filter(Boolean).join(' · ') || 'skeo LMS';
   return [
     {
       type: 'rtext',

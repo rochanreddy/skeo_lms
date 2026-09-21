@@ -172,10 +172,93 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 /* ── Auth (split screen) ── */
 .auth { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 100vh; }
 .auth-hero { position: relative; overflow: hidden; padding: 48px; color: var(--parchment); display: flex; flex-direction: column; justify-content: space-between; background: var(--stage); }
-/* The rule, drawn large — the brand motif as the hero's only ornament. */
-.auth-hero::after { content: ''; position: absolute; left: 48px; bottom: 168px; width: 84px; height: 3px; border-radius: 3px; background: var(--lavender); }
+/* Two washes of light behind the art, so the laptop sits ON something rather
+   than floating on flat black. Radial rather than linear because the light has
+   a source: it falls off around the screen, which is what makes the screen read
+   as the thing emitting it. */
+.auth-hero::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 46% at 72% 58%, rgba(61,139,255,.28), transparent 70%),
+    radial-gradient(40% 34% at 22% 14%, rgba(143,188,255,.12), transparent 72%); }
+/* The rule, drawn large — the brand motif, kept from the old hero. */
+.auth-hero::after { content: ''; position: absolute; left: 48px; bottom: 168px; width: 84px; height: 3px; border-radius: 3px; background: var(--lavender); z-index: 2; }
+
+/* ── The sign-in illustration ─────────────────────────────────
+   A laptop with an editor open on it, two white cards in front of it. It sits
+   BEHIND the copy (z-index 0 against the copy's 1) and ignores the pointer, so
+   nothing here can get between someone and the form.
+   ------------------------------------------------------------------------ */
+.login-art { position: absolute; right: -58px; bottom: 34px; width: 540px; pointer-events: none;
+  z-index: 0; user-select: none; }
+/* Tipped away from the reader on its X axis and turned on its Y, which is how
+   a laptop on a desk actually presents itself. The perspective is on the
+   element rather than the parent so the hero's other children are not dragged
+   into the same 3D context. */
+.la-laptop { transform: perspective(1400px) rotateX(6deg) rotateY(-15deg) rotate(1deg); transform-style: preserve-3d; }
+.la-screen { background: #0e0c16; border: 1px solid #332c47; border-radius: 12px 12px 3px 3px;
+  box-shadow: 0 34px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset; overflow: hidden; }
+.la-chrome { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #15121f; border-bottom: 1px solid #2a2438; }
+.la-dot { width: 9px; height: 9px; border-radius: 50%; background: #3a3350; }
+/* Only the first light is lit. Three coloured dots is somebody else's window
+   chrome; one accent reads as ours. */
+.la-dot:first-child { background: var(--lavender); }
+.la-file { margin-left: 10px; font-family: Consolas, Menlo, monospace; font-size: 11px; color: #6e6688; }
+
+.la-code { margin: 0; padding: 16px 18px 20px; font-family: Consolas, Menlo, monospace;
+  font-size: 12.5px; line-height: 1.85; white-space: pre; }
+.la-line { display: flex; gap: 14px; }
+/* tabular-nums so the gutter does not jitter, and a fixed width so the code
+   starts on one column whether the line number is 1 or 14. */
+.la-num { flex: none; width: 12px; text-align: right; color: #453d5e; font-variant-numeric: tabular-nums; }
+.la-text { position: relative; }
+.la-kw { color: #9dc1ff; }
+.la-fn { color: #7dd3fc; }
+.la-var { color: #fbbf24; }
+.la-cm { color: #5a5274; font-style: italic; }
+.la-op { color: #8b82a8; }
+.la-pl { color: #ded9f0; }
+/* Steady, not blinking. A caret keeping time in the corner of the sign-in page
+   pulls the eye off the password field every second, forever. */
+.la-caret { display: inline-block; width: 7px; height: 14px; margin-left: 2px; vertical-align: -3px;
+  background: var(--lavender); opacity: .85; border-radius: 1px; }
+
+/* The body, foreshortened. scaleX past 1 because a lid tilted back shows its
+   base wider than itself, and the trapezium that gives is what sells the angle. */
+.la-base { height: 13px; margin: 0 -14px; border-radius: 0 0 11px 11px;
+  background: linear-gradient(#2b2540, #191527); border: 1px solid #332c47; border-top: 0;
+  transform: scaleX(1.035); display: flex; align-items: flex-start; justify-content: center; }
+.la-notch { width: 78px; height: 4px; border-radius: 0 0 4px 4px; background: #120f1c; }
+
+/* The white elements, in front of the screen. Real white on a near-black
+   ground is the loudest thing available, so they are small and there are two. */
+.la-card { position: absolute; background: #fff; border-radius: 12px; padding: 11px 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.42); display: flex; align-items: center; gap: 10px; }
+/* Both cards sit low, over the base and the closing lines of the snippet.
+   Higher up they cover the statement the snippet exists to show — a card
+   across `const ship = async (idea) =>` reads as something hidden rather than
+   as something layered. */
+.la-card--build { left: -34px; bottom: 58px; }
+.la-card--live { right: 122px; bottom: -26px; }
+.la-card-row { display: flex; align-items: center; gap: 8px; }
+.la-card-title { font-size: 12.5px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.la-card-sub { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: Consolas, Menlo, monospace; }
+/* The tick is drawn with two borders on a rotated box rather than set as a
+   character, so it keeps its weight at any size and needs no icon font. */
+.la-tick { width: 15px; height: 15px; border-radius: 50%; background: #16a34a; position: relative; flex: none; }
+.la-tick::after { content: ''; position: absolute; left: 5px; top: 2.5px; width: 4px; height: 7.5px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(43deg); }
+.la-pulse { width: 9px; height: 9px; border-radius: 50%; background: #16a34a; flex: none;
+  box-shadow: 0 0 0 4px rgba(22,163,74,.16); }
+
+/* The art is the first thing to go: below this the hero is already narrower
+   than the laptop, and a half-cropped laptop is worse than none. */
+@media (max-width: 1180px) {
+  .login-art { display: none; }
+}
 .auth-brand { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
-.auth-hero-copy { position: relative; z-index: 1; max-width: 460px; }
+/* max-width so the headline never runs under the laptop, which starts at the
+   hero's right edge. */
+.auth-hero-copy { position: relative; z-index: 1; max-width: 430px; }
 .auth-hero-copy h2 { font-family: var(--serif); font-style: italic; font-size: 46px; line-height: 1.16; font-weight: 400; color: var(--parchment); letter-spacing: -0.02em; margin-bottom: 18px; }
 .auth-hero-copy h2 span { display: block; }
 .auth-hero-copy p { color: var(--lavender); font-size: 16px; line-height: 1.6; }
@@ -648,26 +731,155 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .tree-topic.done { color: var(--ink); }
 .topic-check { color: var(--green); font-weight: 700; margin-right: 4px; }
 
-/* The certificate leans hardest on the serif — it's the most human artefact
-   the product makes, and the one a student shows someone else. */
+/* ── The certificate ───────────────────────────────────────────
+   A fixed dark artifact, not a themed surface. Its palette is written out
+   here rather than taken from the app’s tokens because this sheet is
+   printed, screenshotted and pasted into application forms: it has to look
+   like one document everywhere, not like whatever theme the holder happened
+   to be in when they opened it.
+   ------------------------------------------------------------------------ */
 /* Radix supplies `fixed inset-0` and the fade for every scrim; these rules add
    only what is particular to this one. Centring moved to the popper, so the
    old 20px overlay padding becomes an inset on the panel itself. */
 .cert-overlay { background: rgba(0,0,0,.78); backdrop-filter: blur(4px); z-index: 100; }
 /* Was `z-[101] gap-0 border-0 p-0` in the JSX — see the note on .cmd. */
-.cert { --ink: #0b0d12; --ink-2: #2a2f3a; --muted: #5f6779; --purple: #1f6fe0; --purple-line: #c9dbff;
-  background: #ffffff; color: var(--ink); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); max-width: 660px; width: calc(100% - 40px);
+.cert {
+  /* Literals, not tokens, and that is the point: the app is themed and this
+     sheet must not be. They are the brand’s own blues written down, so the
+     certificate belongs to the product without following it. */
+  --c-ground: #0d1017;      /* the page behind the card */
+  --c-card:   #141924;      /* the card itself */
+  --c-line:   #283345;      /* hairlines and the inner border */
+  --c-ink:    #ffffff;      /* the name, the signature */
+  --c-read:   #c6cdd9;      /* body copy */
+  --c-dim:    #8a93a6;      /* the id block, the signature role */
+  --c-accent: #8fbcff;      /* the kicker and the programme name */
+  background: var(--c-ground); border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,.6);
+  max-width: 940px; width: calc(100% - 40px);
   z-index: 101; gap: 0; border: 0; padding: 0; }
-.cert-inner { border: 1px solid var(--purple-line); margin: 16px; padding: 52px 44px; text-align: center; border-radius: var(--radius); position: relative; }
-.cert-inner::before { content: ''; position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 54px; height: 2px; background: var(--purple); border-radius: 0 0 2px 2px; }
-.cert-brand { font-family: var(--display); font-weight: 900; font-size: 19px; color: var(--ink); letter-spacing: -0.025em; }
-.cert-kicker { text-transform: uppercase; letter-spacing: .24em; font-size: 11px; color: var(--muted); margin-top: 26px; font-weight: 700; }
-.cert-name { font-family: var(--serif); font-style: italic; font-size: 46px; font-weight: 400; margin: 14px 0 6px; color: var(--ink); letter-spacing: -0.02em; line-height: 1.1; }
-.cert-body { color: var(--muted); margin: 0; font-size: 14.5px; }
-.cert-program { font-family: var(--display); font-size: 21px; font-weight: 700; color: var(--purple); margin-top: 10px; letter-spacing: -0.02em; }
-.cert-meta { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--purple-line); font-size: 11.5px; color: var(--muted); }
-.cert-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 0 18px 20px; }
-@media print { body * { visibility: hidden; } .cert, .cert * { visibility: visible; } .cert { position: absolute; inset: 0; transform: none; width: auto; max-width: none; box-shadow: none; } .cert-actions { display: none; } }
+.cert-inner {
+  background: var(--c-card); border: 1px solid var(--c-line); border-radius: var(--radius);
+  margin: 14px; padding: 40px 44px 34px; text-align: left; position: relative; }
+
+/* Header: wordmark left, sample stamp right when there is one. */
+.cert-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
+.cert-brandblock { flex: 0 1 auto; }
+/* The wordmark set plainly, the way SkeoWordmark draws it — no rule, no dot,
+   no borrowed lockup. Lowercase, like every other place the name appears. */
+.cert-brand { font-family: var(--display); font-weight: 900; font-size: 28px; color: var(--c-ink); letter-spacing: -0.03em; line-height: 1; }
+.cert-tagline { font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--c-accent); margin-top: 7px; }
+/* Loud on purpose: a sample that reads as a credential is the one failure
+   this whole preview path exists to prevent. */
+.cert-sample { font-size: 11px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--c-accent);
+  border: 1px solid var(--c-line); border-radius: 999px; padding: 5px 12px; }
+.cert-rule { height: 1px; background: var(--c-line); margin: 22px 0 30px; }
+
+.cert-kicker { text-transform: uppercase; letter-spacing: .34em; font-size: 13px; font-weight: 600; color: var(--c-accent); }
+.cert-lede { margin: 18px 0 0; font-size: 15.5px; color: var(--c-read); }
+.cert-name { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 54px; line-height: 1.05; letter-spacing: -0.025em; color: var(--c-ink); margin: 10px 0 22px; overflow-wrap: anywhere; }
+.cert-body { margin: 0 0 12px; font-size: 14.5px; line-height: 1.75; color: var(--c-read); max-width: 76ch; }
+.cert-body strong { color: var(--c-accent); font-weight: 700; }
+.cert-revoked { margin: 6px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #FF8A80; }
+
+/* Footer: the QR and its code on the left, the signature on the right. */
+.cert-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; margin-top: 34px; flex-wrap: wrap; }
+.cert-idblock { display: flex; align-items: flex-start; gap: 14px; }
+/* White ground behind the modules whatever the card does — a scanner reads a
+   tinted QR as low contrast and gives up. */
+.cert-qr { display: block; background: #fff; padding: 5px; border-radius: 5px; flex: none; }
+/* The id block is built like a signature block: the code sits where a name
+   does, the rule under it, the dates where the designation does. That is what
+   puts both rules in the footer at the same height — a line under only one of
+   them reads as an accident. They share a line-height and a padding, which is
+   the only way they end up level: box-sizing is border-box, so a min-height
+   would sit inside the padding and each box would fall back to its own text
+   height — 12.5px mono and 13.5px bold are four pixels apart. */
+.cert-idtext { display: grid; gap: 0; }
+.cert-idtext .cert-id { line-height: 16px; padding-bottom: 6px; border-bottom: 1px solid var(--c-line); }
+.cert-idtext .cert-issued:first-of-type { margin-top: 8px; }
+.cert-idtext .cert-issued + .cert-issued { margin-top: 3px; }
+.cert-id { font-family: Consolas, Menlo, monospace; font-variant-numeric: tabular-nums; font-size: 12.5px; letter-spacing: .04em; color: var(--c-read); }
+.cert-issued { font-family: Consolas, Menlo, monospace; font-size: 11px; color: var(--c-dim); }
+
+.cert-signs { display: flex; gap: 34px; flex-wrap: wrap; }
+/* The rule sits BETWEEN the name and the designation, not above the name — it
+   reads as the signature line the name is written on, which is what a rule
+   above the name cannot do. */
+.cert-sign { min-width: 168px; }
+.cert-sign-name { line-height: 16px; font-size: 13.5px; font-weight: 700; color: var(--c-ink); padding-bottom: 6px; border-bottom: 1px solid var(--c-line); }
+.cert-sign-role { font-size: 10.5px; color: var(--c-dim); margin-top: 8px; }
+
+.cert-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 0 18px 18px; }
+
+/* The list of certificates on a profile. Each row opens the sheet, so it is a
+   button rather than a div with a click handler — it has to be reachable by
+   keyboard and announce itself as something that does a thing. */
+.cert-list { display: grid; gap: 8px; margin-top: 4px; }
+.cert-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%;
+  text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--bg); cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+.cert-row:hover { border-color: var(--purple-line); background: var(--card); }
+.cert-row-name { display: block; font-weight: 600; color: var(--ink); font-size: 14.5px; }
+.cert-row-meta { display: block; margin-top: 2px; font-family: Consolas, Menlo, monospace; font-size: 11.5px; color: var(--muted); }
+.cert-row-open { flex: none; font-size: 13px; font-weight: 600; color: var(--purple); }
+
+/* ── The verification page ───────────────────────────────────
+   Where the QR lands. Its reader is a stranger with no account, on a phone,
+   standing in front of the person whose certificate they are checking — so
+   this is one card with a verdict at the top and nothing to navigate. It
+   borrows the app’s light surface rather than the certificate’s dark one:
+   this is a page about a document, not the document.
+   ------------------------------------------------------------------------ */
+.verify { min-height: 100vh; display: grid; place-items: center; padding: 28px 20px; background: var(--bg); }
+.verify-card { width: 100%; max-width: 520px; background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 30px 30px 26px; }
+.verify-brand { margin-bottom: 22px; }
+/* The verdict reads before anything else on the page, because it is the only
+   thing most people came for — the facts underneath are the follow-up. */
+.verify-badge { display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; padding: 6px 13px; border-radius: 999px; }
+.verify-badge--valid { background: #dcfce7; color: #15803d; }
+.verify-badge--revoked { background: #fee2e2; color: #b91c1c; }
+.verify-badge--missing { background: var(--purple-soft); color: var(--a1-ink); }
+.verify-status { margin: 14px 0 0; font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+.verify-facts { margin-top: 22px; border-top: 1px solid var(--line); }
+.verify-fact { display: flex; justify-content: space-between; align-items: baseline; gap: 18px;
+  padding: 11px 0; border-bottom: 1px solid var(--line); }
+.verify-fact-label { font-size: 12.5px; color: var(--muted); flex: none; }
+/* The name can be long and the id is never broken across lines by choice —
+   a certificate id with a line break in it cannot be read back over a phone. */
+.verify-fact-value { font-size: 14.5px; font-weight: 600; color: var(--ink); text-align: right; overflow-wrap: anywhere; }
+.verify-fact-value.mono { font-family: Consolas, Menlo, monospace; font-weight: 500; font-size: 13px; letter-spacing: .03em; overflow-wrap: normal; }
+
+@media (max-width: 480px) {
+  .verify-card { padding: 24px 20px 20px; }
+  /* Stacked, because a long name and its label side by side on a phone
+     leaves the value squeezed into a column two words wide. */
+  .verify-fact { display: block; }
+  .verify-fact-value { text-align: left; margin-top: 3px; }
+}
+
+@media (max-width: 720px) {
+  .cert-inner { padding: 26px 22px 24px; }
+  .cert-name { font-size: 36px; }
+  .cert-kicker { letter-spacing: .2em; font-size: 11.5px; }
+  .cert-foot { gap: 22px; }
+  .cert-signs { gap: 20px; }
+}
+
+/* print-color-adjust, because browsers drop background colours when they
+   print, and without it this sheet comes out as dark grey text on white paper
+   with the QR floating on nothing. A credential printed that way is not a
+   lighter version of the design, it is a broken one. */
+@media print {
+  body * { visibility: hidden; }
+  .cert, .cert * { visibility: visible; }
+  .cert { position: absolute; inset: 0; transform: none; width: auto; max-width: none; box-shadow: none; }
+  .cert-actions { display: none; }
+  .cert, .cert-inner, .cert-qr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { size: A4 landscape; margin: 10mm; }
+}
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
 .tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
 .tile-value { font-family: var(--display); font-size: 26px; font-weight: 700; }

@@ -24,7 +24,7 @@ export default function AdminHome() {
         <div>
           <div className="eyebrow">Admin</div>
           <p className="greet">Everything, at a glance.</p>
-          <p>What's happening across Skeo LMS right now.</p>
+          <p>What's happening across skeo LMS right now.</p>
         </div>
         <button className="btn sm ghost" onClick={() => downloadFile('/reports/platform')}>Platform report (CSV)</button>
       </div>

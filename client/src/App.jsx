@@ -14,6 +14,9 @@ const ForcePasswordChange = lazy(() => import('./pages/ForcePasswordChange.jsx')
 const Blocked = lazy(() => import('./pages/Blocked.jsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
+// The page behind the QR on a certificate. Lazy like the rest, and public:
+// whoever opens it is a stranger checking somebody else’s credential.
+const VerifyCertificate = lazy(() => import('./pages/VerifyCertificate.jsx'));
 
 // What's on screen while /me is in flight. The topbar and the page frame don't
 // depend on the answer, so they paint immediately rather than after a round
@@ -103,6 +106,12 @@ export default function App() {
       {/* Where the emailed reset link lands. Reachable while signed in too: the
           link may be opened in a browser that still holds someone's session. */}
       <Route path="/reset" element={<Suspense fallback={<AppSkeleton />}><ResetPassword /></Suspense>} />
+      {/* PUBLIC, and it has to stay that way — it is printed on paper as a QR
+          code and opened by recruiters who have no account. Declared above the
+          catch-all so a signed-out visitor is not bounced to /login, and it
+          never redirects a signed-in one either: the person checking a
+          certificate may well be an admin with a session open. */}
+      <Route path="/verify/:code" element={<Suspense fallback={<AppSkeleton />}><VerifyCertificate /></Suspense>} />
       <Route
         path="/app"
         element={user ? <AppShell user={user} setUser={setUser} logout={logout} /> : <Navigate to="/login" />}

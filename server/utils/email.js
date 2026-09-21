@@ -36,7 +36,7 @@ const unquote = (s) => String(s || '').trim().replace(/^["']+|["']+$/g, '').trim
 function fromAddress() {
   return unquote(process.env.MAIL_FROM)
     || unquote(process.env.SMTP_FROM)
-    || (process.env.SMTP_USER ? `Skeo <${process.env.SMTP_USER}>` : 'Skeo <onboarding@resend.dev>');
+    || (process.env.SMTP_USER ? `skeo <${process.env.SMTP_USER}>` : 'skeo <onboarding@resend.dev>');
 }
 
 let cachedTransport = null;

@@ -20,6 +20,7 @@ import reportRoutes from './reports.js';
 import videoRoutes from './videos.js';
 import supportRoutes from './support.js';
 import webinarRoutes from './webinars.js';
+import certificateRoutes from './certificates.js';
 
 const router = Router();
 
@@ -48,5 +49,6 @@ router.use('/reports', reportRoutes); // admin CSV exports
 router.use('/videos', videoRoutes); // VdoCipher: per-viewer playback OTPs + admin library
 router.use('/support', supportRoutes); // help requests: students raise them, admins answer
 router.use('/webinars', webinarRoutes); // masterclasses an admin pushes to the whole school
+router.use('/certificates', certificateRoutes); // credentials, and the one public route a stranger can check one on
 
 export default router;

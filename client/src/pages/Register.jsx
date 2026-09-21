@@ -33,7 +33,7 @@ export default function Register({ onLogin }) {
       <div className="auth-hero">
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
-          <h2>Start learning with Skeo.</h2>
+          <h2>Start learning with skeo.</h2>
           <p>Live sessions, quizzes, projects and feedback — everything in one place.</p>
         </div>
         <div />
@@ -42,7 +42,7 @@ export default function Register({ onLogin }) {
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={submit}>
           <h1>Create your account</h1>
-          <p className="sub">For students joining the Skeo LMS.</p>
+          <p className="sub">For students joining the skeo LMS.</p>
 
           <div className="field">
             <label htmlFor="reg-name">Full name</label>

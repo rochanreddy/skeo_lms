@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
+import CertificateModal from '../components/CertificateModal.jsx';
 
 // Fully wired against GET/PATCH /api/skeo/me. Sections from the spec:
 // Personal · Educational · Professional.
@@ -13,7 +14,15 @@ export default function Profile() {
     professional: user.professional || {},
   });
   const [busy, setBusy] = useState(false);
+  // Every certificate this account holds, including ones an admin issued to a
+  // whole cohort — the classroom only ever knows about the one you claimed by
+  // finishing a programme. A minted-but-unsent certificate is filtered out
+  // server side, so this is exactly what the holder is allowed to know about.
+  const [certs, setCerts] = useState([]);
+  const [openCert, setOpenCert] = useState(null);
   const [msg, setMsg] = useState('');
+
+  useEffect(() => { api('/certificates/mine').then((d) => setCerts(d.certificates || [])).catch(() => {}); }, []);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -84,6 +93,25 @@ export default function Profile() {
         </div>
       </section>
 
+      {/* Only when there is something to show. An empty "Certificates" panel on
+          the profile of someone mid-programme reads as something withheld. */}
+      {certs.length > 0 && (
+        <section className="panel">
+          <h3>Certificates</h3>
+          <div className="cert-list">
+            {certs.map((c) => (
+              <button type="button" key={c.certId} className="cert-row" onClick={() => setOpenCert(c)}>
+                <span>
+                  <span className="cert-row-name">{c.programme}</span>
+                  <span className="cert-row-meta">{c.certId}{c.batch ? ` · ${c.batch}` : ''}</span>
+                </span>
+                <span className="cert-row-open">{c.revoked ? 'Revoked' : 'View'}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="panel">
         <h3>Educational</h3>
         <div className="field-grid">
@@ -109,6 +137,7 @@ export default function Profile() {
       </form>
 
       <ChangePassword />
+      {openCert && <CertificateModal cert={openCert} onClose={() => setOpenCert(null)} />}
     </div>
   );
 }
