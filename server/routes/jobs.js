@@ -217,11 +217,17 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   const filter = scrapedFilter(filters);
-  // Relevance first when searching — someone typing "prompt engineer" wants
-  // prompt engineering roles, not whatever happens to be newest.
+  // Most relevant first, newest breaking ties. The pipeline scores
+  // `relevance` once when it stores a job, so this costs nothing here.
+  //
+  // Without it the board opens on sales and ops: Business and Tech are two
+  // thirds of the feed, and the AI roles these students are training for sit
+  // pages deep. A search term overrides it — the reader has said what they
+  // want, and ranking AI roles above their own query would be the board
+  // arguing with them.
   const sort = filters.search
     ? { score: { $meta: 'textScore' }, postedAt: -1 }
-    : { postedAt: -1 };
+    : { relevance: -1, postedAt: -1 };
   const projection = filters.search ? { score: { $meta: 'textScore' } } : {};
 
   // Page one is shortened by however many manual postings sit above it, so
