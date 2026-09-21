@@ -163,6 +163,11 @@ const shapeScraped = (job) => ({
   roleCategory: job.roleCategory,
   workType: job.workType || 'unspecified',
   experienceLevel: job.experienceLevel || 'unspecified',
+  // Which syllabus terms put this listing where it is — "claude", "n8n",
+  // "prompt engineering". The pipeline scores relevance from these, so
+  // showing them is the difference between an order a student trusts and one
+  // that looks arbitrary.
+  matchedSkills: Array.isArray(job.matchedSkills) ? job.matchedSkills : [],
   postedAt: job.postedAt,
   description: '',
   origin: 'feed',
@@ -181,6 +186,8 @@ const shapeManual = (job) => ({
   // Rows written before the taxonomy change still carry the old enum.
   workType: job.workType || normalizeWorkType(job.type),
   experienceLevel: job.experienceLevel || 'unspecified',
+  // Hand-posted openings are never scored, so they carry no matched terms.
+  matchedSkills: [],
   postedAt: job.postedAt || job.createdAt,
   description: job.description || '',
   origin: 'manual',

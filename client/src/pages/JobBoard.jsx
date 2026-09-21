@@ -254,6 +254,16 @@ function JobCard({ job, isAdmin, onRemoved }) {
         {job.origin === 'manual' && <span className="badge">Shared by the team</span>}
       </div>
 
+      {/* Why this listing is where it is. The board ranks on how well a job
+          matches what the course actually teaches, and these are the terms it
+          matched — without them a student has no way to tell a ranked list
+          from an arbitrary one. */}
+      {job.matchedSkills?.length > 0 && (
+        <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+          Matches what you're learning: {job.matchedSkills.join(' · ')}
+        </div>
+      )}
+
       {job.description && <p style={{ margin: '10px 0 0' }}>{job.description}</p>}
 
       <div className="row" style={{ gap: 8, marginTop: 12 }}>

@@ -27,6 +27,13 @@ const scrapedJobSchema = new mongoose.Schema(
     roleCategory: String,
     workType: String,
     experienceLevel: String,
+    // How well the posting matches the Menler syllabus, and which of its
+    // terms it matched. Scored by the pipeline (pipeline/syllabus.js), never
+    // here. Declared despite strict:false because the board's default order
+    // is `relevance` descending — these two are load-bearing for this route,
+    // not incidental fields that happen to ride along.
+    relevance: Number,
+    matchedSkills: [String],
     postedAt: Date,
     fetchedAt: Date,
     lastSeenAt: Date,
