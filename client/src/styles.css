@@ -188,15 +188,15 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .auth-hero--art::after { content: none; }
 
 /* ── The sign-in illustration ─────────────────────────────────
-   A course module completing itself: lessons tick off, the bar fills behind
-   them, the certificate arrives. The product, not a stock picture of
-   programming.
+   The real syllabus, working through itself: a module opens, its lessons tick
+   off, it closes with a check on it, the next one opens, and the certificate
+   lands at the end.
 
-   ONE TIMELINE. The list is drawn twice — not-done under done — and a single
-   sweep clips the top layer, so a lesson completes when the clip edge passes
-   it. The bar, the counter and the certificate hang off the same 13s cycle at
-   the same percentages. Five rows with five delays would look identical on the
-   first pass and drift apart by the tenth.
+   THE SEQUENCE LIVES IN THE COMPONENT, THE MOTION LIVES HERE. LoginArt walks a
+   schedule and writes what is true onto the DOM — data-open, data-done — and
+   every rule below is a transition between those states. Nothing here needs to
+   know the running order, which is why the running order can change without
+   touching this file.
 
    FLAT, NOT FAKE-3D. An earlier version tilted a laptop with a perspective
    transform. A rotated lid and a flat base never share a vanishing point, and
@@ -223,7 +223,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   pointer-events: none; user-select: none; z-index: 0;
   /* Fallback knob, for browsers without container queries: viewport units,
      which are only a proxy — they cannot know how much room the copy left. */
-  font-size: clamp(7px, min(1.1vh, 0.95vw), 11px);
+  font-size: clamp(7px, min(1.05vh, 0.92vw), 11px);
 }
 /* The knob proper. The drawing is bounded by the BOX IT WAS GIVEN, not by the
    window: the copy above it is a fixed height, so on a short viewport the
@@ -231,7 +231,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    vh never spends. Container units measure the leftover itself. */
 @supports (container-type: size) {
   .login-art { container-type: size; }
-  .la-scene { font-size: clamp(7px, min(2.9cqh, 1.95cqw), 14px); }
+  .la-scene { font-size: clamp(7px, min(2.75cqh, 1.95cqw), 13.5px); }
 }
 .la-scene { position: relative; width: 44em; flex: none;
   margin-right: -3em;                     /* the bleed past the panel edge */ }
@@ -246,83 +246,104 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   background: #0c1017; border: 1px solid #222a3a;
   box-shadow: 0 2.4em 5em rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03) inset; }
 
-/* Header: where you are, and how far in. */
+/* Header: which track, and how far in. */
 .la-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5em; }
 .la-eyebrow { font-size: .72em; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
   color: var(--lavender); }
-.la-title { margin-top: .5em; font-family: var(--display); font-size: 1.35em; font-weight: 700;
+.la-title { margin-top: .5em; font-family: var(--display); font-size: 1.3em; font-weight: 700;
   letter-spacing: -0.02em; color: #eef2f8; }
-/* A reel of digits behind a one-digit window. The sweep that drives the rows
-   cuts at a fraction of the list; a digit sliced at two fifths of its height
-   is a broken glyph, not a number. So this steps a whole digit at a time, on
-   the same percentages, and the two stay in lockstep because they are the same
-   percentages rather than two timings that have to be kept equal by hand. */
-.la-count { display: flex; align-items: flex-start;
-  font-family: Consolas, Menlo, monospace; font-size: 1.15em; color: #4f5a72; white-space: nowrap; }
-/* The window. Its height and the digit’s height must be the same value or the
-   reel drifts a fraction of a line per step. */
-.la-reel { display: block; height: 1.2em; overflow: hidden; }
-.la-reel-track { display: block; }
-.la-reel i { display: block; height: 1.2em; line-height: 1.2em; font-style: normal; color: #eef2f8; }
-.la-count-of { line-height: 1.2em; color: #4f5a72; }
+.la-count { font-family: Consolas, Menlo, monospace; font-size: 1.15em; color: #4f5a72;
+  white-space: nowrap; }
+/* tabular-nums, or the panel twitches sideways as the count passes 9. */
+.la-count-now { color: #eef2f8; font-variant-numeric: tabular-nums; }
 
-/* The bar. */
-.la-bar { margin: 1.5em 0 1.3em; height: .45em; border-radius: .45em; background: #1a2130; overflow: hidden; }
-.la-bar-fill { display: block; width: 0; height: 100%; border-radius: .45em;
-  background: linear-gradient(90deg, #2f74e6, var(--blue)); }
+.la-bar { margin: 1.4em 0 1.2em; height: .45em; border-radius: .45em; background: #1a2130; overflow: hidden; }
+.la-bar-fill { display: block; height: 100%; border-radius: .45em;
+  background: linear-gradient(90deg, #2f74e6, var(--blue));
+  transition: width .5s cubic-bezier(.4,0,.2,1); }
 
-/* The list, drawn twice. The layers must agree on row height or the clip
-   lands mid-row, so neither carries padding and both take their size from the
-   same rows. */
-.la-list { position: relative; }
-.la-layer { display: flex; flex-direction: column; }
-.la-layer--done { position: absolute; inset: 0; clip-path: inset(0 0 100% 0); }
-.la-row { display: flex; align-items: center; gap: .85em; height: 3.1em; padding: 0 .7em;
-  border-radius: .6em; white-space: nowrap; }
-.la-layer--done .la-row { background: #121a26; }
-.la-row-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  font-size: .95em; color: #6f7a92; }
-.la-layer--done .la-row-name { color: #dfe5ef; }
-.la-row-meta { flex: none; font-family: Consolas, Menlo, monospace; font-size: .78em; color: #495468; }
-.la-layer--done .la-row-meta { color: #6fe3b0; }
+/* ── the syllabus ─────────────────────────────────────────
+   A fixed height, holding the tallest state: three closed modules plus one
+   open. Without it the panel grows and shrinks on every step and the whole
+   drawing walks up and down the page, because it is centred in its box. */
+.la-mods { height: 17.3em; }
+.la-mod { border-radius: .7em; transition: background .3s ease; }
+.la-mod[data-open="true"] { background: #0f1520; }
+.la-mod-head { display: flex; align-items: center; gap: .8em; height: 3.2em; padding: 0 .8em;
+  white-space: nowrap; }
+.la-mod-code { font-family: Consolas, Menlo, monospace; font-size: .82em; color: #5d6784;
+  transition: color .3s ease; }
+.la-mod[data-open="true"] .la-mod-code,
+.la-mod[data-done="true"] .la-mod-code { color: var(--lavender); }
+.la-mod-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  font-size: .96em; color: #7c8699; transition: color .3s ease; }
+.la-mod[data-open="true"] .la-mod-title { color: #eef2f8; }
+.la-mod[data-done="true"] .la-mod-title { color: #b9c2d2; }
+.la-mod-n { flex: none; font-family: Consolas, Menlo, monospace; font-size: .76em; color: #4b5468; }
 
-/* The glyph says what kind of thing the row is; a syllabus where every row
-   looks the same does not read as one. Drawn rather than set in an icon font,
-   so it keeps its weight at any size. */
-.la-glyph { position: relative; flex: none; width: 1.7em; height: 1.7em; border-radius: .5em;
-  background: #18202e; display: grid; place-items: center; }
-.la-glyph::before { content: ''; display: block; }
-/* A play triangle from three borders. */
-.la-glyph--play::before { width: 0; height: 0; margin-left: .12em;
-  border-top: .32em solid transparent; border-bottom: .32em solid transparent;
-  border-left: .52em solid #7f8aa3; }
-.la-glyph--build::before { width: .62em; height: .62em; border-radius: .14em; background: #7f8aa3; }
-.la-glyph--live::before { width: .6em; height: .6em; border-radius: 50%; border: .16em solid #7f8aa3; }
-.la-glyph--quiz::before { width: .62em; height: .62em; transform: rotate(45deg); background: #7f8aa3; }
+/* The chevron: two borders on a rotated box, so it keeps its weight at any
+   size and needs no icon font. It turns when the module opens. */
+.la-chev { flex: none; width: .5em; height: .5em; margin-right: .2em;
+  border: solid #4b5468; border-width: 0 .13em .13em 0; transform: rotate(45deg) translate(-.1em,-.1em);
+  transition: transform .35s cubic-bezier(.4,0,.2,1), border-color .3s ease; }
+.la-mod[data-open="true"] .la-chev { transform: rotate(225deg) translate(-.05em,-.05em); border-color: var(--lavender); }
 
-/* On the done layer the glyph becomes a tick. The tick is two borders on a
-   rotated box: no icon font, and it keeps its weight at any size. */
-.la-layer--done .la-glyph { background: #16a34a; }
-.la-layer--done .la-glyph::before { display: none; }
-.la-tick { display: none; width: .34em; height: .66em; margin-top: -.14em;
-  border: solid #fff; border-width: 0 .17em .17em 0; transform: rotate(43deg); }
-.la-layer--done .la-tick { display: block; }
+/* The module’s own mark: an outline that fills in green when it is finished. */
+.la-modmark { position: relative; flex: none; width: 1.55em; height: 1.55em; border-radius: .48em;
+  border: .13em solid #2b3446; display: grid; place-items: center;
+  transition: background .35s ease, border-color .35s ease; }
+.la-mod[data-done="true"] .la-modmark { background: #16a34a; border-color: #16a34a; }
 
-/* Footer. */
-.la-foot { display: flex; align-items: center; gap: .7em; margin-top: 1.4em; padding-top: 1.2em;
-  border-top: 1px solid #1a2130; font-family: Consolas, Menlo, monospace; font-size: .8em; color: #5d6784; }
+/* 0fr to 1fr. The row collapses to nothing and grows to exactly its content,
+   which a max-height guess never does: too small clips the last lesson, too
+   large spends half the transition easing against empty space. */
+.la-mod-body { display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .4s cubic-bezier(.4,0,.2,1); }
+.la-mod[data-open="true"] .la-mod-body { grid-template-rows: 1fr; }
+/* The grid row is the thing being animated, so the child has to be allowed to
+   be smaller than its content — min-height:0 — and to hide the overflow while
+   it is. */
+.la-mod-inner { min-height: 0; overflow: hidden; }
+
+.la-les { display: flex; align-items: center; gap: .75em; height: 2.5em; padding: 0 .8em 0 1.7em;
+  white-space: nowrap; opacity: .55; transition: opacity .35s ease; }
+.la-les[data-done="true"] { opacity: 1; }
+.la-les-code { font-family: Consolas, Menlo, monospace; font-size: .76em; color: #4f5a72; }
+.la-les-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  font-size: .88em; color: #7c8699; transition: color .35s ease; }
+.la-les[data-done="true"] .la-les-name { color: #dfe5ef; }
+.la-les-mark { position: relative; flex: none; width: 1.15em; height: 1.15em; border-radius: 50%;
+  border: .12em solid #2b3446; display: grid; place-items: center;
+  transition: background .3s ease, border-color .3s ease; }
+.la-les[data-done="true"] .la-les-mark { background: #16a34a; border-color: #16a34a; }
+
+/* One tick, used at both sizes. Two borders on a rotated box: no icon font,
+   and it keeps its weight wherever it is dropped. It scales from nothing as
+   the mark fills, so the fill and the tick read as one movement. */
+.la-tick { width: .3em; height: .58em; margin-top: -.1em;
+  border: solid #fff; border-width: 0 .15em .15em 0;
+  transform: rotate(43deg) scale(0); opacity: 0;
+  transition: transform .3s cubic-bezier(.34,1.4,.5,1), opacity .2s ease; }
+.la-les[data-done="true"] .la-tick,
+.la-mod[data-done="true"] .la-tick { transform: rotate(43deg) scale(1); opacity: 1; }
+.la-modmark .la-tick { width: .36em; height: .7em; border-width: 0 .17em .17em 0; }
+
+.la-foot { display: flex; align-items: center; gap: .7em; margin-top: 1.2em; padding-top: 1.1em;
+  border-top: 1px solid #1a2130; font-family: Consolas, Menlo, monospace; font-size: .78em; color: #5d6784; }
 .la-foot-live { width: .6em; height: .6em; border-radius: 50%; background: #f0525f; flex: none;
   box-shadow: 0 0 0 .28em rgba(240,82,95,.16); }
 
 /* The certificate, arriving. White on near-black is the loudest thing here, so
-   it is small, and it is the only one — it is the payoff, and a second note
+   it is small and it is the only one — it is the payoff, and a second note
    beside it would split the moment. Anchored from the left because the panel
    bleeds off the hero edge, and anything placed from ITS right lands in the
    part nobody can see. */
 .la-chip { position: absolute; left: 11em; bottom: -1.7em;
   background: #fff; border-radius: .9em; padding: .75em 1em;
   box-shadow: 0 1.2em 2.8em rgba(0,0,0,.5); display: flex; align-items: center; gap: .75em;
-  white-space: nowrap; opacity: 0; transform: translateY(.6em) scale(.96); }
+  white-space: nowrap; opacity: 0; transform: translateY(.6em) scale(.96);
+  transition: opacity .45s ease, transform .45s cubic-bezier(.34,1.3,.5,1); }
+.la-chip[data-show="true"] { opacity: 1; transform: none; }
 /* Dark literals, not --ink and --muted. This card is white on purpose, and
    those tokens resolve to white and mid-grey on this theme — the label would
    be white on white. A fixed surface needs fixed type. */
@@ -333,62 +354,14 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   background: radial-gradient(circle at 35% 30%, #8fbcff, #1f6fe0);
   box-shadow: 0 0 0 .25em rgba(31,111,224,.14); }
 
-/* ── the timeline ──────────────────────────────────────────
-   Five rows, so the sweep steps in fifths. Each step is a pair of keyframes at
-   the same value: the pair holds the row still, and the 0.4% between pairs is
-   short enough to read as a snap rather than a slide — a lesson is done or it
-   is not, and easing across that boundary would say otherwise.
-
-   The whole thing is behind prefers-reduced-motion. With motion off the
-   drawing sits in its finished state, which is the frame worth seeing anyway:
-   five of five, bar full, certificate in hand. */
-@media (prefers-reduced-motion: no-preference) {
-  .la-layer--done { animation: la-sweep 13s cubic-bezier(.4,0,.2,1) infinite; }
-  .la-reel-track { animation: la-reel 13s cubic-bezier(.4,0,.2,1) infinite; }
-  .la-bar-fill { animation: la-fill 13s cubic-bezier(.4,0,.2,1) infinite; }
-  .la-chip { animation: la-arrive 13s cubic-bezier(.34,1.3,.5,1) infinite; }
-}
+/* Someone who asked for less movement gets the finished frame and no
+   transitions at all — the component already stops its timer, and this stops
+   the first paint from easing into place. */
 @media (prefers-reduced-motion: reduce) {
-  .la-layer--done { clip-path: inset(0 0 0 0); }
-  .la-reel-track { transform: translateY(-6em); }   /* land the reel on 5 */
-  .la-bar-fill { width: 100%; }
-  .la-chip { opacity: 1; transform: none; }
-}
-
-@keyframes la-sweep {
-  0%,   7.6%  { clip-path: inset(0 0 100% 0); }
-  8%,   23.6% { clip-path: inset(0 0 80% 0); }
-  24%,  39.6% { clip-path: inset(0 0 60% 0); }
-  40%,  55.6% { clip-path: inset(0 0 40% 0); }
-  56%,  71.6% { clip-path: inset(0 0 20% 0); }
-  72%,  94%   { clip-path: inset(0 0 0 0); }
-  94.4%, 100% { clip-path: inset(0 0 100% 0); }
-}
-/* Six digits, one line each, so every step is exactly one line. */
-@keyframes la-reel {
-  0%,   7.6%  { transform: translateY(0); }
-  8%,   23.6% { transform: translateY(-1.2em); }
-  24%,  39.6% { transform: translateY(-2.4em); }
-  40%,  55.6% { transform: translateY(-3.6em); }
-  56%,  71.6% { transform: translateY(-4.8em); }
-  72%,  94%   { transform: translateY(-6em); }
-  94.4%, 100% { transform: translateY(0); }
-}
-@keyframes la-fill {
-  0%,   7.6%  { width: 0; }
-  8%,   23.6% { width: 20%; }
-  24%,  39.6% { width: 40%; }
-  40%,  55.6% { width: 60%; }
-  56%,  71.6% { width: 80%; }
-  72%,  94%   { width: 100%; }
-  94.4%, 100% { width: 0; }
-}
-/* The certificate lands just after the last row, holds, and leaves before the
-   reset — so the loop never shows it alongside an empty list. */
-@keyframes la-arrive {
-  0%,   73%   { opacity: 0; transform: translateY(.6em) scale(.96); }
-  78%,  91%   { opacity: 1; transform: translateY(0) scale(1); }
-  94%,  100%  { opacity: 0; transform: translateY(.6em) scale(.96); }
+  .la-bar-fill, .la-mod, .la-mod-body, .la-chev, .la-modmark, .la-les,
+  .la-les-mark, .la-tick, .la-chip, .la-mod-code, .la-mod-title, .la-les-name {
+    transition: none;
+  }
 }
 
 /* Two floors, for two different reasons. Narrower than this and the panel is
