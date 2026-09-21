@@ -72,11 +72,16 @@ async function sendViaResend({ from, to, subject, text, html, replyTo }) {
 }
 
 export async function sendMail({ to, subject, text, html, replyTo }) {
+  /* Resolved before the dev branch so the console prints the sender too. It is
+     the one field you cannot check any other way short of actually sending, and
+     getting it wrong is silent: the mail goes out from whatever mailbox the SMTP
+     credentials belong to, or from Resend's shared address, and nobody notices
+     until a student replies to it. */
+  const from = fromAddress();
   if (!isMailConfigured()) {
-    console.log(`\n[email:dev] to=${to}\nsubject=${subject}\n${text || ''}\n`);
+    console.log(`\n[email:dev] from=${from}\nto=${to}\nsubject=${subject}\n${text || ''}\n`);
     return { dev: true };
   }
-  const from = fromAddress();
   if (isResendConfigured()) return sendViaResend({ from, to, subject, text, html, replyTo });
   const transport = await getTransport();
   const info = await transport.sendMail({ from, to, subject, text, html, replyTo });
