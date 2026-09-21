@@ -1,43 +1,60 @@
 /**
- * The illustration on the sign-in hero: an editor, mid-ship.
+ * The illustration on the sign-in hero: a module completing itself.
  *
- * Drawn in markup rather than shipped as an image. The code and the terminal
- * output are real text, so they stay sharp on every display instead of going
- * soft at 2x like a screenshot would, they cost nothing to download, and they
- * recolour with the theme tokens rather than baking one palette into a PNG that
- * then has to be re-exported whenever the brand moves.
+ * It shows the product rather than a stock picture of programming — a course
+ * panel with its lessons ticking off one by one, the bar filling behind them,
+ * and the certificate arriving at the end. That is the whole arc of the
+ * fellowship, and it is the arc the headline beside it names: build, learn,
+ * and get paid for it.
  *
- * IT IS A FLAT COMPOSITION, NOT A 3D ONE. An earlier version drew a laptop with
- * a CSS perspective transform. A tilted lid and a flat slab of a base never
- * share a vanishing point, and the join between them reads as two rectangles
- * rather than as an object — the kind of thing that looks worse the longer you
- * look at it. A squared-up window stack carries the same idea and survives
- * being looked at.
+ * HOW THE ANIMATION WORKS. The list is drawn twice, once as not-yet-done and
+ * once as done, stacked exactly. A single sweep animation clips the done layer
+ * from the top, so a lesson "completes" when the clip edge passes it. One
+ * timeline drives every part — the rows, the bar, the certificate — which is
+ * why they cannot drift out of step with each other. Animating five rows
+ * separately and hoping their delays stay aligned is how that drift starts.
+ *
+ * Both layers carry the same rows so their geometry is identical; the clip is
+ * a percentage of the list's height, and it only lines up with a row edge
+ * because every row is the same height and the layer has no padding of its own.
  *
  * Entirely decorative: the hero says "Build. Learn. Monetize." in text beside
  * it, so this is aria-hidden and a screen reader is told nothing twice.
  */
 
-/* One line of the editor, as tokens. Written as data rather than as nested
-   spans in the JSX because the shape of the snippet is the thing worth reading
-   here, and thirty <span className="la-kw"> wrappers bury it. */
-const CODE = [
-  [['c', '// the whole job, in four lines']],
-  [['k', 'export const'], ['f', ' ship'], ['o', ' = async ('], ['v', 'idea'], ['o', ') => {']],
-  [['o', '  '], ['k', 'const'], ['p', ' product '], ['o', '= '], ['k', 'await'], ['f', ' build'], ['o', '('], ['v', 'idea'], ['o', ');']],
-  [['o', '  '], ['k', 'await'], ['p', ' product'], ['o', '.'], ['f', 'launch'], ['o', '();']],
-  [['o', '  '], ['k', 'return'], ['p', ' product'], ['o', '.'], ['f', 'invoice'], ['o', '();']],
-  [['o', '};']],
+/* The module, as data. `kind` picks the glyph — a lesson, a build, a live
+   session, a quiz — because a list where every row looks the same does not
+   read as a syllabus. */
+const LESSONS = [
+  { kind: 'play', name: 'Find a problem worth solving', meta: '12 min' },
+  { kind: 'build', name: 'Ship a working v1', meta: 'Project' },
+  { kind: 'live', name: 'Mentor review', meta: 'Live' },
+  { kind: 'quiz', name: 'Pricing your work', meta: '6 questions' },
+  { kind: 'build', name: 'Send your first invoice', meta: 'Project' },
 ];
 
-const TOKEN_CLASS = { k: 'kw', f: 'fn', v: 'var', c: 'cm', o: 'op', p: 'pl' };
-
-const FILES = [
-  { name: 'src', dir: true },
-  { name: 'ship.js', on: true },
-  { name: 'client.js' },
-  { name: 'invoice.md' },
-];
+/* One layer of the list. Rendered twice with different `state`, so the two
+   stacks are guaranteed to have the same geometry — the clip that reveals one
+   through the other is a percentage, and it only lands on a row boundary while
+   both layers agree on where those boundaries are. */
+function Rows({ state }) {
+  return (
+    <div className={`la-layer la-layer--${state}`}>
+      {LESSONS.map((l) => (
+        <div className="la-row" key={l.name}>
+          <span className={`la-glyph la-glyph--${l.kind}`}>
+            {/* The tick lives in the markup of both layers and is simply
+                invisible on the todo one, so the two rows stay the same height
+                whatever happens to it. */}
+            <span className="la-tick" />
+          </span>
+          <span className="la-row-name">{l.name}</span>
+          <span className="la-row-meta">{l.meta}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function LoginArt() {
   return (
@@ -45,76 +62,50 @@ export default function LoginArt() {
       <div className="la-scene">
         {/* A second panel, offset behind the first. Depth from one more surface
             rather than from a perspective transform, and it costs no height:
-            it is inset at the top and only shows along two edges. */}
+            it is inset at the top and shows only along two edges. */}
         <div className="la-stack" />
 
-        <div className="la-ide">
-          <div className="la-bar">
-            <span className="la-dot" /><span className="la-dot" /><span className="la-dot" />
-            <div className="la-tabs">
-              <span className="la-tab la-tab--on">ship.js</span>
-              <span className="la-tab">invoice.md</span>
+        <div className="la-panel">
+          <div className="la-head">
+            <div>
+              <div className="la-eyebrow">Module 2 of 6</div>
+              <div className="la-title">Ship your first product</div>
             </div>
-          </div>
-
-          <div className="la-main">
-            <div className="la-files">
-              {FILES.map((f) => (
-                <span
-                  key={f.name}
-                  className={`la-filerow${f.on ? ' la-filerow--on' : ''}${f.dir ? ' la-filerow--dir' : ''}`}
-                >
-                  <span className="la-fileglyph" />
-                  {f.name}
+            <div className="la-count">
+              {/* A reel, not a clip. The sweep that reveals the rows cuts at a
+                  fraction of the list, and a digit sliced at two fifths of its
+                  height reads as a broken glyph rather than as a number — so the
+                  count steps a whole digit at a time, on the same percentages. */}
+              <span className="la-reel">
+                {/* The window stays put and the TRACK moves. Transforming the
+                    window itself takes its own clipping box along with it, which
+                    sends the digit out of the panel instead of scrolling it. */}
+                <span className="la-reel-track">
+                  {[0, 1, 2, 3, 4, 5].map((n) => <i key={n}>{n}</i>)}
                 </span>
-              ))}
+              </span>
+              <span className="la-count-of">/5</span>
             </div>
-
-            <pre className="la-code">
-              {CODE.map((line, i) => (
-                <div className="la-line" key={i}>
-                  <span className="la-num">{i + 1}</span>
-                  <span className="la-text">
-                    {line.map(([kind, text], j) => (
-                      <span className={`la-${TOKEN_CLASS[kind]}`} key={j}>{text}</span>
-                    ))}
-                  </span>
-                </div>
-              ))}
-            </pre>
           </div>
 
-          {/* The integrated terminal, where a real editor keeps it. It is what
-              makes this read as an editor rather than as a code sample in a box,
-              and it carries the payoff the snippet is building toward. */}
-          <div className="la-term">
-            <div className="la-tline"><span className="la-prompt">$</span>npm run ship</div>
-            <div className="la-tline la-tline--ok"><span className="la-tick-sm" />built in 1.2s · 4 tests passed</div>
-            <div className="la-tline la-tline--ok"><span className="la-tick-sm" />live at yourproject.app</div>
-            <div className="la-tline"><span className="la-prompt">$</span><span className="la-caret" /></div>
+          <div className="la-bar"><span className="la-bar-fill" /></div>
+
+          <div className="la-list">
+            <Rows state="todo" />
+            <Rows state="done" />
           </div>
 
-          <div className="la-status">
-            <span className="la-branch">main</span>
-            <span>0 problems</span>
-            <span className="la-status-gap" />
-            <span>JavaScript</span>
+          <div className="la-foot">
+            <span className="la-foot-live" />
+            Live review · Thursday, 7pm
           </div>
         </div>
 
-        {/* Two notes, and each says something the window does not: the review
-            that let it ship, and the invoice that followed. A third repeating
-            "deployed" would only say the terminal's last line again. */}
-        <div className="la-chip la-chip--review">
-          <span className="la-tick" />
-          <span className="la-chip-title">Mentor approved</span>
-        </div>
-
-        <div className="la-chip la-chip--paid">
-          <span className="la-chip-mark">&#8377;</span>
+        <div className="la-chip">
+          <span className="la-seal" />
           <span>
-            <span className="la-chip-title">First invoice paid</span>
-            <span className="la-chip-sub">25,000 · 2 days ago</span>
+            <span className="la-chip-title">Certificate unlocked</span>
+            <span className="la-chip-sub">SKEO-FELLO-0926-0007</span>
           </span>
         </div>
       </div>
