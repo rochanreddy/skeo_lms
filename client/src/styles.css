@@ -2417,26 +2417,176 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .assign-countdown.overdue { background: var(--red-soft); color: var(--red-ink); border-color: var(--red-line); }
 .assign-req-list li svg { color: var(--green); }
 
-/* ── Job board filters ─────────────────────────────────────────────────
-   A pill that toggles. Deliberately not .chip: that one carries an avatar
-   and a remove button, so it is padded for a person, not a word. */
-.filter-chip {
-  display: inline-flex;
-  align-items: center;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-family: var(--font);
-  color: var(--muted);
-  cursor: pointer;
-  white-space: nowrap;
+/* ── Job board ─────────────────────────────────────────────────────────────
+   A board, not a stack of panels. Three parts, and the whole page hangs off
+   them: a search bar across the top, a sticky filter rail down the left, and
+   the listings in the remaining column.
+
+   The rail is the point. Twenty-odd filter chips laid across the content
+   column pushed the first listing below the fold and made the page read as
+   noise; down the side they are a legend you consult, and the listings start
+   at the top, where a board should start.                                   */
+.jb { display: flex; flex-direction: column; gap: 18px; }
+/* The column gap already spaces the head off the search bar. */
+.jb > .page-head { margin-bottom: 0; }
+
+/* ── Search ── One field, the width of the page, with the glass inside it. */
+.jb-search { display: flex; gap: 10px; align-items: center; }
+.jb-search-field { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
+.jb-search-field svg { position: absolute; left: 15px; width: 17px; height: 17px; color: var(--muted-2); pointer-events: none; }
+.jb-search-field input {
+  width: 100%; padding: 13px 15px 13px 43px; font-family: var(--font); font-size: 14.5px;
+  border: 1px solid var(--line); border-radius: var(--pill); background: var(--card); color: var(--ink);
+  box-shadow: var(--shadow);
 }
-.filter-chip:hover { color: var(--ink); border-color: var(--line-2, var(--line)); }
-.filter-chip.active {
-  background: var(--purple-soft);
-  border-color: var(--purple);
-  color: var(--purple);
-  font-weight: 600;
+.jb-search-field input::placeholder { color: var(--muted-2); }
+.jb-search-field input:focus { outline: none; border-color: var(--blue); box-shadow: var(--ring); }
+.jb-search .btn { flex: none; padding: 12px 22px; }
+
+.jb-layout { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 24px; align-items: start; }
+
+/* ── The filter rail ── No card around it: a card would make the filters look
+   like content. They are chrome, so they sit straight on the ground. */
+.jb-rail { position: sticky; top: 84px; }
+.jb-group + .jb-group { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+.jb-group-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 11px;
+}
+.jb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* A pill that toggles. Deliberately not .chip: that one carries an avatar and
+   a remove button, so it is padded for a person, not a word. */
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--pill);
+  padding: 6px 12px; font-family: var(--font); font-size: 12.5px; color: var(--muted);
+  cursor: pointer; white-space: nowrap; transition: color .14s, border-color .14s, background .14s;
+}
+.filter-chip:hover { color: var(--ink); border-color: var(--line-2); background: var(--wash); }
+.filter-chip:focus-visible { outline: none; box-shadow: var(--ring); }
+.filter-chip.active { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue-ink); font-weight: 600; }
+.filter-chip.active:hover { background: var(--blue-soft); border-color: var(--blue); }
+.filter-chip svg { width: 12px; height: 12px; flex: none; }
+
+/* The rail's disclosure, on screens too narrow to carry a rail. */
+.jb-filter-toggle { display: none; }
+
+/* ── Results header ── the count, and what is currently narrowing it. */
+.jb-count { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.jb-count strong { font-family: var(--display); font-size: 17px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+.jb-count span { color: var(--muted); font-size: 13.5px; }
+.jb-active { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+/* A chip that removes its own filter — the same pill, worn as a statement
+   rather than an option. */
+.jb-active-chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px 5px 12px;
+  border-radius: var(--pill); background: var(--blue-soft); border: 1px solid var(--blue-line);
+  color: var(--blue-ink); font-family: var(--font); font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: border-color .14s;
+}
+.jb-active-chip:hover { border-color: var(--blue); }
+.jb-active-chip svg { width: 13px; height: 13px; opacity: .7; }
+.jb-active-chip:hover svg { opacity: 1; }
+
+/* ── A listing ────────────────────────────────────────────────────────────
+   Monogram, then the role. The monogram is doing real work: forty openings
+   with no left edge is a wall of text, and a coloured square per company
+   gives the eye somewhere to land and something to scan by.                */
+.job-card {
+  position: relative; display: flex; flex-direction: column; gap: 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px 20px; box-shadow: var(--shadow);
+  transition: border-color .16s, transform .16s, box-shadow .16s;
+}
+.job-card:hover { border-color: var(--blue-line); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.job-card:focus-within { border-color: var(--blue); box-shadow: var(--ring); }
+.job-card-head { display: flex; align-items: flex-start; gap: 14px; }
+.job-logo {
+  width: 42px; height: 42px; flex: none; border-radius: 12px; display: grid; place-items: center;
+  font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: -.02em;
+  background: var(--a1-soft); color: var(--a1-ink);
+}
+.job-logo[data-tone='2'] { background: var(--a2-soft); color: var(--a2-ink); }
+.job-logo[data-tone='3'] { background: var(--a3-soft); color: var(--a3-ink); }
+.job-logo[data-tone='4'] { background: var(--a4-soft); color: var(--a4-ink); }
+.job-logo[data-tone='5'] { background: var(--a5-soft); color: var(--a5-ink); }
+.job-logo[data-tone='6'] { background: var(--a6-soft); color: var(--a6-ink); }
+
+.job-id { min-width: 0; flex: 1; }
+.job-title { font-family: var(--display); font-size: 16.5px; font-weight: 700; letter-spacing: -.025em; line-height: 1.3; margin: 0; color: var(--ink); }
+/* The title is the link and it covers the card, so the whole row is the
+   target while the accessible name is still the role. */
+.job-title a { color: inherit; text-decoration: none; transition: color .14s; }
+.job-title a::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius); }
+.job-title a:focus-visible { outline: none; }
+.job-card:hover .job-title a { color: var(--blue); }
+.job-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; font-size: 13.5px; color: var(--muted); }
+.job-meta b { font-weight: 600; color: var(--ink-2); }
+.job-meta i { font-style: normal; color: var(--line-2); }
+
+/* Age sits opposite the title, quiet, with "new" the one thing that speaks up. */
+.job-age { flex: none; font-size: 12.5px; color: var(--muted-2); white-space: nowrap; padding-top: 3px; }
+.job-new {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: var(--pill);
+  background: var(--green-soft); color: var(--green-ink); font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.job-new::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.job-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.job-tag {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--pill);
+  background: var(--wash); border: 1px solid var(--line-soft); color: var(--muted);
+  font-size: 11.5px; font-weight: 500; white-space: nowrap;
+}
+/* The category is what the board sorts the world into, so it is the one tag
+   that carries colour. */
+.job-tag.cat { background: var(--blue-soft); border-color: var(--blue-line); color: var(--blue-ink); font-weight: 600; }
+.job-tag.team { background: var(--amber-soft); border-color: var(--amber-line); color: var(--amber-ink); font-weight: 600; }
+
+/* Why this listing is where it is. Given the rule motif rather than a box: it
+   is an annotation on the card, not another field in it. */
+.job-match { margin: 0; border-left: 2px solid var(--blue-line); padding-left: 11px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.job-match b { color: var(--blue-ink); font-weight: 600; }
+.job-desc {
+  margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Actions clear the card's stretched link, or Remove would be unclickable
+   underneath it. */
+.job-actions { position: relative; z-index: 1; display: flex; gap: 8px; align-items: center; }
+
+/* ── Pagination ── */
+.jb-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 22px; }
+.jb-pager span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ── Admin: post an opening ── labelled fields, because a form of eight
+   identical placeholder-only boxes can't be checked once it is filled in. */
+.jb-post-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.jb-post-head p { margin: 5px 0 0; max-width: 58ch; font-size: 13.5px; line-height: 1.55; }
+.jb-field { min-width: 0; }
+.jb-field > span { display: block; font-size: 13px; color: var(--ink-2); font-weight: 500; margin-bottom: 5px; }
+.field-grid > .jb-field { margin: 0; }
+/* .panel label sets display:block, so the checkbox row needs the weight
+   of two classes to lay itself out on one line. */
+.field-grid > .jb-check { display: flex; align-items: center; gap: 8px; align-self: end; padding-bottom: 11px; }
+.field-grid > .jb-check input { width: auto; margin: 0; }
+
+@media (max-width: 980px) {
+  .jb-layout { grid-template-columns: minmax(0, 1fr); }
+  /* The rail becomes a disclosure: on a phone it is twenty-odd chips standing
+     ahead of the first listing, which is what the rail exists to avoid. */
+  .jb-filter-toggle { display: inline-flex; }
+  .jb-rail { position: static; }
+  .jb-rail:not(.open) { display: none; }
+}
+@media (max-width: 560px) {
+  .job-card-head { flex-wrap: wrap; }
+  /* The field takes the first line to itself and the two buttons share the
+     second, rather than three full-width bars stacked down the page. */
+  .jb-search { flex-wrap: wrap; }
+  .jb-search-field { flex: 1 1 100%; }
+  .jb-search .btn { flex: 1 1 0; justify-content: center; }
 }

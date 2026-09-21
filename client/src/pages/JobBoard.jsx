@@ -20,6 +20,11 @@ import {
  * Listings show for ten days from the date the role opened and then drop off
  * on their own, so the board is always the last ten days rather than an
  * archive nobody prunes.
+ *
+ * The page is laid out as a board: search across the top, the filters in a
+ * sticky rail down the side, listings filling the rest. The filters used to
+ * run across the content column, which put the first opening below the fold —
+ * on a page whose whole job is showing openings.
  */
 
 const PLACES = [
@@ -50,6 +55,45 @@ function ago(value) {
   return `${days}d ago`;
 }
 
+/** Posted in the last two days. Worth saying loudly on a ten-day board. */
+const isFresh = (value) =>
+  Boolean(value) && Date.now() - new Date(value).getTime() < 2 * 86400000;
+
+/**
+ * A company's monogram and its colour.
+ *
+ * Both come from the name, so a company keeps the same square everywhere and
+ * on every reload — the point is to be able to scan a long list by shape and
+ * colour, which a random tone each render would defeat.
+ */
+function monogram(company) {
+  const name = (company || '?').trim();
+  const words = name.split(/\s+/).filter(Boolean);
+  const initials = (words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2)).toUpperCase();
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) hash = (hash * 31 + name.charCodeAt(i)) % 997;
+  return { initials, tone: String((hash % 6) + 1) };
+}
+
+const SearchIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
+
 const EMPTY = { category: [], workType: [], experience: [], place: [], search: '' };
 
 export default function JobBoard() {
@@ -59,6 +103,9 @@ export default function JobBoard() {
   const [filters, setFilters] = useState(EMPTY);
   const [searchBox, setSearchBox] = useState('');
   const [page, setPage] = useState(1);
+  // Only ever true on narrow screens, where the rail collapses to a disclosure.
+  const [railOpen, setRailOpen] = useState(false);
+  const [postOpen, setPostOpen] = useState(false);
 
   const [data, setData] = useState({ jobs: [], total: 0, pages: 1, facets: null, feedAvailable: true });
   // An empty list before the first response is "not known yet", not "none".
@@ -89,6 +136,12 @@ export default function JobBoard() {
     setFilters((f) => ({ ...f, search: searchBox.trim() }));
   };
 
+  const clearSearch = () => {
+    setSearchBox('');
+    setPage(1);
+    setFilters((f) => ({ ...f, search: '' }));
+  };
+
   const clearAll = () => {
     setSearchBox('');
     setPage(1);
@@ -96,12 +149,6 @@ export default function JobBoard() {
   };
 
   const facets = data.facets;
-  const anyFilter =
-    filters.search ||
-    filters.category.length ||
-    filters.workType.length ||
-    filters.experience.length ||
-    filters.place.length;
 
   const groups = useMemo(() => {
     if (!facets) return [];
@@ -113,8 +160,40 @@ export default function JobBoard() {
     ];
   }, [facets]);
 
+  /**
+   * Slug → label, for the tags on a card.
+   *
+   * Listings store slugs ('AI-NonTech', 'full-time') because labels get
+   * reworded and rewriting thousands of rows over a copy edit shouldn't be
+   * possible. The board is where they get read, so this is where they get
+   * turned back into words — the facets carry both halves already.
+   */
+  const labelOf = useMemo(() => {
+    const map = new Map();
+    if (facets) {
+      [...facets.categories, ...facets.workTypes, ...facets.levels]
+        .forEach((o) => map.set(o.value, o.label));
+    }
+    return (value) => map.get(value) || value;
+  }, [facets]);
+
+  /** Every filter that is on, flattened into one removable strip. */
+  const active = useMemo(() => {
+    const out = [];
+    if (filters.search) out.push({ key: 'search', value: '', label: `“${filters.search}”` });
+    groups.forEach((g) => {
+      filters[g.key].forEach((v) => {
+        const opt = g.options.find((o) => o.value === v);
+        out.push({ key: g.key, value: v, label: opt ? opt.label : v });
+      });
+    });
+    return out;
+  }, [filters, groups]);
+
+  const dropFilter = (f) => (f.key === 'search' ? clearSearch() : toggle(f.key, f.value));
+
   return (
-    <div>
+    <div className="jb">
       <div className="page-head">
         <div>
           <div className="eyebrow">Job Board</div>
@@ -124,95 +203,138 @@ export default function JobBoard() {
             team. Listings stay up for ten days from the day they were posted.
           </p>
         </div>
+        {isAdmin && !postOpen && (
+          <button className="btn sm" onClick={() => setPostOpen(true)}>Post an opening</button>
+        )}
       </div>
 
-      {isAdmin && <AdminPost onPosted={load} facets={facets} />}
+      {isAdmin && postOpen && (
+        <AdminPost onPosted={load} onClose={() => setPostOpen(false)} facets={facets} />
+      )}
 
       {!data.feedAvailable && !loading && (
-        <p className="panel" role="status" style={{ marginTop: 14 }}>
+        <p className="panel" role="status">
           The jobs feed can&apos;t be reached right now, so this is only what the team has
           posted. It usually comes back on its own — nothing here is lost.
         </p>
       )}
 
-      <form className="panel" onSubmit={submitSearch} style={{ marginTop: 14 }}>
-        <div className="row" style={{ gap: 8 }}>
+      <form className="jb-search" onSubmit={submitSearch} role="search">
+        <div className="jb-search-field">
+          <SearchIcon />
           <input
             id="job-search"
             type="search"
-            placeholder="Search title or company"
+            aria-label="Search openings"
+            placeholder="Search by title or company"
             value={searchBox}
             onChange={(e) => setSearchBox(e.target.value)}
-            style={{ flex: 1, minWidth: 0 }}
           />
-          <button className="btn sm">Search</button>
         </div>
-
-        {groups.map((g) => (
-          <div key={g.key} className="row" style={{ gap: 8, marginTop: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <span className="muted" style={{ width: 74, flex: 'none', fontSize: 12, lineHeight: '26px' }}>
-              {g.label}
-            </span>
-            <div className="row" style={{ gap: 6, flexWrap: 'wrap', flex: 1 }}>
-              {g.options.map((o) => (
-                <button
-                  key={o.value}
-                  type="button"
-                  className={`filter-chip ${filters[g.key].includes(o.value) ? "active" : ""}`}
-                  aria-pressed={filters[g.key].includes(o.value)}
-                  onClick={() => toggle(g.key, o.value)}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        <div className="row" style={{ justifyContent: 'space-between', marginTop: 12 }}>
-          <span className="muted">
-            {loading ? 'Loading…' : `${data.total.toLocaleString('en-IN')} matching`}
-          </span>
-          {anyFilter ? (
-            <button type="button" className="btn sm ghost" onClick={clearAll}>Clear all</button>
-          ) : null}
-        </div>
+        <button className="btn">Search</button>
+        <button
+          type="button"
+          className="btn quiet jb-filter-toggle"
+          aria-expanded={railOpen}
+          onClick={() => setRailOpen((v) => !v)}
+        >
+          {railOpen ? 'Hide filters' : 'Filters'}
+          {active.length > 0 && !railOpen ? ` (${active.length})` : ''}
+        </button>
       </form>
 
-      {err && <p className="panel error" role="alert" style={{ marginTop: 14 }}>{err}</p>}
+      {err && <p className="panel error" role="alert">{err}</p>}
 
-      <div className="list" style={{ marginTop: 14 }}>
-        {loading && [0, 1, 2].map((n) => <div key={n} className="panel skeleton-row" style={{ height: 104 }} />)}
+      <div className="jb-layout">
+        <aside className={`jb-rail ${railOpen ? 'open' : ''}`} aria-label="Filters">
+          {groups.map((g) => (
+            <div key={g.key} className="jb-group">
+              <div className="jb-group-label">{g.label}</div>
+              <div className="jb-chips">
+                {g.options.map((o) => {
+                  const on = filters[g.key].includes(o.value);
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      className={`filter-chip ${on ? 'active' : ''}`}
+                      aria-pressed={on}
+                      onClick={() => toggle(g.key, o.value)}
+                    >
+                      {on && <CheckIcon />}
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </aside>
 
-        {!loading && data.jobs.length === 0 && (
-          <p className="muted">
-            {anyFilter
-              ? 'Nothing matches those filters. Loosen one, or clear them all.'
-              : 'No openings right now. The board refreshes every morning.'}
-          </p>
-        )}
+        <div>
+          <div className="jb-count">
+            <strong>
+              {loading
+                ? 'Loading…'
+                : `${data.total.toLocaleString('en-IN')} ${data.total === 1 ? 'opening' : 'openings'}`}
+            </strong>
+            {!loading && data.pages > 1 && <span>Page {page} of {data.pages}</span>}
+          </div>
 
-        {!loading && data.jobs.map((j) => (
-          <JobCard key={j.id} job={j} isAdmin={isAdmin} onRemoved={load} />
-        ))}
-      </div>
+          {active.length > 0 && (
+            <div className="jb-active">
+              {active.map((f) => (
+                <button
+                  key={`${f.key}:${f.value}`}
+                  type="button"
+                  className="jb-active-chip"
+                  onClick={() => dropFilter(f)}
+                  aria-label={`Remove filter ${f.label}`}
+                >
+                  {f.label}
+                  <CloseIcon />
+                </button>
+              ))}
+              <button type="button" className="btn sm ghost" onClick={clearAll}>Clear all</button>
+            </div>
+          )}
 
-      {!loading && data.pages > 1 && (
-        <div className="row" style={{ justifyContent: 'center', gap: 8, marginTop: 18 }}>
-          <button className="btn sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </button>
-          <span className="muted">{page} / {data.pages}</span>
-          <button className="btn sm" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>
-            Next
-          </button>
+          <div className="list">
+            {loading && [0, 1, 2, 3].map((n) => <div key={n} className="skeleton-row tall" />)}
+
+            {!loading && data.jobs.length === 0 && (
+              <div className="empty">
+                <div className="empty-icon" aria-hidden="true">🔍</div>
+                <strong>{active.length ? 'Nothing matches those filters' : 'No openings right now'}</strong>
+                {active.length
+                  ? 'Loosen one of them, or clear them all and start again.'
+                  : 'The board refreshes every morning — check back tomorrow.'}
+              </div>
+            )}
+
+            {!loading && data.jobs.map((j) => (
+              <JobCard key={j.id} job={j} isAdmin={isAdmin} onRemoved={load} labelOf={labelOf} />
+            ))}
+          </div>
+
+          {!loading && data.pages > 1 && (
+            <div className="jb-pager">
+              <button className="btn sm quiet" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                ← Previous
+              </button>
+              <span>{page} / {data.pages}</span>
+              <button className="btn sm quiet" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>
+                Next →
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-function JobCard({ job, isAdmin, onRemoved }) {
+function JobCard({ job, isAdmin, onRemoved, labelOf }) {
   const [busy, setBusy] = useState(false);
 
   async function remove() {
@@ -229,29 +351,51 @@ function JobCard({ job, isAdmin, onRemoved }) {
   }
 
   const place = job.location || job.country || '';
+  const { initials, tone } = monogram(job.company);
+  const fresh = isFresh(job.postedAt);
+  // 'unspecified' is a real answer from the pipeline, but it is not a tag.
+  const workType = job.workType !== 'unspecified' ? job.workType : '';
+  const level = job.experienceLevel !== 'unspecified' ? job.experienceLevel : '';
 
   return (
-    <div className="panel">
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <h3 style={{ margin: '0 0 2px' }}>{job.title || 'Untitled posting'}</h3>
-          <div className="muted">
-            {job.company || 'Company not stated'}
-            {place ? ` — ${place}` : ''}
+    <article className="job-card">
+      <div className="job-card-head">
+        <div className="job-logo" data-tone={tone} aria-hidden="true">{initials}</div>
+
+        <div className="job-id">
+          <h3 className="job-title">
+            {/* The link stretches over the card, so the whole listing opens the
+                posting while the accessible name stays the role itself. */}
+            {job.url ? (
+              <a href={job.url} target="_blank" rel="noreferrer noopener">
+                {job.title || 'Untitled posting'}
+              </a>
+            ) : (
+              job.title || 'Untitled posting'
+            )}
+          </h3>
+          <div className="job-meta">
+            <b>{job.company || 'Company not stated'}</b>
+            {place && <><i>•</i><span>{place}</span></>}
           </div>
         </div>
-        <span className="muted" style={{ whiteSpace: 'nowrap' }}>{ago(job.postedAt)}</span>
+
+        {fresh ? (
+          <span className="job-new">{ago(job.postedAt)}</span>
+        ) : (
+          <span className="job-age">{ago(job.postedAt)}</span>
+        )}
       </div>
 
-      <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-        {job.roleCategory && <span className="badge badge-accent">{job.roleCategory}</span>}
-        {job.country === 'India' && <span className="badge">India</span>}
-        {job.isRemote && <span className="badge">Remote</span>}
-        {job.workType && job.workType !== 'unspecified' && <span className="badge">{job.workType}</span>}
-        {job.experienceLevel && job.experienceLevel !== 'unspecified' && (
-          <span className="badge">{job.experienceLevel}</span>
-        )}
-        {job.origin === 'manual' && <span className="badge">Shared by the team</span>}
+      <div className="job-tags">
+        {job.roleCategory && <span className="job-tag cat">{labelOf(job.roleCategory)}</span>}
+        {job.origin === 'manual' && <span className="job-tag team">Shared by the team</span>}
+        {job.country === 'India' && <span className="job-tag">India</span>}
+        {job.isRemote && <span className="job-tag">Remote</span>}
+        {workType && <span className="job-tag">{labelOf(workType)}</span>}
+        {/* An internship is a level and an engagement at once, and the feed
+            tags it as both — printing it twice makes the row look broken. */}
+        {level && level !== workType && <span className="job-tag">{labelOf(level)}</span>}
       </div>
 
       {/* Why this listing is where it is. The board ranks on how well a job
@@ -259,28 +403,23 @@ function JobCard({ job, isAdmin, onRemoved }) {
           matched — without them a student has no way to tell a ranked list
           from an arbitrary one. */}
       {job.matchedSkills?.length > 0 && (
-        <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-          Matches what you're learning: {job.matchedSkills.join(' · ')}
-        </div>
+        <p className="job-match">
+          Matches what you&apos;re learning: <b>{job.matchedSkills.join(' · ')}</b>
+        </p>
       )}
 
-      {job.description && <p style={{ margin: '10px 0 0' }}>{job.description}</p>}
+      {job.description && <p className="job-desc">{job.description}</p>}
 
-      <div className="row" style={{ gap: 8, marginTop: 12 }}>
-        {job.url && (
-          <a className="btn sm" href={job.url} target="_blank" rel="noreferrer noopener">
-            Apply →
-          </a>
-        )}
-        {/* Only the team's own postings can be removed — a scraped listing has
-            no record here to delete, and drops off by itself. */}
-        {isAdmin && job.origin === 'manual' && (
+      {/* Only the team's own postings can be removed — a scraped listing has
+          no record here to delete, and drops off by itself. */}
+      {isAdmin && job.origin === 'manual' && (
+        <div className="job-actions">
           <button className="btn sm ghost-danger" onClick={remove} disabled={busy}>
             {busy ? 'Removing…' : 'Remove'}
           </button>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -296,8 +435,7 @@ const BLANK_FORM = {
   isRemote: false,
 };
 
-function AdminPost({ onPosted, facets }) {
-  const [open, setOpen] = useState(false);
+function AdminPost({ onPosted, onClose, facets }) {
   const [form, setForm] = useState(BLANK_FORM);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -315,7 +453,7 @@ function AdminPost({ onPosted, facets }) {
         body: { ...form, roleCategory: form.roleCategory || null },
       });
       setForm(BLANK_FORM);
-      setOpen(false);
+      onClose();
       onPosted();
     } catch (e2) {
       setErr(e2.message);
@@ -324,80 +462,107 @@ function AdminPost({ onPosted, facets }) {
     }
   }
 
-  if (!open) {
-    return (
-      <div className="row" style={{ marginTop: 14 }}>
-        <button className="btn sm" onClick={() => setOpen(true)}>Post an opening</button>
-      </div>
-    );
-  }
-
   return (
-    <form className="panel" onSubmit={submit} style={{ marginTop: 14 }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h3 style={{ margin: 0 }}>Post an opening</h3>
-        <button type="button" className="btn sm ghost" onClick={() => setOpen(false)}>Cancel</button>
-      </div>
-      <p className="muted" style={{ marginTop: 4 }}>
-        For roles that never reach a job board. It appears at the top of the list for
-        everyone, and drops off after ten days like any other.
-      </p>
-
-      <div className="inline-form" style={{ marginTop: 10 }}>
-        <input placeholder="Title" value={form.title} onChange={(e) => set('title', e.target.value)} />
-        <input placeholder="Company" value={form.company} onChange={(e) => set('company', e.target.value)} />
-        <input placeholder="Location" value={form.location} onChange={(e) => set('location', e.target.value)} />
-        <input placeholder="Apply link" value={form.applyUrl} onChange={(e) => set('applyUrl', e.target.value)} />
+    <form className="panel" onSubmit={submit}>
+      <div className="jb-post-head">
+        <div>
+          <h3 style={{ margin: 0 }}>Post an opening</h3>
+          <p className="muted">
+            For roles that never reach a job board. It appears at the top of the list for
+            everyone, and drops off after ten days like any other.
+          </p>
+        </div>
+        <button type="button" className="btn sm ghost" onClick={onClose}>Cancel</button>
       </div>
 
-      <div className="inline-form" style={{ marginTop: 10 }}>
-        <Select value={form.roleCategory || 'none'} onValueChange={(v) => set('roleCategory', v === 'none' ? '' : v)}>
-          <SelectTrigger aria-label="Category"><SelectValue placeholder="Category" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No category</SelectItem>
-            {(facets?.categories || []).map((c) => (
-              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="field-grid" style={{ marginTop: 18 }}>
+        <label>
+          Title
+          <input value={form.title} onChange={(e) => set('title', e.target.value)} required />
+        </label>
+        <label>
+          Company
+          <input value={form.company} onChange={(e) => set('company', e.target.value)} required />
+        </label>
+        <label>
+          Location
+          <input
+            placeholder="Bengaluru, or Anywhere"
+            value={form.location}
+            onChange={(e) => set('location', e.target.value)}
+          />
+        </label>
+        <label>
+          Apply link
+          <input
+            type="url"
+            placeholder="https://"
+            value={form.applyUrl}
+            onChange={(e) => set('applyUrl', e.target.value)}
+          />
+        </label>
 
-        <Select value={form.workType} onValueChange={(v) => set('workType', v)}>
-          <SelectTrigger aria-label="Type"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {(facets?.workTypes || []).map((w) => (
-              <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* A Select isn't a form control a <label> can own, so the caption is
+            a sibling and the trigger names itself. */}
+        <div className="jb-field">
+          <span>Category</span>
+          <Select value={form.roleCategory || 'none'} onValueChange={(v) => set('roleCategory', v === 'none' ? '' : v)}>
+            <SelectTrigger aria-label="Category"><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No category</SelectItem>
+              {(facets?.categories || []).map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={form.experienceLevel} onValueChange={(v) => set('experienceLevel', v)}>
-          <SelectTrigger aria-label="Level"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {(facets?.levels || []).map((l) => (
-              <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="jb-field">
+          <span>Type</span>
+          <Select value={form.workType} onValueChange={(v) => set('workType', v)}>
+            <SelectTrigger aria-label="Type"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(facets?.workTypes || []).map((w) => (
+                <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <label className="row" style={{ gap: 6, alignItems: 'center' }}>
+        <div className="jb-field">
+          <span>Level</span>
+          <Select value={form.experienceLevel} onValueChange={(v) => set('experienceLevel', v)}>
+            <SelectTrigger aria-label="Level"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(facets?.levels || []).map((l) => (
+                <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <label className="jb-check">
           <input
             type="checkbox"
             checked={form.isRemote}
             onChange={(e) => set('isRemote', e.target.checked)}
           />
-          <span className="muted">Remote</span>
+          Remote
         </label>
       </div>
 
-      <textarea
-        style={{ marginTop: 10, width: '100%' }}
-        placeholder="Description (optional)"
-        value={form.description}
-        onChange={(e) => set('description', e.target.value)}
-      />
+      <label>
+        Description
+        <textarea
+          rows={3}
+          placeholder="Optional — what the role is, and who it suits."
+          value={form.description}
+          onChange={(e) => set('description', e.target.value)}
+        />
+      </label>
 
-      <div className="row" style={{ gap: 8, marginTop: 10 }}>
-        <button className="btn sm" disabled={busy}>{busy ? 'Posting…' : 'Post'}</button>
+      <div className="row" style={{ marginTop: 16 }}>
+        <button className="btn sm" disabled={busy}>{busy ? 'Posting…' : 'Post opening'}</button>
         {err && <span className="error" role="alert">{err}</span>}
       </div>
     </form>
