@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { hashPassword, needsRehash, verifyPassword } from '../utils/password.js';
 
 import { User, ROLES } from '../models/User.js';
+import { hasPaidAccess } from '../utils/access.js';
 import { forget } from '../middleware/auth.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
 import { sendMail, trySendMail } from '../utils/email.js';
@@ -13,33 +14,17 @@ const router = Router();
 const hashToken = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
 const APP_URL = () => (process.env.SKEO_APP_URL || 'http://localhost:5175').replace(/\/+$/, '');
 
-// POST /api/skeo/auth/register — self-signup is forced to role=student.
-router.post('/register', async (req, res) => {
-  try {
-    // Wide, for the NAT reason in /login. Signup has no per-account equivalent
-    // to lean on -- spam signups use a fresh address every time -- so this is
-    // the only brake there is, sized to stop a script rather than a crowd.
-    if (!rateLimit(`register:${req.ip}`, 200, 60_000)) return res.status(429).json({ error: 'Too many attempts. Try again shortly.' });
-    const { email, password, fullName, phone } = req.body || {};
-    if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
-    if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
-
-    const clean = String(email).toLowerCase().trim();
-    if (await User.findOne({ email: clean })) return res.status(409).json({ error: 'An account with this email already exists.' });
-
-    const user = await User.create({
-      email: clean,
-      passwordHash: await hashPassword(password),
-      fullName: fullName || '',
-      phone: phone || '',
-      role: 'student',
-    });
-    return res.status(201).json({ user: user.toPublic(), accessToken: signAccessToken(user), refreshToken: signRefreshToken(user) });
-  } catch (err) {
-    console.error('register error:', err);
-    return res.status(500).json({ error: 'Could not register.' });
-  }
-});
+// POST /api/skeo/auth/register — closed.
+//
+// A skeo account is made by paying for a plan on skeoai.com: the website tells
+// the LMS once Cashfree confirms the money (routes/provision.js), and the LMS
+// mails the login. Open self-signup made accounts with nothing paid for, which
+// opened onto an empty LMS — so it now answers the way login does for a
+// non-buyer, and the client sends them to the plans.
+router.post('/register', (_req, res) => res.status(403).json({
+  error: 'skeo accounts are created when you buy a plan.',
+  code: 'not_purchased',
+}));
 
 // POST /api/skeo/auth/login
 router.post('/login', async (req, res) => {
@@ -65,7 +50,19 @@ router.post('/login', async (req, res) => {
     if (!rateLimit(`login-ip:${req.ip}`, 600, 60_000)) return res.status(429).json({ error: 'Too many attempts. Try again shortly.' });
 
     const user = await User.findOne({ email: clean });
-    const ok = user && (await verifyPassword(password, user.passwordHash));
+    // No account at all: on skeo an account is what a purchase makes, so the
+    // useful answer is where to buy one, not "invalid password" — which would
+    // send someone who has never paid off to reset a password they never had.
+    // Saying so reveals no more than /register's "already exists" always has.
+    // Still counted as a failure, so the per-account limit holds for guesses.
+    if (!user) {
+      record(failures, 60_000);
+      return res.status(401).json({
+        error: 'There is no skeo account for this email yet. Accounts are created when you buy a plan.',
+        code: 'not_purchased',
+      });
+    }
+    const ok = await verifyPassword(password, user.passwordHash);
     if (!ok) {
       record(failures, 60_000);
       return res.status(401).json({ error: 'Invalid email or password.' });
@@ -82,6 +79,14 @@ router.post('/login', async (req, res) => {
           ? `Your account has been blocked: ${user.blocked.reason}`
           : 'Your account has been blocked by the administrator.',
         code: 'blocked',
+      });
+    }
+    // An account with nothing paid for — made through the old open sign-up,
+    // say — would open onto an empty LMS. Point it at the plans instead.
+    if (user.role === 'student' && !(await hasPaidAccess(user))) {
+      return res.status(403).json({
+        error: 'Your account does not have a skeo plan yet.',
+        code: 'not_purchased',
       });
     }
     // Every account created before utils/password.js was hashed at the old,
@@ -114,6 +119,11 @@ router.post('/refresh', async (req, res) => {
   }
   if (user.role !== 'admin' && user.blocked?.lms) {
     return res.status(403).json({ error: 'Your account has been blocked by the administrator.', code: 'blocked' });
+  }
+  // The same gate as login, so a session begun before it existed does not
+  // outlive it.
+  if (user.role === 'student' && !(await hasPaidAccess(user))) {
+    return res.status(403).json({ error: 'Your account does not have a skeo plan yet.', code: 'not_purchased' });
   }
   return res.json({ accessToken: signAccessToken(user), user: user.toPublic() });
 });

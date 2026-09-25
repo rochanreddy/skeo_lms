@@ -1,4 +1,21 @@
 import { Batch } from '../models/Batch.js';
+import { ProvisionedOrder } from '../models/ProvisionedOrder.js';
+
+/**
+ * Has this person paid for anything the LMS holds?
+ *
+ * Yes if they own Everything AI, are in any batch (bought, or enrolled by an
+ * admin — both count), or have a completed website order. The last one is for
+ * the buyer whose batch did not exist yet when they paid: the order recorded a
+ * warning for an admin to act on, and they must still be able to sign in.
+ */
+export async function hasPaidAccess(user) {
+  if (user.role === 'admin') return true;
+  if (user.allAccess) return true;
+  if ((user.batchIds || []).length) return true;
+  if (await Batch.exists({ studentIds: user._id })) return true;
+  return Boolean(await ProvisionedOrder.exists({ userId: user._id, status: 'done' }));
+}
 
 const has = (arr, id) => (arr || []).some((x) => x.toString() === id);
 

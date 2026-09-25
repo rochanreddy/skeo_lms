@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, setToken } from '../api.js';
 import SkeoWordmark from '../components/SkeoWordmark.jsx';
 import LoginArt from '../components/LoginArt.jsx';
+import GetSkeo, { PRICING_URL } from '../components/GetSkeo.jsx';
 
 // The demo accounts, as data — the box below fills the form from these instead
 // of asking whoever's driving to retype a password from the screen.
@@ -23,6 +24,10 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [err, setErr] = useState('');
+  // Set when the server says this person has no skeo plan — no account for the
+  // address, or an account with nothing paid for. They get the way to buy one
+  // instead of a red "invalid" they cannot fix.
+  const [notPurchased, setNotPurchased] = useState('');
   const [busy, setBusy] = useState(false);
   const nav = useNavigate();
   const [params] = useSearchParams();
@@ -32,6 +37,7 @@ export default function Login({ onLogin }) {
   async function submit(e) {
     e.preventDefault();
     setErr('');
+    setNotPurchased('');
     setBusy(true);
     try {
       const { accessToken, refreshToken, user } = await api('/auth/login', { method: 'POST', body: { email, password } });
@@ -39,7 +45,8 @@ export default function Login({ onLogin }) {
       onLogin(user);
       nav('/app');
     } catch (e2) {
-      setErr(e2.message);
+      if (e2.code === 'not_purchased') setNotPurchased(e2.message);
+      else setErr(e2.message);
     } finally {
       setBusy(false);
     }
@@ -65,7 +72,7 @@ export default function Login({ onLogin }) {
 
           <div className="field">
             <label htmlFor="login-email">Email</label>
-            <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required aria-describedby={err ? 'login-error' : undefined} />
+            <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required aria-describedby={err || notPurchased ? 'login-error' : undefined} />
           </div>
           <div className="field">
             <label htmlFor="login-password">Password</label>
@@ -88,9 +95,11 @@ export default function Login({ onLogin }) {
               </button>
             </div>
           </div>
+          {notPurchased && <GetSkeo id="login-error" message={notPurchased} />}
           {err && <div id="login-error" className="error auth-error" role="alert">{err}</div>}
           <button className="btn" disabled={busy}>{busy ? 'Signing in…' : 'Sign in →'}</button>
           <p className="auth-alt"><Link to="/forgot">Forgot your password?</Link></p>
+          <p className="auth-alt">New to skeo? <a href={PRICING_URL}>See plans</a></p>
 
           {SHOW_DEMOS && (
             <div className="demo-box">

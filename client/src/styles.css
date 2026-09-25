@@ -2990,3 +2990,15 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   .job-side { flex-basis: 100%; flex-direction: row; align-items: center; justify-content: space-between; }
   .job-apply { flex: 1; max-width: 240px; }
 }
+
+/* ── Not bought yet ─────────────────────────────────────────────────────────
+   Shown on sign-in (and in place of sign-up) to someone with no skeo plan:
+   the way in is buying one on skeoai.com, so the panel's one action is the
+   plans. Styled as a notice rather than an error — nobody did anything wrong. */
+.get-skeo {
+  margin-bottom: 14px; padding: 14px 14px 12px; border-radius: 10px;
+  background: var(--purple-soft); border: 1px solid var(--purple-line);
+}
+.get-skeo-msg { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.auth-form .get-skeo-btn { width: 100%; justify-content: center; text-decoration: none; }
+.get-skeo-note { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
