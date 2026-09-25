@@ -23,6 +23,9 @@ const provisionedOrderSchema = new mongoose.Schema(
     // (e.g. "ai#2/2"). Recorded one by one, so a retry after a failure sends
     // only what is missing — not the login again, nor a part that arrived.
     playbookParts: { type: [String], default: [] },
+    // Sends made from the admin panel after the first delivery — who pressed
+    // Send / Resend and when is worth having when a student says "I never got it".
+    playbookResends: { type: [{ at: Date, parts: [String] }], default: [] },
     // Things an admin should look at — e.g. a Claude Course bought while no
     // batch named "Claude" exists, so nothing could be unlocked.
     warnings: { type: [String], default: [] },

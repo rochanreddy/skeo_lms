@@ -7,7 +7,7 @@ import { appUrl } from './appUrl.js';
 import { isMailConfigured, sendMail, trySendMail } from './email.js';
 import { welcomeEmail } from './welcomeEmail.js';
 import { playbooksEmail } from './playbooksEmail.js';
-import { loadPlaybookSet, playbookSetsFor, splitIntoMails } from './playbooks.js';
+import { PLAYBOOK_SETS, loadPlaybookSet, playbookSetsFor, splitIntoMails } from './playbooks.js';
 
 /**
  * A paid website order → an LMS account, its batches, and the login mail —
@@ -267,4 +267,66 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
     await order.save().catch(() => {});
     throw err;
   }
+}
+
+/**
+ * Send playbook sets to someone now — the admin panel's Send / Resend.
+ *
+ * Unlike provisionOrder this does not ask whether they were sent before: the
+ * admin pressing the button is the decision. Every set is read from disk
+ * before a single mail goes, so a missing PDF fails the whole request rather
+ * than half-sending. When the send belongs to an order, each part is recorded
+ * on it (and in its resend log), so the delivery status the admin sees stays
+ * true.
+ *
+ * @param {{ email: string, name?: string, sets: string[], orderId?: string }} p
+ * @returns {Promise<{ sent: string[], at: Date }>} the part keys sent, e.g. "ai#2/2"
+ */
+export async function sendPlaybooks({ email, name = '', sets = [], orderId = '' }) {
+  const cleanEmail = String(email || '').toLowerCase().trim();
+  const keys = [...new Set(sets)].filter((k) => PLAYBOOK_SETS[k]);
+  if (!cleanEmail || !keys.length) {
+    const err = new Error('An email and at least one playbook set (claude, ai) are required.');
+    err.status = 400;
+    throw err;
+  }
+  if (!isMailConfigured() && process.env.NODE_ENV === 'production') {
+    throw new Error('No mail transport configured (set ZEPTOMAIL_TOKEN).');
+  }
+
+  const loaded = await Promise.all(keys.map((k) => loadPlaybookSet(k)));
+  const user = await User.findOne({ email: cleanEmail }).select('fullName');
+  const displayName = user?.fullName || String(name || '').trim();
+
+  const sent = [];
+  for (const set of loaded) {
+    const mails = splitIntoMails(set.files);
+    for (let i = 0; i < mails.length; i++) {
+      const mail = playbooksEmail({
+        fullName: displayName,
+        email: cleanEmail,
+        label: set.label,
+        titles: mails[i].map((f) => f.title),
+        part: i + 1,
+        parts: mails.length,
+      });
+      await sendMail({
+        to: cleanEmail,
+        subject: mail.subject,
+        text: mail.text,
+        html: mail.html,
+        attachments: mails[i].map(({ filename, content, contentType }) => ({ filename, content, contentType })),
+      });
+      sent.push(`${set.key}#${i + 1}/${mails.length}`);
+    }
+  }
+
+  const at = new Date();
+  if (orderId) {
+    await ProvisionedOrder.updateOne(
+      { orderId },
+      { $addToSet: { playbookParts: { $each: sent } }, $push: { playbookResends: { at, parts: sent } } },
+    );
+  }
+  return { sent, at };
 }

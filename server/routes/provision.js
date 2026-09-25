@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Router } from 'express';
-import { provisionOrder } from '../utils/provision.js';
+import { provisionOrder, sendPlaybooks } from '../utils/provision.js';
 
 // POST /api/skeo/provision — the website's server, and nothing else, tells the
 // LMS that an order has been paid for.
@@ -38,6 +38,27 @@ router.post('/', async (req, res) => {
     const status = err.status || 500;
     if (status >= 500) console.error(`[provision] ${orderId} failed:`, err.message);
     return res.status(status).json({ error: err.message || 'Provisioning failed.' });
+  }
+});
+
+// POST /api/skeo/provision/playbooks — the admin panel's Send / Resend.
+// { email, name?, sets: ['claude' | 'ai'], orderId? }. Same secret as above:
+// the website's admin API calls it on the admin's behalf.
+router.post('/playbooks', async (req, res) => {
+  if (!authorised(req)) return res.status(401).json({ error: 'Not authorised.' });
+  const { email, name, sets, orderId } = req.body || {};
+  try {
+    const result = await sendPlaybooks({
+      email,
+      name,
+      sets: Array.isArray(sets) ? sets.map(String) : [],
+      orderId: String(orderId || '').trim(),
+    });
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error('[provision/playbooks] failed:', err.message);
+    return res.status(status).json({ error: err.message || 'Could not send the playbooks.' });
   }
 });
 
