@@ -96,7 +96,7 @@ export function welcomeEmail({ fullName, email, password = null, loginUrl, batch
         isNew && ['Password', esc(password), true],
       ]),
       P(esc(passwordNote)),
-      playbooks ? P('Your playbooks are in a separate email, attached as PDFs.') : '',
+      playbooks ? P('Your playbooks come in separate emails, attached as PDFs.') : '',
     ].join(''),
     cta: { label: 'Sign in to skeo', href: loginUrl },
   });
@@ -110,7 +110,7 @@ export function welcomeEmail({ fullName, email, password = null, loginUrl, batch
     ...(isNew ? [`Password:   ${password}`] : []),
     '',
     passwordNote, '',
-    ...(playbooks ? ['Your playbooks are in a separate email, attached as PDFs.', ''] : []),
+    ...(playbooks ? ['Your playbooks come in separate emails, attached as PDFs.', ''] : []),
     `Questions? Write to ${SUPPORT}.`, '',
     '— skeo',
   ].join('\n');

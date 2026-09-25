@@ -7,7 +7,7 @@ import { appUrl } from './appUrl.js';
 import { isMailConfigured, sendMail, trySendMail } from './email.js';
 import { welcomeEmail } from './welcomeEmail.js';
 import { playbooksEmail } from './playbooksEmail.js';
-import { loadPlaybooks } from './playbooks.js';
+import { loadPlaybookSet, playbookSetsFor, splitIntoMails } from './playbooks.js';
 
 /**
  * A paid website order → an LMS account, its batches, and the login mail —
@@ -65,15 +65,17 @@ export function batchesFor(items, batches) {
   return { batchIds: [...ids], allAccess: false, warnings };
 }
 
-/** The playbooks go out by mail: bought on their own, or as part of Everything AI. */
-export const getsPlaybooks = (items) => items.includes('playbooks') || items.includes('member');
+/** Whether any playbooks go out by mail — Claude Playbooks, the AI Library, or both via Everything AI. */
+export const getsPlaybooks = (items) => playbookSetsFor(items).length > 0;
 
 /**
- * Whether the order needs an LMS account. The playbooks are PDFs delivered by
- * mail, so an order of nothing else has no reason for a login — and a login
- * that opens onto an empty LMS would only confuse the buyer.
+ * Whether the order needs an LMS account. The Claude Playbooks and the AI
+ * Library are PDFs delivered by mail, so an order of nothing else has no
+ * reason for a login — and a login that opens onto an empty LMS would only
+ * confuse the buyer.
  */
-export const needsAccount = (items) => items.some((i) => i !== 'playbooks');
+const MAIL_ONLY = new Set(['playbooks', 'library']);
+export const needsAccount = (items) => items.some((i) => !MAIL_ONLY.has(i));
 
 /** Ten characters, none of them easy to misread (no 0/O, 1/l/I). */
 export function tempPassword() {
@@ -111,7 +113,7 @@ const summary = (o, batchNames = []) => ({
   orderId: o.orderId,
   created: o.created,
   emailed: o.emailed,
-  playbooksSent: o.playbooksSent,
+  playbookParts: o.playbookParts,
   batches: batchNames,
   warnings: o.warnings,
 });
@@ -147,10 +149,9 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
     }
 
     const account = needsAccount(cleanItems);
-    const wantsPlaybooks = getsPlaybooks(cleanItems) && !order.playbooksSent;
     // Read before anything is created: a missing PDF should stop the order
     // cold, not after an account and a login mail already exist.
-    const playbooks = wantsPlaybooks ? await loadPlaybooks() : null;
+    const sets = await Promise.all(playbookSetsFor(cleanItems).map((key) => loadPlaybookSet(key)));
     let batchNames = [];
     let displayName = String(name || '').trim();
 
@@ -227,13 +228,34 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
       }
     }
 
-    if (playbooks) {
-      const mail = playbooksEmail({ fullName: displayName, email: cleanEmail, titles: playbooks.titles });
-      // sendMail rather than trySendMail: a failure here must fail the order,
-      // so it is retried until the buyer actually has what they paid for.
-      await sendMail({ to: cleanEmail, subject: mail.subject, text: mail.text, html: mail.html, attachments: playbooks.attachments });
-      order.playbooksSent = true;
-      await order.save();
+    // Each set as one mail, or as numbered parts when it is too large for
+    // one. Every part is recorded as it goes, so a retry sends only the parts
+    // that did not — never a second copy of one that arrived.
+    for (const set of sets) {
+      const mails = splitIntoMails(set.files);
+      for (let i = 0; i < mails.length; i++) {
+        const key = `${set.key}#${i + 1}/${mails.length}`;
+        if (order.playbookParts.includes(key)) continue;
+        const mail = playbooksEmail({
+          fullName: displayName,
+          email: cleanEmail,
+          label: set.label,
+          titles: mails[i].map((f) => f.title),
+          part: i + 1,
+          parts: mails.length,
+        });
+        // sendMail rather than trySendMail: a failure here must fail the
+        // order, so it is retried until the buyer has what they paid for.
+        await sendMail({
+          to: cleanEmail,
+          subject: mail.subject,
+          text: mail.text,
+          html: mail.html,
+          attachments: mails[i].map(({ filename, content, contentType }) => ({ filename, content, contentType })),
+        });
+        order.playbookParts.push(key);
+        await order.save();
+      }
     }
 
     order.status = 'done';

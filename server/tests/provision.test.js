@@ -13,7 +13,7 @@ import { batchesFor, getsPlaybooks, needsAccount, tempPassword } from '../utils/
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { loadPlaybooks } from '../utils/playbooks.js';
+import { loadPlaybookSet, playbookSetsFor, splitIntoMails, MAX_MAIL_BYTES } from '../utils/playbooks.js';
 
 const B = ['Claude', 'ChatGPT', 'Gemini', 'AI Coding'].map((name, i) => ({ _id: `b${i}`, name }));
 
@@ -61,29 +61,53 @@ test('each tool course unlocks the batch named after the tool', () => {
   assert.equal(batchesFor(['member'], tools).batchIds.length, 6);
 });
 
-test('playbooks go by mail, and a playbooks-only order needs no account', () => {
-  assert.equal(getsPlaybooks(['playbooks']), true);
-  assert.equal(getsPlaybooks(['member']), true, 'Everything AI includes them');
+test('which playbook sets an order gets, and which orders need no account', () => {
+  assert.deepEqual(playbookSetsFor(['playbooks']), ['claude']);
+  assert.deepEqual(playbookSetsFor(['library']), ['ai']);
+  assert.deepEqual(playbookSetsFor(['member']), ['claude', 'ai'], 'Everything AI gets both');
+  assert.deepEqual(playbookSetsFor(['claude']), []);
   assert.equal(getsPlaybooks(['claude']), false);
   assert.equal(needsAccount(['playbooks']), false);
+  assert.equal(needsAccount(['library', 'playbooks']), false, 'mail-only purchases');
   assert.equal(needsAccount(['playbooks', 'claude']), true);
   assert.equal(needsAccount(['member']), true);
 });
 
-test('no playbooks configured, or a bad or missing file, fails rather than mailing nothing', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'skeo-pb-'));
+test('a missing, empty, malformed or escaping set fails rather than mailing nothing', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'skeo-pb-'));
+  const dir = path.join(root, 'claude');
+  await fs.mkdir(dir);
   const list = (entries) => fs.writeFile(path.join(dir, 'playbooks.json'), JSON.stringify(entries));
-  await assert.rejects(loadPlaybooks(dir), /No playbooks/, 'no list at all');
+  await assert.rejects(loadPlaybookSet('claude', root), /No Claude Playbooks/, 'no list at all');
   await list([]);
-  await assert.rejects(loadPlaybooks(dir), /No playbooks/, 'empty list');
+  await assert.rejects(loadPlaybookSet('claude', root), /No Claude Playbooks/, 'empty list');
   await list([{ title: 'x', file: '../../.env' }]);
-  await assert.rejects(loadPlaybooks(dir), /Not a playbook entry/, 'path escape refused');
+  await assert.rejects(loadPlaybookSet('claude', root), /Not a playbook entry/, 'path escape refused');
   await list([{ title: 'x', file: 'nope.pdf' }]);
-  await assert.rejects(loadPlaybooks(dir), /missing/);
-  await fs.writeFile(path.join(dir, 'a.pdf'), '%PDF-1.4 a');
-  await list([{ title: 'Playbook A', file: 'a.pdf' }]);
-  const pb = await loadPlaybooks(dir);
-  assert.deepEqual(pb.titles, ['Playbook A']);
-  assert.equal(pb.attachments[0].contentType, 'application/pdf');
-  await fs.rm(dir, { recursive: true, force: true });
+  await assert.rejects(loadPlaybookSet('claude', root), /missing/);
+  await assert.rejects(loadPlaybookSet('nope', root), /Unknown/);
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test('a large set is split into mails under the cap, in order', () => {
+  const f = (title, mb) => ({ title, content: Buffer.alloc(mb * 1024 * 1024) });
+  const parts = splitIntoMails([f('a', 5.5), f('b', 0.7), f('c', 5.3), f('d', 1.5), f('e', 0.7)]);
+  assert.deepEqual(parts.map((p) => p.map((x) => x.title)), [['a', 'b'], ['c', 'd', 'e']]);
+  assert.deepEqual(splitIntoMails([f('huge', 12)]).length, 1, 'one oversize file still goes, alone');
+});
+
+// The real files, as shipped. Guards against a playbook being added that
+// pushes a mail over the cap, or a listed file not being committed.
+test('the shipped playbook sets load, and every mail stays under the cap', async () => {
+  for (const [key, expectMails] of [['claude', 1], ['ai', 2]]) {
+    const set = await loadPlaybookSet(key);
+    assert.equal(set.files.length, 5, key);
+    const mails = splitIntoMails(set.files);
+    assert.equal(mails.length, expectMails, `${key} mails`);
+    for (const m of mails) {
+      const bytes = m.reduce((n, x) => n + x.content.length, 0);
+      assert.ok(bytes <= MAX_MAIL_BYTES, `${key}: a mail of ${bytes} bytes`);
+      for (const x of m) assert.equal(x.content.subarray(0, 5).toString(), '%PDF-', x.filename);
+    }
+  }
 });
