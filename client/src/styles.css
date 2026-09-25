@@ -865,85 +865,99 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .topic-check { color: var(--green); font-weight: 700; margin-right: 4px; }
 
 /* ── The certificate ───────────────────────────────────────────
-   A fixed dark artifact, not a themed surface. Its palette is written out
-   here rather than taken from the app’s tokens because this sheet is
-   printed, screenshotted and pasted into application forms: it has to look
-   like one document everywhere, not like whatever theme the holder happened
-   to be in when they opened it.
+   The website's certificate (skeoai.com), made real: the values below are
+   copied from skeo_web's globals.css so the credential a student receives is
+   the one the website shows them. It keeps its own palette rather than the
+   app's theme tokens because it is printed, screenshotted and pasted into
+   application forms — one document everywhere, not whatever theme the holder
+   happened to be in. --cert-accent is the tool's colour, set per certificate.
    ------------------------------------------------------------------------ */
-/* Radix supplies `fixed inset-0` and the fade for every scrim; these rules add
-   only what is particular to this one. Centring moved to the popper, so the
-   old 20px overlay padding becomes an inset on the panel itself. */
 .cert-overlay { background: rgba(0,0,0,.78); backdrop-filter: blur(4px); z-index: 100; }
-/* Was `z-[101] gap-0 border-0 p-0` in the JSX — see the note on .cmd. */
+/* The dialog panel: just a frame for the card and the two buttons under it. */
 .cert {
-  /* Literals, not tokens, and that is the point: the app is themed and this
-     sheet must not be. They are the brand’s own blues written down, so the
-     certificate belongs to the product without following it. */
-  --c-ground: #0d1017;      /* the page behind the card */
-  --c-card:   #141924;      /* the card itself */
-  --c-line:   #283345;      /* hairlines and the inner border */
-  --c-ink:    #ffffff;      /* the name, the signature */
-  --c-read:   #c6cdd9;      /* body copy */
-  --c-dim:    #8a93a6;      /* the id block, the signature role */
-  --c-accent: #8fbcff;      /* the kicker and the programme name */
-  background: var(--c-ground); border-radius: var(--radius-lg); overflow: hidden;
-  box-shadow: 0 24px 70px rgba(0,0,0,.6);
-  max-width: 940px; width: calc(100% - 40px);
+  background: transparent; box-shadow: none; overflow: visible;
+  max-width: 720px; width: calc(100% - 32px);
   z-index: 101; gap: 0; border: 0; padding: 0; }
+
+.certificate {
+  --cert-accent: #6746ec;
+  position: relative; overflow: hidden;
+  background: #241d39; padding: 18px; border-radius: 15px;
+  box-shadow: inset 0 0 0 1px #43345e, 0 24px 70px rgba(0,0,0,.55);
+  font-family: 'Manrope', var(--font);
+}
+.cert-glow {
+  position: absolute; width: 300px; height: 300px; border-radius: 50%;
+  background: var(--cert-accent); filter: blur(70px); right: -30px; top: -80px; opacity: .85;
+}
 .cert-inner {
-  background: var(--c-card); border: 1px solid var(--c-line); border-radius: var(--radius);
-  margin: 14px; padding: 40px 44px 34px; text-align: left; position: relative; }
+  position: relative; display: flex; flex-direction: column;
+  border: 1px solid color-mix(in srgb, var(--cert-accent) 55%, #e6dcff);
+  background: #2e2548b3; color: #fff; padding: 30px 32px 22px; text-align: left;
+}
 
-/* Header: wordmark left, sample stamp right when there is one. */
-.cert-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
-.cert-brandblock { flex: 0 1 auto; }
-/* The wordmark set plainly, the way SkeoWordmark draws it — no rule, no dot,
-   no borrowed lockup. Lowercase, like every other place the name appears. */
-.cert-brand { font-family: var(--display); font-weight: 900; font-size: 28px; color: var(--c-ink); letter-spacing: -0.03em; line-height: 1; }
-.cert-tagline { font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--c-accent); margin-top: 7px; }
-/* Loud on purpose: a sample that reads as a credential is the one failure
-   this whole preview path exists to prevent. */
-.cert-sample { font-size: 11px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--c-accent);
-  border: 1px solid var(--c-line); border-radius: 999px; padding: 5px 12px; }
-.cert-rule { height: 1px; background: var(--c-line); margin: 22px 0 30px; }
+/* Issuer on the left, the bodies that stand behind the credential right. */
+.cert-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding-bottom: 15px; border-bottom: 1px solid #ffffff1f;
+}
+.cert-brand { display: inline-flex; align-items: center; gap: 10px; }
+.cert-brand b { font-size: 20px; font-weight: 700; letter-spacing: -0.04em; color: #fff; }
+/* Loud on purpose: a sample that reads as a credential is the one failure the
+   preview path exists to prevent. */
+.cert-sample {
+  font: 700 9px 'DM Mono', Consolas, Menlo, monospace; letter-spacing: .18em; text-transform: uppercase;
+  color: #fff; border: 1px solid #ffffff40; border-radius: 999px; padding: 3px 8px;
+}
+.cert-accred-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 18px; padding-top: 3px; min-width: 0; }
+/* One ink: each mark flattened to white and held under full white, so the four
+   sit beneath the name rather than competing with it. */
+.cert-accred-logo {
+  display: block; width: auto; max-width: 86px; min-width: 0; height: 17px;
+  object-fit: contain; filter: brightness(0) invert(1); opacity: .68;
+}
+.cert-accred-logo--square { height: 25px; }
 
-.cert-kicker { text-transform: uppercase; letter-spacing: .34em; font-size: 13px; font-weight: 600; color: var(--c-accent); }
-.cert-lede { margin: 18px 0 0; font-size: 15.5px; color: var(--c-read); }
-.cert-name { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 54px; line-height: 1.05; letter-spacing: -0.025em; color: var(--c-ink); margin: 10px 0 22px; overflow-wrap: anywhere; }
-.cert-body { margin: 0 0 12px; font-size: 14.5px; line-height: 1.75; color: var(--c-read); max-width: 76ch; }
-.cert-body strong { color: var(--c-accent); font-weight: 700; }
-.cert-revoked { margin: 6px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #FF8A80; }
+.cert-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.cert-title-row small { font: 500 8px 'DM Mono', Consolas, Menlo, monospace; letter-spacing: 1px; color: #bfb4dc; }
+.cert-badge {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  padding: 6px 12px 6px 9px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--cert-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--cert-accent) 18%, transparent);
+  font-size: 11px; font-weight: 700; letter-spacing: -0.1px; color: #fff;
+}
+.cert-badge-mark { width: 15px; height: 15px; flex: none; }
 
-/* Footer: the QR and its code on the left, the signature on the right. */
-.cert-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; margin-top: 34px; flex-wrap: wrap; }
-.cert-idblock { display: flex; align-items: flex-start; gap: 14px; }
+/* As tall as what it holds: the gaps above "presented to" and under the
+   citation are stated, not left over from a fixed card shape. */
+.cert-body { display: flex; flex-direction: column; }
+.cert-presented { margin: 22px 0 0; font-size: 12px; line-height: 1.6; color: #d0c7e7; }
+.cert-name {
+  margin: 6px 0 14px; font-family: inherit; font-size: 33px; font-weight: 700;
+  line-height: 1.05; letter-spacing: -1.6px; color: #fff; overflow-wrap: anywhere;
+}
+.cert-citation { margin: 0; max-width: 460px; font-size: 12px; line-height: 1.6; color: #d0c7e7; }
+.cert-citation b { color: color-mix(in srgb, var(--cert-accent) 45%, #fff); }
+.cert-revoked {
+  margin: 14px 0 0; font: 700 11px 'DM Mono', Consolas, Menlo, monospace;
+  letter-spacing: .16em; text-transform: uppercase; color: #ff8a80;
+}
+
+/* The foot: the QR and the issue date on the left, the id on the right, on
+   the website's rule. */
+.cert-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 20px; padding-top: 12px; border-top: 1px solid #746898;
+  font: 10px 'DM Mono', Consolas, Menlo, monospace; color: #c4bbdc;
+}
+.cert-foot-left { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
 /* White ground behind the modules whatever the card does — a scanner reads a
    tinted QR as low contrast and gives up. */
-.cert-qr { display: block; background: #fff; padding: 5px; border-radius: 5px; flex: none; }
-/* The id block is built like a signature block: the code sits where a name
-   does, the rule under it, the dates where the designation does. That is what
-   puts both rules in the footer at the same height — a line under only one of
-   them reads as an accident. They share a line-height and a padding, which is
-   the only way they end up level: box-sizing is border-box, so a min-height
-   would sit inside the padding and each box would fall back to its own text
-   height — 12.5px mono and 13.5px bold are four pixels apart. */
-.cert-idtext { display: grid; gap: 0; }
-.cert-idtext .cert-id { line-height: 16px; padding-bottom: 6px; border-bottom: 1px solid var(--c-line); }
-.cert-idtext .cert-issued:first-of-type { margin-top: 8px; }
-.cert-idtext .cert-issued + .cert-issued { margin-top: 3px; }
-.cert-id { font-family: Consolas, Menlo, monospace; font-variant-numeric: tabular-nums; font-size: 12.5px; letter-spacing: .04em; color: var(--c-read); }
-.cert-issued { font-family: Consolas, Menlo, monospace; font-size: 11px; color: var(--c-dim); }
+.cert-qr { display: block; background: #fff; padding: 3px; border-radius: 4px; flex: none; }
+.cert-id { flex: none; color: #8d81ae; letter-spacing: .04em; }
 
-.cert-signs { display: flex; gap: 34px; flex-wrap: wrap; }
-/* The rule sits BETWEEN the name and the designation, not above the name — it
-   reads as the signature line the name is written on, which is what a rule
-   above the name cannot do. */
-.cert-sign { min-width: 168px; }
-.cert-sign-name { line-height: 16px; font-size: 13.5px; font-weight: 700; color: var(--c-ink); padding-bottom: 6px; border-bottom: 1px solid var(--c-line); }
-.cert-sign-role { font-size: 10.5px; color: var(--c-dim); margin-top: 8px; }
-
-.cert-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 0 18px 18px; }
+.cert-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 0 0; }
 
 /* The list of certificates on a profile. Each row opens the sheet, so it is a
    button rather than a div with a click handler — it has to be reachable by
@@ -993,12 +1007,19 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   .verify-fact-value { text-align: left; margin-top: 3px; }
 }
 
+/* A phone: the card keeps its layout and gives up size, the way the website's
+   does — the accreditation row and the title row stay on one line each. */
 @media (max-width: 720px) {
-  .cert-inner { padding: 26px 22px 24px; }
-  .cert-name { font-size: 36px; }
-  .cert-kicker { letter-spacing: .2em; font-size: 11.5px; }
-  .cert-foot { gap: 22px; }
-  .cert-signs { gap: 20px; }
+  .certificate { padding: 12px; }
+  .cert-inner { padding: 20px 18px 16px; }
+  .cert-accred-row { gap: 10px; }
+  .cert-accred-logo { height: 12px; max-width: 60px; }
+  .cert-accred-logo--square { height: 18px; }
+  .cert-name { font-size: 26px; letter-spacing: -1px; }
+  /* One line for the title, as on the website: the tracking gives way first. */
+  .cert-title-row small { font-size: 7.5px; letter-spacing: .3px; }
+  .cert-citation { font-size: 11px; }
+  .cert-qr { width: 44px; height: 44px; }
 }
 
 /* print-color-adjust, because browsers drop background colours when they
@@ -1010,7 +1031,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   .cert, .cert * { visibility: visible; }
   .cert { position: absolute; inset: 0; transform: none; width: auto; max-width: none; box-shadow: none; }
   .cert-actions { display: none; }
-  .cert, .cert-inner, .cert-qr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cert, .certificate, .cert-inner, .cert-glow, .cert-qr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   @page { size: A4 landscape; margin: 10mm; }
 }
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
