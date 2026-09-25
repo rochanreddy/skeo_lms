@@ -69,7 +69,7 @@ async function getTransport() {
 
 // ZeptoMail wants the sender split into name and address.
 function parseAddress(str) {
-  const m = /^s*(.*?)s*<([^>]+)>s*$/.exec(String(str || ''));
+  const m = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(String(str || ''));
   if (m) return { ...(m[1] ? { name: m[1] } : {}), email: m[2].trim() };
   return { email: String(str || '').trim() };
 }
