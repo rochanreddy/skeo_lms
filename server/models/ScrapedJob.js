@@ -30,11 +30,24 @@ const scrapedJobSchema = new mongoose.Schema(
     experienceLevel: String,
     // How well the posting matches the Menler syllabus, and which of its
     // terms it matched. Scored by the pipeline (pipeline/syllabus.js), never
-    // here. Declared despite strict:false because the board's default order
-    // is `relevance` descending — these two are load-bearing for this route,
-    // not incidental fields that happen to ride along.
+    // here.
     relevance: Number,
     matchedSkills: [String],
+
+    // Reachability, scored by the pipeline's pipeline/ranking.js: can the
+    // student get it, is it open to them in India, can they apply today.
+    // rankScore weights those three with relevance and is what this board
+    // sorts on.
+    //
+    // Declared despite strict:false because these are load-bearing for this
+    // route rather than fields that happen to ride along: the board's whole
+    // order depends on rankScore, and rankReasons is what explains it on the
+    // card.
+    achievability: Number,
+    indiaFit: Number,
+    easeOfApply: Number,
+    rankScore: Number,
+    rankReasons: [String],
     postedAt: Date,
     fetchedAt: Date,
     lastSeenAt: Date,

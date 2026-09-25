@@ -476,13 +476,21 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
         {level && level !== workType && <span className="job-tag">{labelOf(level)}</span>}
       </div>
 
-      {/* Why this listing is where it is. The board ranks on how well a job
-          matches what the course actually teaches, and these are the terms it
-          matched — without them a student has no way to tell a ranked list
-          from an arbitrary one. */}
-      {job.matchedSkills?.length > 0 && (
+      {/* Why this listing is where it is.
+
+          The board ranks on four things: whether a student can realistically
+          get it, whether it is open to them in India, how hard it is to apply,
+          and how well it matches the course. rankReasons carries all four
+          ("internship", "Bengaluru", "direct apply", "matches claude"), so it
+          is what gets shown; matchedSkills only explains the fourth and is the
+          fallback for rows the pipeline has not re-scored yet.
+
+          Without either, a student has no way to tell a ranked list from an
+          arbitrary one. */}
+      {(job.rankReasons?.length > 0 || job.matchedSkills?.length > 0) && (
         <p className="job-match">
-          Matches what you&apos;re learning: <b>{job.matchedSkills.join(' · ')}</b>
+          Why this is here:{' '}
+          <b>{(job.rankReasons?.length ? job.rankReasons : job.matchedSkills).join(' · ')}</b>
         </p>
       )}
 

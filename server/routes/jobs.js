@@ -169,6 +169,9 @@ const shapeScraped = (job) => ({
   // showing them is the difference between an order a student trusts and one
   // that looks arbitrary.
   matchedSkills: Array.isArray(job.matchedSkills) ? job.matchedSkills : [],
+  // Why this listing sits where it does: ["internship", "Bengaluru",
+  // "direct apply", "matches claude"].
+  rankReasons: Array.isArray(job.rankReasons) ? job.rankReasons : [],
   postedAt: job.postedAt,
   description: '',
   origin: 'feed',
@@ -190,6 +193,8 @@ const shapeManual = (job) => ({
   experienceLevel: job.experienceLevel || 'unspecified',
   // Hand-posted openings are never scored, so they carry no matched terms.
   matchedSkills: [],
+  // Hand-posted openings are never scored, so they carry no reasons either.
+  rankReasons: [],
   postedAt: job.postedAt || job.createdAt,
   description: job.description || '',
   origin: 'manual',
@@ -226,17 +231,26 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   const filter = scrapedFilter(filters);
-  // Most relevant first, newest breaking ties. The pipeline scores
-  // `relevance` once when it stores a job, so this costs nothing here.
+  // Best overall match first, newest breaking ties. The pipeline scores
+  // `rankScore` once when it stores a job, so this costs nothing here.
   //
-  // Without it the board opens on sales and ops: Business and Tech are two
-  // thirds of the feed, and the AI roles these students are training for sit
-  // pages deep. A search term overrides it — the reader has said what they
-  // want, and ranking AI roles above their own query would be the board
-  // arguing with them.
+  // It combines four things in priority order: can the student get it
+  // (experience level, title seniority, years demanded), is it open to them
+  // in India, can they apply today, and does it match the syllabus. The
+  // weights live in the pipeline's pipeline/ranking.js.
+  //
+  // This used to sort on `relevance` alone, which answered the wrong
+  // question: a Staff Engineer role in San Francisco wanting ten years and a
+  // US work visa matches the syllabus perfectly and is no use to anybody
+  // here. Mirrors buildJobSort() in the pipeline's db/readJobs.js — change
+  // both.
+  //
+  // A search term overrides it: the reader has said what they want, and
+  // ranking anything above their own query would be the board arguing with
+  // them.
   const sort = filters.search
     ? { score: { $meta: 'textScore' }, postedAt: -1 }
-    : { relevance: -1, postedAt: -1 };
+    : { rankScore: -1, postedAt: -1 };
   const projection = filters.search ? { score: { $meta: 'textScore' } } : {};
 
   // Page one is shortened by however many manual postings sit above it, so
