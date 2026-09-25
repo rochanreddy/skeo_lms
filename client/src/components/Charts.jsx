@@ -1,11 +1,16 @@
 // Tiny dependency-free SVG charts for the admin panel.
-// Palette: validated categorical slots (blue, orange, green) on the dark card
-// surface; sequential pairs are two steps of one hue. Legends always carry the
-// values, so no reading depends on color alone.
+// Palette: the theme's own tokens — the accent, amber and green — so a chart
+// follows day and night like the rest of the page; sequential pairs are a hue
+// and its tinted line. Legends always carry the values, so no reading depends
+// on color alone.
+//
+// Colours are applied through `style`, not SVG attributes: a CSS variable in a
+// presentation attribute is not reliably resolved everywhere (older Safari),
+// while in `style` it is.
 
-export const SERIES = ['#3d8bff', '#ff8a4c', '#2ecc8a'];
-export const SEQ = { main: '#3d8bff', light: '#274672' }; // blue + its shade
-export const SEQ_AQUA = { main: '#2ecc8a', light: '#1b4a36' };
+export const SERIES = ['var(--blue)', 'var(--amber)', 'var(--green)'];
+export const SEQ = { main: 'var(--blue)', light: 'var(--blue-line)' }; // accent + its shade
+export const SEQ_AQUA = { main: 'var(--green)', light: 'var(--green-line)' };
 
 const polar = (cx, cy, r, angle) => [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
 
@@ -37,10 +42,10 @@ export function Donut({ data, size = 132, thickness = 22, centerLabel, centerSub
   return (
     <div className="donut">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={data.map((d) => `${d.label}: ${d.value}`).join(', ')}>
-        {total === 0 && <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" stroke="#232833" strokeWidth={thickness} />}
+        {total === 0 && <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth={thickness} />}
         {/* A single 100% segment is a full ring — an arc can't close on itself. */}
         {total > 0 && visible.length === 1 && (
-          <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" stroke={visible[0].color || SERIES[0]} strokeWidth={thickness}>
+          <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" style={{ stroke: visible[0].color || SERIES[0] }} strokeWidth={thickness}>
             <title>{`${visible[0].label}: ${visible[0].value} (100%)`}</title>
           </circle>
         )}
@@ -49,7 +54,7 @@ export function Donut({ data, size = 132, thickness = 22, centerLabel, centerSub
           const path = segmentPath(cx, cy, rOuter, rInner, angle, angle + sweep, pad);
           angle += sweep;
           return (
-            <path key={d.label} d={path} fill={d.color || SERIES[i % SERIES.length]}>
+            <path key={d.label} d={path} style={{ fill: d.color || SERIES[i % SERIES.length] }}>
               <title>{`${d.label}: ${d.value} (${Math.round((d.value / total) * 100)}%)`}</title>
             </path>
           );
@@ -86,12 +91,12 @@ export function MiniLine({ points, height = 120, color = SEQ.main }) {
 
   return (
     <svg className="miniline" viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={points.map((p) => `${p.label}: ${p.count}`).join(', ')}>
-      <line x1={padX} x2={w - padX} y1={height - padBottom} y2={height - padBottom} stroke="#232833" strokeWidth="1" />
+      <line x1={padX} x2={w - padX} y1={height - padBottom} y2={height - padBottom} style={{ stroke: 'var(--line)' }} strokeWidth="1" />
       {points.length > 0 && (
         <>
-          <path d={area} fill={color} opacity="0.1" />
-          <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          <circle cx={x(points.length - 1)} cy={y(last.count)} r="4" fill={color} stroke="#12151c" strokeWidth="2" />
+          <path d={area} style={{ fill: color }} opacity="0.1" />
+          <path d={line} fill="none" style={{ stroke: color }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          <circle cx={x(points.length - 1)} cy={y(last.count)} r="4" style={{ fill: color, stroke: 'var(--card)' }} strokeWidth="2" />
           <text x={x(points.length - 1)} y={y(last.count) - 8} textAnchor="end" className="miniline-val">{last.count}</text>
         </>
       )}

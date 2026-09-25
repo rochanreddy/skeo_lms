@@ -4,8 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>skeo LMS</title>
-    <meta name="theme-color" content="#0b0d12" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Day or night before first paint, the website's way: the stored choice
+         (same key as skeoai.com — see src/components/ThemeToggle.jsx), else the
+         device's own preference. Without it a night-mode student would see a
+         light flash on every load while React started. -->
+    <script>
+      try {
+        var s = localStorage.getItem('skeo-palette');
+        var p = (s === 'charcoal' || s === 'claude') ? s
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'charcoal' : 'claude');
+        document.documentElement.dataset.palette = p;
+      } catch (e) { document.documentElement.dataset.palette = 'claude'; }
+    </script>
     <!-- The fonts are self-hosted (see src/fonts.css and public/fonts). There is
          no third-party stylesheet to fetch and parse before the files can even
          be discovered, so the two UI families are preloaded directly and arrive

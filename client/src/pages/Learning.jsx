@@ -818,7 +818,9 @@ function LessonVideo({ url }) {
 function Ring({ pct }) {
   const r = 20, c = 2 * Math.PI * r;
   return (
-    <svg className="ring" width="52" height="52" viewBox="0 0 52 52">
+    // Not className="ring": that is also Tailwind's ring utility, which drew a
+    // 1px box in the text colour around the whole SVG.
+    <svg className="progress-ring" width="52" height="52" viewBox="0 0 52 52">
       <circle cx="26" cy="26" r={r} className="ring-bg" />
       <circle cx="26" cy="26" r={r} className="ring-fg" strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} transform="rotate(-90 26 26)" />
       <text x="26" y="30" textAnchor="middle" className="ring-text">{pct}%</text>

@@ -27,93 +27,97 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 @import 'tw-animate-css';
 
-/* The whole app is dark. `.dark` is the "stage" (lessons, live sessions) —
-   one step blacker than the page — so wrap a stage region in it and shadcn
-   follows. */
+/* The page follows the palette (Claude by day, Charcoal by night — see
+   styles.css); `.dark` is the "stage" (lessons, live sessions), which stays
+   dark in both, so wrap a stage region in it and shadcn follows.
+
+   Every value here is a reference to styles.css's tokens rather than a copy
+   of them, so the components follow the palette the moment it switches. */
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  /* ── Surfaces ── four steps of black (see styles.css) */
-  --sk-background: #0b0d12;        /* --bg   */
-  --sk-foreground: #f5f7fb;        /* --ink  */
-  --sk-card: #12151c;              /* --card */
-  --sk-card-foreground: #f5f7fb;
-  --sk-popover: #12151c;
-  --sk-popover-foreground: #f5f7fb;
+:root,
+:root[data-palette='claude'],
+:root[data-palette='charcoal'] {
+  --sk-background: var(--bg);
+  --sk-foreground: var(--ink);
+  --sk-card: var(--card);
+  --sk-card-foreground: var(--ink);
+  --sk-popover: var(--card);
+  --sk-popover-foreground: var(--ink);
 
-  /* ── Blue carries every interactive state ── */
-  --sk-primary: #3d8bff;           /* --blue      */
+  /* ── The accent carries every interactive state ── */
+  --sk-primary: var(--blue);
   --sk-primary-foreground: #ffffff;
-  --sk-secondary: #14223a;         /* --blue-soft */
-  --sk-secondary-foreground: #8fbcff;
-  --sk-accent: #1c212b;            /* --wash-2: hover rows, highlighted items */
-  --sk-accent-foreground: #f5f7fb;
+  --sk-secondary: var(--blue-soft);
+  --sk-secondary-foreground: var(--blue-ink);
+  --sk-accent: var(--wash-2);       /* hover rows, highlighted items */
+  --sk-accent-foreground: var(--ink);
 
   /* shadcn's `muted` is a SURFACE; styles.css's --muted is TEXT. Both kept. */
-  --sk-muted: #1a1e27;             /* --line-soft */
-  --sk-muted-foreground: #8a93a6;  /* --muted     */
+  --sk-muted: var(--line-soft);
+  --sk-muted-foreground: var(--muted);
 
-  --sk-destructive: #f0525f;       /* --red */
+  --sk-destructive: var(--red);
   --sk-destructive-foreground: #ffffff;
 
-  --sk-border: #232833;            /* --line */
-  --sk-input: #232833;
-  --sk-ring: #3d8bff;
+  --sk-border: var(--line);
+  --sk-input: var(--line);
+  --sk-ring: var(--blue);
 
   /* Course identity accents --a1..--a6, in registry order. */
-  --sk-chart-1: #3d8bff;
-  --sk-chart-2: #14b8a6;
-  --sk-chart-3: #f5b83d;
-  --sk-chart-4: #f43f7a;
-  --sk-chart-5: #60a5fa;
+  --sk-chart-1: var(--a1);
+  --sk-chart-2: var(--a2);
+  --sk-chart-3: var(--a3);
+  --sk-chart-4: var(--a4);
+  --sk-chart-5: var(--a5);
 
-  --sk-sidebar: #12151c;
-  --sk-sidebar-foreground: #f5f7fb;
-  --sk-sidebar-primary: #3d8bff;
+  --sk-sidebar: var(--card);
+  --sk-sidebar-foreground: var(--ink);
+  --sk-sidebar-primary: var(--blue);
   --sk-sidebar-primary-foreground: #ffffff;
-  --sk-sidebar-accent: #1c212b;
-  --sk-sidebar-accent-foreground: #f5f7fb;
-  --sk-sidebar-border: #232833;
-  --sk-sidebar-ring: #3d8bff;
+  --sk-sidebar-accent: var(--wash-2);
+  --sk-sidebar-accent-foreground: var(--ink);
+  --sk-sidebar-border: var(--line);
+  --sk-sidebar-ring: var(--blue);
 
   /* Falls back to styles.css's --radius (18px) so corners match the cards. */
   --sk-radius: var(--radius, 18px);
 }
 
-/* The stage: lessons and live sessions. One step below the page — true black. */
+/* The stage: lessons and live sessions — dark in both palettes. */
 .dark {
-  --sk-background: #05060a;        /* --stage      */
-  --sk-foreground: #f5f7fb;
-  --sk-card: #101319;              /* --stage-2    */
-  --sk-card-foreground: #f5f7fb;
-  --sk-popover: #101319;
-  --sk-popover-foreground: #f5f7fb;
+  --sk-background: var(--stage);
+  --sk-foreground: #f2f3f5;
+  --sk-card: var(--stage-2);
+  --sk-card-foreground: #f2f3f5;
+  --sk-popover: var(--stage-2);
+  --sk-popover-foreground: #f2f3f5;
 
-  --sk-primary: #3d8bff;
+  --sk-primary: var(--blue);
   --sk-primary-foreground: #ffffff;
-  --sk-secondary: #232833;         /* --stage-line */
-  --sk-secondary-foreground: #f5f7fb;
-  --sk-accent: #232833;
-  --sk-accent-foreground: #f5f7fb;
+  --sk-secondary: var(--stage-line);
+  --sk-secondary-foreground: #f2f3f5;
+  --sk-accent: var(--stage-line);
+  --sk-accent-foreground: #f2f3f5;
 
-  --sk-muted: #101319;
-  --sk-muted-foreground: #8a93a6;
+  --sk-muted: var(--stage-2);
+  --sk-muted-foreground: #9a9ea8;
 
-  --sk-destructive: #f0525f;
+  --sk-destructive: var(--red);
   --sk-destructive-foreground: #ffffff;
 
-  --sk-border: #232833;
-  --sk-input: #232833;
-  --sk-ring: #8fbcff;
+  --sk-border: var(--stage-line);
+  --sk-input: var(--stage-line);
+  --sk-ring: var(--stage-accent-ink);
 
-  --sk-sidebar: #101319;
-  --sk-sidebar-foreground: #f5f7fb;
-  --sk-sidebar-primary: #8fbcff;
-  --sk-sidebar-primary-foreground: #05060a;
-  --sk-sidebar-accent: #232833;
-  --sk-sidebar-accent-foreground: #f5f7fb;
-  --sk-sidebar-border: #232833;
-  --sk-sidebar-ring: #8fbcff;
+  --sk-sidebar: var(--stage-2);
+  --sk-sidebar-foreground: #f2f3f5;
+  --sk-sidebar-primary: var(--stage-accent-ink);
+  --sk-sidebar-primary-foreground: var(--stage);
+  --sk-sidebar-accent: var(--stage-line);
+  --sk-sidebar-accent-foreground: #f2f3f5;
+  --sk-sidebar-border: var(--stage-line);
+  --sk-sidebar-ring: var(--stage-accent-ink);
 }
 
 @theme inline {
@@ -153,12 +157,12 @@
   --color-sidebar-ring: var(--sk-sidebar-ring);
 
   /* Brand extras, so `bg-blue` / `text-green` / `font-serif` stay reachable. */
-  --color-blue: #3d8bff;
-  --color-lime: #c7f25a;
-  --color-yellow: #f5b83d;
-  --color-green: #2ecc8a;
-  --color-lavender: #8fbcff;
-  --color-parchment: #f5f7fb;
+  --color-blue: var(--blue);
+  --color-lime: var(--lime);
+  --color-yellow: var(--amber);
+  --color-green: var(--green);
+  --color-lavender: var(--blue-ink);
+  --color-parchment: var(--ink);
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'DM Sans', 'Inter', system-ui, sans-serif;

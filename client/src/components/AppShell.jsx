@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { navFor } from '../nav.jsx';
 import Icon from './Icon.jsx';
 import NotificationBell from './NotificationBell.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
 import SkeoWordmark from './SkeoWordmark.jsx';
 import UserMenu from './UserMenu.jsx';
 
@@ -86,6 +87,8 @@ export default function AppShell({ user, setUser, logout }) {
           <span className="search-trigger-text">Search anything…</span>
           <kbd className="kbd">{isMac ? '⌘' : 'Ctrl'} K</kbd>
         </button>
+
+        <ThemeToggle />
 
         <NotificationBell />
 

@@ -151,7 +151,7 @@ export default function AdminCertificates() {
                       </td>
                       <td>
                         <code style={{ fontSize: 12 }}>{c.code}</code>
-                        {c.revoked && <div style={{ fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>Revoked</div>}
+                        {c.revoked && <div style={{ fontSize: 12, color: 'var(--red-ink)', fontWeight: 600 }}>Revoked</div>}
                       </td>
                       <td className="muted" style={{ fontSize: 13 }}>{fmt(c.issuedAt)}</td>
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>

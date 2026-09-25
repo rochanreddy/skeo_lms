@@ -1,37 +1,110 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    SKEO LMS — design language
-     the ground  #0b0d12  black  → the page; every card rises one step from it
-     the word    #f5f7fb  white  → ink: text, the active dock item, the rule's paper
-     the mark    #3d8bff  blue   → structure: every interactive state, the path
-     the dot     #2ecc8a  green  → progress, done, go
-   Three colours do the work. Black is the surface, white is the ink, and blue
-   is the only thing that ever means "you can act on this" — it never
-   decorates. Green, amber and red are status and nothing else. Three motifs
-   carry the identity: the RULE (underline, never a filled pill), the DOT (one
-   shape, three states), and DM Serif Display italic for the human moments.
+   Two palettes, the website's own (skeoai.com, skeo_web/src/app/globals.css):
+     Claude    — by day:   ivory paper, warm near-black ink, terracotta accent
+     Charcoal  — by night: charcoal paper, near-white ink, violet accent
+   `data-palette` on <html> picks one (index.html sets it before first paint;
+   ThemeToggle.jsx switches it), exactly as the website does, so a student
+   moving between skeoai.com and the LMS stays in one product.
 
-   The older --purple / --lavender / --parchment names are kept as aliases so
-   two thousand lines of rules didn't need renaming; they resolve to blue and
-   white now. New rules should use the --blue / --white names.
+   The accent still means one thing: "you can act on this". Green, amber and
+   red are status and nothing else. It is still called --blue (with --purple
+   and --brand as aliases) so three thousand lines of rules did not need
+   renaming — read it as "the accent", whatever colour the palette makes it.
+
+   THE STAGE stays dark in both palettes: the login art, the home "path" hero,
+   the lesson reader and code blocks are the focus surfaces, the way the
+   website keeps its dark bands in day mode. .stage-scope (below) hands them
+   the dark text colours, so day-mode ink never lands on a dark slab.
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
+  /* Fixed, whatever the palette: the stage's own white and black. */
+  --white: #f5f7fb;
+  --black: #0b0d12;
+
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 26px;
+  --pill: 999px;
+
+  --font: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --display: 'DM Sans', 'Inter', system-ui, sans-serif;
+  --serif: 'DM Serif Display', Georgia, serif;
+}
+
+/* ── Claude, by day (the default) ── */
+:root,
+:root[data-palette='claude'] {
+  color-scheme: light;
+
+  --blue: #bd5a38;             /* the accent — Claude terracotta */
+  --blue-dark: #a24a2c;        /* hover */
+  --blue-ink: #96421f;         /* accent as TEXT on a soft fill — clears AA */
+  --blue-soft: #f7eae3;        /* tinted fill */
+  --blue-line: #ebcfc1;        /* tinted border */
+  --blue-glow: rgba(189,90,56,.28);
+
+  --green: #1f9d68;
+  --green-soft: #e4f4ec;
+  --green-line: #bfe3d0;
+  --green-ink: #13734c;
+  --green-deep: #0f6b47;       /* green text on a WHITE pill */
+  --amber: #c98a12;
+  --amber-soft: #fbf1dc;
+  --amber-line: #efd9a6;
+  --amber-ink: #8a5a00;
+  --red: #d6404d;
+  --red-soft: #fbe7e9;
+  --red-line: #f2c5ca;
+  --red-ink: #b3242f;
+  --lime: #ebdbbc;             /* Manilla — the website's highlight slot */
+
+  --ink: #191817;              /* warm near-black */
+  --ink-2: #4a4741;            /* body copy */
+  --muted: #625c53;            /* secondary copy */
+  --muted-2: #837d73;          /* placeholders, disabled, tertiary */
+  --on-ink: #ffffff;           /* text on an --ink fill (the active dock item) */
+  --line: #e3e0d6;
+  --line-2: #d3cfc3;           /* hover borders, scrollbar thumb */
+  --line-soft: #eeebe3;
+  --bg: #fafaf7;               /* Ivory — the page */
+  --card: #ffffff;
+  --wash: #f2f0e9;             /* a sub-surface inside a card: inputs, rows */
+  --wash-2: #eae7de;
+  --code: #96421f;
+
+  --stage: #141413;            /* the website's ink band */
+  --stage-2: #262624;
+  --stage-line: #3a3935;
+  --stage-accent-ink: #f0b49b; /* the accent as text ON the stage */
+
+  --a1: var(--blue);  --a1-soft: var(--blue-soft);  --a1-ink: var(--blue-ink);   /* accent */
+  --a2: #0f9488;      --a2-soft: #e0f3f1;           --a2-ink: #0b6b62;           /* teal   */
+  --a3: var(--amber); --a3-soft: var(--amber-soft); --a3-ink: var(--amber-ink);  /* amber  */
+  --a4: #d6336c;      --a4-soft: #fbe5ee;           --a4-ink: #a3204f;           /* rose   */
+  --a5: #2f7fd6;      --a5-soft: #e3eefb;           --a5-ink: #1d5fa8;           /* sky    */
+  --a6: var(--green); --a6-soft: var(--green-soft); --a6-ink: var(--green-ink);  /* green  */
+
+  --shadow: 0 1px 2px rgba(20,18,15,.06), 0 8px 24px rgba(20,18,15,.07);
+  --shadow-lg: 0 2px 4px rgba(20,18,15,.07), 0 20px 48px rgba(20,18,15,.12);
+}
+
+/* ── Charcoal, by night ── */
+:root[data-palette='charcoal'] {
   color-scheme: dark;
 
-  /* ── Brand ── */
-  --black: #0b0d12;
-  --white: #f5f7fb;
-  --blue: #3d8bff;
-  --blue-dark: #2f74e6;        /* hover */
-  --blue-ink: #8fbcff;         /* blue as TEXT on a soft fill — clears AA */
-  --blue-soft: #14223a;        /* tinted fill */
-  --blue-line: #274672;        /* tinted border */
-  --blue-glow: rgba(61,139,255,.35);
+  --blue: #8b6df5;             /* the accent — violet, lifted for charcoal */
+  --blue-dark: #7a5cf0;
+  --blue-ink: #b6a1ff;
+  --blue-soft: #211f33;
+  --blue-line: #3a3352;
+  --blue-glow: rgba(139,109,245,.35);
 
   --green: #2ecc8a;
   --green-soft: #0f2a1f;
   --green-line: #1b4a36;
   --green-ink: #6fe3b0;
-  --green-deep: #0f6b47;       /* green text on a WHITE pill */
+  --green-deep: #0f6b47;
   --amber: #f5b83d;
   --amber-soft: #2b2110;
   --amber-line: #4d3a14;
@@ -40,61 +113,79 @@
   --red-soft: #2a1519;
   --red-line: #4a2027;
   --red-ink: #ff8a93;
-  --lime: #c7f25a;
-  --yellow: var(--amber);
+  --lime: #dfff75;
 
-  /* Aliases — the old names, resolving into the new palette. */
+  --ink: #f2f3f5;
+  --ink-2: #c3c6cd;
+  --muted: #999da6;
+  --muted-2: #7c8089;
+  --on-ink: #131417;           /* the solid pill is light-on-dark, inverted */
+  --line: #2e3138;
+  --line-2: #3a3e46;
+  --line-soft: #26282e;
+  --bg: #131417;
+  --card: #1b1d22;             /* a step above the page, not the same grey */
+  --wash: #1e2026;
+  --wash-2: #24262d;
+  --code: #b6a1ff;
+
+  --stage: #0d0e10;
+  --stage-2: #1a1c22;
+  --stage-line: #2e3138;
+  --stage-accent-ink: #b6a1ff;
+
+  --a1: var(--blue);  --a1-soft: var(--blue-soft);  --a1-ink: var(--blue-ink);
+  --a2: #14b8a6;      --a2-soft: #0f2a28;           --a2-ink: #5fe0d0;
+  --a3: var(--amber); --a3-soft: var(--amber-soft); --a3-ink: var(--amber-ink);
+  --a4: #f43f7a;      --a4-soft: #2e1420;           --a4-ink: #ff8ab0;
+  --a5: #60a5fa;      --a5-soft: #12223a;           --a5-ink: #9cc6ff;
+  --a6: var(--green); --a6-soft: var(--green-soft); --a6-ink: var(--green-ink);
+
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg: 0 2px 4px rgba(0,0,0,.45), 0 20px 48px rgba(0,0,0,.55);
+}
+
+/* Aliases — declared after both palettes and on the same element, so each
+   resolves against whichever palette is live. */
+:root,
+:root[data-palette='claude'],
+:root[data-palette='charcoal'] {
   --purple: var(--blue);
   --purple-dark: var(--blue-dark);
   --purple-soft: var(--blue-soft);
   --purple-line: var(--blue-line);
   --lavender: var(--blue-ink);
-  --parchment: var(--white);
+  --parchment: var(--ink);
   --brand: var(--blue);
   --brand-dark: var(--blue-dark);
   --brand-soft: var(--blue-soft);
-
-  /* ── Ink & surfaces ── four steps of black, each one a hair lighter. */
-  --ink: var(--white);
-  --ink-2: #c6cdd9;
-  --muted: #8a93a6;
-  --muted-2: #5f6779;          /* placeholders, disabled, tertiary */
-  --line: #232833;
-  --line-2: #2f3642;           /* hover borders, scrollbar thumb */
-  --line-soft: #1a1e27;
-  --bg: var(--black);
-  --card: #12151c;
-  --wash: #171b23;             /* a sub-surface inside a card: inputs, rows */
-  --wash-2: #1c212b;
-  --code: #9dc1ff;
-
-  /* The focus "stage": lessons and live sessions go to true black, one step
-     below the page, so the picture is the brightest thing in the room. */
-  --stage: #05060a;
-  --stage-2: #101319;
-  --stage-line: #232833;
-
-  /* Accents for course identity and status. Each ships a saturated tone, a soft
-     fill and an ink that clears WCAG AA on that fill. */
-  --a1: var(--blue);  --a1-soft: var(--blue-soft);  --a1-ink: var(--blue-ink);   /* blue   */
-  --a2: #14b8a6;      --a2-soft: #0f2a28;           --a2-ink: #5fe0d0;           /* teal   */
-  --a3: var(--amber); --a3-soft: var(--amber-soft); --a3-ink: var(--amber-ink);  /* amber  */
-  --a4: #f43f7a;      --a4-soft: #2e1420;           --a4-ink: #ff8ab0;           /* rose   */
-  --a5: #60a5fa;      --a5-soft: #12223a;           --a5-ink: #9cc6ff;           /* sky    */
-  --a6: var(--green); --a6-soft: var(--green-soft); --a6-ink: var(--green-ink);  /* green  */
-
-  --radius-sm: 12px;
-  --radius: 18px;
-  --radius-lg: 26px;
-  --pill: 999px;
-
-  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
-  --shadow-lg: 0 2px 4px rgba(0,0,0,.45), 0 20px 48px rgba(0,0,0,.55);
+  --yellow: var(--amber);
   --ring: 0 0 0 3px var(--blue-glow);
+  /* The website's own names, for the controls copied from it (ThemeToggle). */
+  --paper: var(--bg);
+  --surface: var(--wash);
+  --ink-4: var(--muted-2);
+}
 
-  --font: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  --display: 'DM Sans', 'Inter', system-ui, sans-serif;
-  --serif: 'DM Serif Display', Georgia, serif;
+/* ── The stage ──
+   Always dark, so it carries the dark text colours with it in both palettes.
+   Custom properties inherit as computed values, so the aliases are restated
+   here too — otherwise --parchment and --lavender would arrive already
+   resolved to day-mode ink. */
+.auth-hero, .path-hero, .lesson, .md-pre, .vdo-frame, .stage-scope {
+  --ink: #f2f3f5;
+  --ink-2: #c3c6cd;
+  --muted: #9a9ea8;
+  --muted-2: #7c8089;
+  --parchment: #f2f3f5;
+  --lavender: var(--stage-accent-ink);
+  --blue-ink: var(--stage-accent-ink);
+  --code: var(--stage-accent-ink);
+  --line: var(--stage-line);
+  --line-2: #45454a;
+  --card: var(--stage-2);
+  --wash: var(--stage-2);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -150,7 +241,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    curriculum tree, assignment rows, session lists. */
 .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; border: 2px solid var(--line); background: var(--card); box-sizing: border-box; transition: all .2s; }
 .dot.done { background: var(--green); border-color: var(--green); }
-.dot.now { border-color: var(--purple); background: var(--card); box-shadow: 0 0 0 4px rgba(61,139,255,.16); }
+.dot.now { border-color: var(--purple); background: var(--card); box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 16%, transparent); }
 .dot.ahead { border-color: var(--purple-line); background: transparent; }
 .dot.late { background: var(--a4); border-color: var(--a4); }
 
@@ -178,8 +269,8 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    as the thing emitting it. */
 .auth-hero::before { content: ''; position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(60% 46% at 72% 58%, rgba(61,139,255,.28), transparent 70%),
-    radial-gradient(40% 34% at 22% 14%, rgba(143,188,255,.12), transparent 72%); }
+    radial-gradient(60% 46% at 72% 58%, color-mix(in srgb, var(--blue) 28%, transparent), transparent 70%),
+    radial-gradient(40% 34% at 22% 14%, color-mix(in srgb, var(--stage-accent-ink) 12%, transparent), transparent 72%); }
 /* The rule, drawn large — the brand motif. Absolute, so it is suppressed on
    the variant that carries the illustration: there the art is the ornament,
    and a second absolutely-placed decoration is a second thing that can land
@@ -240,10 +331,10 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    along the right and bottom edges — one more surface is all the depth this
    needs, and it is the honest kind. */
 .la-stack { position: absolute; left: 2.2em; right: -1.6em; top: 2.4em; bottom: -1.4em;
-  border-radius: 1.1em; background: #0f131b; border: 1px solid #1e2534; }
+  border-radius: 1.1em; background: var(--stage-2); border: 1px solid var(--stage-line); }
 
 .la-panel { position: relative; border-radius: 1.1em; padding: 1.9em 1.9em 1.6em;
-  background: #0c1017; border: 1px solid #222a3a;
+  background: color-mix(in srgb, var(--stage-2) 70%, var(--stage)); border: 1px solid var(--stage-line);
   box-shadow: 0 2.4em 5em rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03) inset; }
 
 /* Header: which track, and how far in. */
@@ -251,15 +342,15 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .la-eyebrow { font-size: .72em; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
   color: var(--lavender); }
 .la-title { margin-top: .5em; font-family: var(--display); font-size: 1.3em; font-weight: 700;
-  letter-spacing: -0.02em; color: #eef2f8; }
-.la-count { font-family: Consolas, Menlo, monospace; font-size: 1.15em; color: #4f5a72;
+  letter-spacing: -0.02em; color: #f2f3f5; }
+.la-count { font-family: Consolas, Menlo, monospace; font-size: 1.15em; color: #6b6f78;
   white-space: nowrap; }
 /* tabular-nums, or the panel twitches sideways as the count passes 9. */
-.la-count-now { color: #eef2f8; font-variant-numeric: tabular-nums; }
+.la-count-now { color: #f2f3f5; font-variant-numeric: tabular-nums; }
 
-.la-bar { margin: 1.4em 0 1.2em; height: .45em; border-radius: .45em; background: #1a2130; overflow: hidden; }
+.la-bar { margin: 1.4em 0 1.2em; height: .45em; border-radius: .45em; background: var(--stage-line); overflow: hidden; }
 .la-bar-fill { display: block; height: 100%; border-radius: .45em;
-  background: linear-gradient(90deg, #2f74e6, var(--blue));
+  background: linear-gradient(90deg, var(--blue-dark), var(--blue));
   transition: width .5s cubic-bezier(.4,0,.2,1); }
 
 /* ── the syllabus ─────────────────────────────────────────
@@ -268,29 +359,29 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    drawing walks up and down the page, because it is centred in its box. */
 .la-mods { height: 17.3em; }
 .la-mod { border-radius: .7em; transition: background .3s ease; }
-.la-mod[data-open="true"] { background: #0f1520; }
+.la-mod[data-open="true"] { background: color-mix(in srgb, #ffffff 4%, var(--stage-2)); }
 .la-mod-head { display: flex; align-items: center; gap: .8em; height: 3.2em; padding: 0 .8em;
   white-space: nowrap; }
-.la-mod-code { font-family: Consolas, Menlo, monospace; font-size: .82em; color: #5d6784;
+.la-mod-code { font-family: Consolas, Menlo, monospace; font-size: .82em; color: #7c8089;
   transition: color .3s ease; }
 .la-mod[data-open="true"] .la-mod-code,
 .la-mod[data-done="true"] .la-mod-code { color: var(--lavender); }
 .la-mod-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  font-size: .96em; color: #7c8699; transition: color .3s ease; }
-.la-mod[data-open="true"] .la-mod-title { color: #eef2f8; }
-.la-mod[data-done="true"] .la-mod-title { color: #b9c2d2; }
-.la-mod-n { flex: none; font-family: Consolas, Menlo, monospace; font-size: .76em; color: #4b5468; }
+  font-size: .96em; color: #9a9ea8; transition: color .3s ease; }
+.la-mod[data-open="true"] .la-mod-title { color: #f2f3f5; }
+.la-mod[data-done="true"] .la-mod-title { color: #c3c6cd; }
+.la-mod-n { flex: none; font-family: Consolas, Menlo, monospace; font-size: .76em; color: #5f636c; }
 
 /* The chevron: two borders on a rotated box, so it keeps its weight at any
    size and needs no icon font. It turns when the module opens. */
 .la-chev { flex: none; width: .5em; height: .5em; margin-right: .2em;
-  border: solid #4b5468; border-width: 0 .13em .13em 0; transform: rotate(45deg) translate(-.1em,-.1em);
+  border: solid #5f636c; border-width: 0 .13em .13em 0; transform: rotate(45deg) translate(-.1em,-.1em);
   transition: transform .35s cubic-bezier(.4,0,.2,1), border-color .3s ease; }
 .la-mod[data-open="true"] .la-chev { transform: rotate(225deg) translate(-.05em,-.05em); border-color: var(--lavender); }
 
 /* The module’s own mark: an outline that fills in green when it is finished. */
 .la-modmark { position: relative; flex: none; width: 1.55em; height: 1.55em; border-radius: .48em;
-  border: .13em solid #2b3446; display: grid; place-items: center;
+  border: .13em solid #45454a; display: grid; place-items: center;
   transition: background .35s ease, border-color .35s ease; }
 .la-mod[data-done="true"] .la-modmark { background: #16a34a; border-color: #16a34a; }
 
@@ -308,12 +399,12 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .la-les { display: flex; align-items: center; gap: .75em; height: 2.5em; padding: 0 .8em 0 1.7em;
   white-space: nowrap; opacity: .55; transition: opacity .35s ease; }
 .la-les[data-done="true"] { opacity: 1; }
-.la-les-code { font-family: Consolas, Menlo, monospace; font-size: .76em; color: #4f5a72; }
+.la-les-code { font-family: Consolas, Menlo, monospace; font-size: .76em; color: #6b6f78; }
 .la-les-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  font-size: .88em; color: #7c8699; transition: color .35s ease; }
-.la-les[data-done="true"] .la-les-name { color: #dfe5ef; }
+  font-size: .88em; color: #9a9ea8; transition: color .35s ease; }
+.la-les[data-done="true"] .la-les-name { color: #e6e7ea; }
 .la-les-mark { position: relative; flex: none; width: 1.15em; height: 1.15em; border-radius: 50%;
-  border: .12em solid #2b3446; display: grid; place-items: center;
+  border: .12em solid #45454a; display: grid; place-items: center;
   transition: background .3s ease, border-color .3s ease; }
 .la-les[data-done="true"] .la-les-mark { background: #16a34a; border-color: #16a34a; }
 
@@ -329,7 +420,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .la-modmark .la-tick { width: .36em; height: .7em; border-width: 0 .17em .17em 0; }
 
 .la-foot { display: flex; align-items: center; gap: .7em; margin-top: 1.2em; padding-top: 1.1em;
-  border-top: 1px solid #1a2130; font-family: Consolas, Menlo, monospace; font-size: .78em; color: #5d6784; }
+  border-top: 1px solid var(--stage-line); font-family: Consolas, Menlo, monospace; font-size: .78em; color: #7c8089; }
 .la-foot-live { width: .6em; height: .6em; border-radius: 50%; background: #f0525f; flex: none;
   box-shadow: 0 0 0 .28em rgba(240,82,95,.16); }
 
@@ -351,8 +442,8 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .la-chip-sub { display: block; margin-top: .1em; font-family: Consolas, Menlo, monospace;
   font-size: .76em; color: #5f6779; }
 .la-seal { width: 1.8em; height: 1.8em; border-radius: 50%; flex: none;
-  background: radial-gradient(circle at 35% 30%, #8fbcff, #1f6fe0);
-  box-shadow: 0 0 0 .25em rgba(31,111,224,.14); }
+  background: radial-gradient(circle at 35% 30%, var(--stage-accent-ink), var(--blue-dark));
+  box-shadow: 0 0 0 .25em color-mix(in srgb, var(--blue) 14%, transparent); }
 
 /* Someone who asked for less movement gets the finished frame and no
    transitions at all — the component already stops its timer, and this stops
@@ -422,7 +513,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; gap: 16px;
   padding: 14px 30px;
-  background: rgba(11,13,18,.78); backdrop-filter: blur(14px) saturate(1.4);
+  background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(14px) saturate(1.4);
   border-bottom: 1px solid transparent;
   transition: border-color .2s, background .2s;
 }
@@ -437,21 +528,21 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: max(20px, env(safe-area-inset-bottom, 0px));
   z-index: 60; display: flex; align-items: stretch; gap: 2px; padding: 6px;
-  background: rgba(18,21,28,.88); backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid rgba(255,255,255,.1); border-radius: 22px;
-  box-shadow: 0 10px 44px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.55);
+  background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid var(--line); border-radius: 22px;
+  box-shadow: var(--shadow-lg);
   max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: none;
 }
 .dock::-webkit-scrollbar { display: none; }
 .dock-item {
   flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
   min-width: 72px; padding: 9px 10px 8px; border-radius: 16px;
-  color: rgba(245,247,251,.58); text-decoration: none;
+  color: var(--muted); text-decoration: none;
   transition: background .18s, color .18s;
 }
 .dock-item svg { flex: none; }
-.dock-item:hover { color: var(--parchment); background: rgba(255,255,255,.09); }
-.dock-item.on { background: var(--white); color: var(--black); }
+.dock-item:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.dock-item.on { background: var(--ink); color: var(--on-ink); }
 .dock-label { font-size: 11.5px; font-weight: 600; white-space: nowrap; letter-spacing: -0.005em; }
 .dock-item.on .dock-label { font-weight: 700; }
 
@@ -572,7 +663,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .cmd-sub-line { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmd-detail { font-size: 12px; color: var(--muted-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; }
 .cmd-item.sel .cmd-sub-line, .cmd-item.sel .cmd-detail { color: var(--blue-ink); }
-.cmd-mark { background: rgba(61,139,255,.16); color: inherit; border-radius: 3px; padding: 0 1px; font-weight: 700; }
+.cmd-mark { background: color-mix(in srgb, var(--blue) 16%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; font-weight: 700; }
 .cmd-enter { flex: none; font-size: 12px; color: var(--purple); opacity: .75; }
 .cmd-empty { padding: 34px 20px; text-align: center; color: var(--muted); font-size: 14px; }
 .cmd-empty-sub { font-size: 12.5px; color: var(--muted-2); margin-top: 7px; }
@@ -596,7 +687,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .notif-text { font-size: 13.5px; color: var(--ink); }
 .notif-time { font-size: 11px; color: var(--muted); margin-top: 3px; }
 .who-name { font-size: 14px; font-weight: 500; }
-.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--white); color: var(--black); display: grid; place-items: center; font-weight: 700; font-family: var(--display); font-size: 14px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; font-weight: 700; font-family: var(--display); font-size: 14px; }
 /* Wide, but capped so long-form text keeps a readable measure. The deep bottom
    padding is clearance for the floating dock. */
 .main { padding: 34px 34px 132px; max-width: 1440px; margin: 0 auto; }
@@ -713,7 +804,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .path-hero::after {
   content: ''; position: absolute; top: -160px; right: -120px; width: 460px; height: 460px;
   border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, rgba(61,139,255,.55) 0%, rgba(61,139,255,0) 68%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--blue) 55%, transparent) 0%, color-mix(in srgb, var(--blue) 0%, transparent) 68%);
 }
 .path-hero > * { position: relative; z-index: 1; }
 
@@ -749,7 +840,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .path-dot { position: relative; z-index: 1; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.24); background: var(--stage); box-sizing: border-box; transition: all .22s; }
 .path-station.done .path-dot { background: var(--green); border-color: var(--green); box-shadow: 0 0 0 4px rgba(46,204,138,.22); }
 .path-station.now .path-dot { border-color: var(--parchment); background: var(--parchment); transform: scale(1.2);
-  box-shadow: 0 0 0 6px rgba(157,193,255,.26), 0 0 24px rgba(157,193,255,.6); }
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--stage-accent-ink) 26%, transparent), 0 0 24px color-mix(in srgb, var(--stage-accent-ink) 60%, transparent); }
 .path-code { font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.3); margin-top: 6px; transition: color .2s; }
 .path-station.done .path-code { color: var(--green-ink); }
 .path-station.now .path-code { color: var(--lavender); }
@@ -765,7 +856,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .path-station:hover .path-label { color: var(--parchment); }
 /* margin-top:auto pins the caption to the bottom of the stretched station, so
    every station's caption sits on one line however long its title ran. */
-.path-state { margin-top: auto; font-size: clamp(9.5px, .8vw, 10.5px); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-align: center; color: rgba(157,193,255,.45); }
+.path-state { margin-top: auto; font-size: clamp(9.5px, .8vw, 10.5px); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-align: center; color: color-mix(in srgb, var(--stage-accent-ink) 45%, transparent); }
 .path-station.done .path-state { color: var(--green-ink); }
 .path-station.now .path-state { color: var(--lavender); }
 
@@ -840,8 +931,8 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .sb-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
 .sb-title { font-family: var(--display); font-size: 22px; font-weight: 700; margin-top: 4px; }
 .sb-time { font-size: 14px; opacity: .9; margin-top: 3px; font-weight: 500; }
-.sb-join { background: #fff; color: #1f6fe0; padding: 11px 20px; border-radius: 10px; font-weight: 700; text-decoration: none; white-space: nowrap; }
-.sb-join:hover { background: #e6eefc; }
+.sb-join { background: #fff; color: var(--blue); padding: 11px 20px; border-radius: 10px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.sb-join:hover { background: color-mix(in srgb, var(--blue) 10%, #fff); }
 .sb-join-off { background: rgba(255,255,255,.25); color: #fff; cursor: default; }
 
 /* ── Learning journey timeline ── */
@@ -986,8 +1077,8 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
    thing most people came for — the facts underneath are the follow-up. */
 .verify-badge { display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .16em;
   text-transform: uppercase; padding: 6px 13px; border-radius: 999px; }
-.verify-badge--valid { background: #dcfce7; color: #15803d; }
-.verify-badge--revoked { background: #fee2e2; color: #b91c1c; }
+.verify-badge--valid { background: var(--green-soft); color: var(--green-ink); }
+.verify-badge--revoked { background: var(--red-soft); color: var(--red-ink); }
 .verify-badge--missing { background: var(--purple-soft); color: var(--a1-ink); }
 .verify-status { margin: 14px 0 0; font-size: 15px; line-height: 1.6; color: var(--ink-2); }
 .verify-facts { margin-top: 22px; border-top: 1px solid var(--line); }
@@ -1089,7 +1180,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .cur-topic.active::before { content: ''; position: absolute; left: 4px; top: 10px; bottom: 10px; width: 2px; border-radius: 2px; background: var(--purple); }
 .cur-tick { flex: none; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); box-sizing: border-box; display: block; }
 .cur-topic.done .cur-tick { background: var(--green); border-color: var(--green); }
-.cur-topic.active .cur-tick { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(61,139,255,.16); }
+.cur-topic.active .cur-tick { border-color: var(--purple); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 16%, transparent); }
 .cur-topic.active.done .cur-tick { background: var(--green); border-color: var(--green); }
 .cur-topic-title { flex: 1; line-height: 1.35; }
 
@@ -1178,13 +1269,13 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
   z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height));
   --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
 .textLayer .markedContent { display: contents; }
-.textLayer ::selection { background: rgba(61,139,255,.35); }
+.textLayer ::selection { background: color-mix(in srgb, var(--blue) 35%, transparent); }
 /* Search hits stay visible through the transparent text colour. */
 .textLayer .pdfr-hit { background: rgba(255,207,82,.45); color: transparent; border-radius: 2px; }
 
 .pdfr-linklayer { position: absolute; inset: 0; z-index: 2; }
 .pdfr-link { position: absolute; display: block; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 2px; }
-.pdfr-link:hover { background: rgba(61,139,255,.16); outline: 1px solid var(--purple); }
+.pdfr-link:hover { background: color-mix(in srgb, var(--blue) 16%, transparent); outline: 1px solid var(--purple); }
 
 /* Toolbar sits above the pages and stays put while they scroll under it. */
 .pdfr-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 16px;
@@ -1375,13 +1466,13 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .att-list { overflow-y: auto; overscroll-behavior: contain; padding: 8px 12px; }
 .att-item { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 11px; }
 .att-item.is-present { background: var(--green-soft); }
-.att-av { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #3a4354; color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.att-av { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--ink-2); color: var(--on-ink); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
 .att-item.is-present .att-av { background: var(--green); }
 .att-name { flex: 1; font-size: 14px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .att-seg { display: inline-flex; background: var(--line-soft); border-radius: 9px; padding: 2px; flex: none; }
 .att-segbtn { border: 0; background: none; padding: 6px 13px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 7px; font-family: var(--font); }
 .att-segbtn.on-p { background: var(--green); color: #fff; }
-.att-segbtn.on-a { background: var(--card); color: var(--ink-2); box-shadow: 0 1px 2px rgba(0,0,0,.45); }
+.att-segbtn.on-a { background: var(--card); color: var(--ink-2); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
 .att-empty { padding: 24px 12px; text-align: center; }
 .att-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--line-soft); }
 @media (max-width: 560px) { .att-item { flex-wrap: wrap; } }
@@ -1399,7 +1490,7 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .af-title { flex: 1; min-width: 220px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; font-size: 15px; font-family: var(--font); font-weight: 600; background: var(--card); }
 .af-seg { display: inline-flex; background: var(--line-soft); border-radius: 10px; padding: 3px; flex: none; }
 .af-seg button { border: 0; background: none; padding: 8px 15px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 8px; font-family: var(--font); }
-.af-seg button.on { background: var(--card); color: var(--brand); box-shadow: 0 1px 2px rgba(0,0,0,.45); }
+.af-seg button.on { background: var(--card); color: var(--brand); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
 .af-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 16px 0 7px; }
 .af-desc { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; font-family: var(--font); line-height: 1.6; box-sizing: border-box; resize: vertical; background: var(--card); }
 .af-desc::placeholder { color: var(--muted-2); }
@@ -1560,7 +1651,7 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .quiz-step.answered { background: var(--purple-soft); border-color: var(--purple-line); color: var(--purple-dark); }
 .quiz-step.correct { background: var(--green-soft); border-color: var(--green-line); color: var(--green-ink); }
 .quiz-step.incorrect { background: var(--red-soft); border-color: var(--red-line); color: var(--red-ink); }
-.quiz-step.current { color: #fff; box-shadow: 0 0 0 4px rgba(61,139,255,.3); }
+.quiz-step.current { color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 30%, transparent); }
 .quiz-step.unanswered.current, .quiz-step.answered.current { background: var(--purple); border-color: var(--purple); }
 .quiz-step.correct.current { background: var(--green); border-color: var(--green); box-shadow: 0 0 0 4px rgba(46,204,138,.28); }
 .quiz-step.incorrect.current { background: var(--red); border-color: var(--red); box-shadow: 0 0 0 4px rgba(240,82,95,.28); }
@@ -1823,7 +1914,7 @@ input:not([class*="rounded"]):focus-visible, select:not([class*="rounded"]):focu
 textarea:not([class*="rounded"]):focus-visible, [tabindex]:not([class*="rounded"]):focus-visible {
   border-radius: 8px;
 }
-.dock-item:focus-visible { box-shadow: 0 0 0 3px rgba(245,247,251,.5); }
+.dock-item:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 40%, transparent); }
 
 /* ── The dock ── The active tab lifts and gets the dot; it should read as the
    place you're standing, not just a highlighted button. */
@@ -1854,7 +1945,7 @@ textarea:not([class*="rounded"]):focus-visible, [tabindex]:not([class*="rounded"
 
 /* ── Buttons ── A little more life on press, and a soft lift on the primary. */
 .btn { position: relative; will-change: transform; }
-.btn:hover { box-shadow: 0 4px 14px rgba(61,139,255,.26); }
+.btn:hover { box-shadow: 0 4px 14px color-mix(in srgb, var(--blue) 26%, transparent); }
 .btn.ghost:hover, .btn.quiet:hover, .btn.on-stage:hover { box-shadow: none; }
 .btn:active { transform: translateY(1px) scale(.99); }
 
@@ -1878,13 +1969,13 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #3a4354; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-2); background-clip: content-box; }
 
 /* ── Text selection in the brand ──
    Two pairings, because the app has two kinds of surface. On paper, a soft
    purple wash under ink. On the dark stage, the same idea inverted: forcing
    ink onto the dark surfaces left the selected text all but invisible. */
-::selection { background: rgba(61,139,255,.2); color: var(--ink); }
+::selection { background: color-mix(in srgb, var(--blue) 20%, transparent); color: var(--ink); }
 
 .auth-hero ::selection,
 .path-hero ::selection,
@@ -1896,7 +1987,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .path-hero::selection,
 .lesson::selection,
 .dock::selection,
-.md-pre::selection { background: rgba(157,193,255,.34); color: var(--parchment); }
+.md-pre::selection { background: color-mix(in srgb, var(--stage-accent-ink) 34%, transparent); color: var(--parchment); }
 
 /* ── Accessibility ── Honour a stated preference for less motion: keep the
    state changes, drop the movement. */
@@ -2017,11 +2108,11 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   border: 1px solid var(--line); border-radius: 12px; background: var(--card);
   transition: border-color .16s, box-shadow .16s;
 }
-.member-row:hover { border-color: var(--purple); box-shadow: 0 2px 10px rgba(61,139,255,.08); }
+.member-row:hover { border-color: var(--purple); box-shadow: 0 2px 10px color-mix(in srgb, var(--blue) 8%, transparent); }
 .member-row.is-blocked { background: var(--red-soft); border-color: var(--red-line); }
 .member-av {
   width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
-  font-size: 13px; font-weight: 700; color: #fff; background: #3a4354; flex: none;
+  font-size: 13px; font-weight: 700; color: var(--on-ink); background: var(--ink-2); flex: none;
 }
 .member-id { flex: 1; min-width: 0; }
 .member-name {
@@ -2728,12 +2819,12 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .panel input:disabled { background: var(--line-soft); color: var(--muted-2); }
 
 /* The topbar only draws its rule — and a soft drop — once content scrolls under it. */
-.topbar.stuck { border-bottom-color: rgba(255,255,255,.07); box-shadow: 0 8px 28px rgba(0,0,0,.4); }
+.topbar.stuck { border-bottom-color: var(--line); box-shadow: var(--shadow); }
 
 /* The dock: a lit top edge, and the active item is the one white thing on
    the page — the word, on the mark. */
-.dock { box-shadow: 0 10px 44px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.07); }
-.dock-item.on { box-shadow: 0 3px 12px rgba(0,0,0,.45); }
+.dock { box-shadow: var(--shadow-lg); }
+.dock-item.on { box-shadow: 0 3px 12px rgba(0,0,0,.22); }
 
 /* Buttons: a faint inner highlight, and the primary lifts on a blue glow. */
 .btn { box-shadow: inset 0 1px 0 rgba(255,255,255,.14); }
@@ -2744,8 +2835,8 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .btn:focus-visible { box-shadow: var(--ring), inset 0 1px 0 rgba(255,255,255,.14); }
 
 /* Pills and chips take a hairline so a soft fill has an edge against a card. */
-.badge, .kbd, .file-chip, .risk-chip { border: 1px solid rgba(255,255,255,.06); }
-.badge-muted { border-color: rgba(255,255,255,.08); }
+.badge, .kbd, .file-chip, .risk-chip { border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); }
+.badge-muted { border-color: color-mix(in srgb, var(--ink) 11%, transparent); }
 
 /* Black media on a black card needs an edge to be a shape at all. */
 .lesson-video, .assign-video .lesson-video, .vdo-frame { box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
@@ -2768,7 +2859,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .lesson, .auth-hero { box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.06); }
 
 /* Selection, in the mark. */
-::selection { background: rgba(61,139,255,.4); color: var(--white); }
+::selection { background: color-mix(in srgb, var(--blue) 28%, transparent); color: var(--ink); }
 
 /* Scrims: heavier, and blurred, so a modal reads as a separate layer. */
 [data-slot='dialog-overlay'], .att-overlay, .cert-overlay { background: rgba(0,0,0,.72); }
@@ -3023,3 +3114,28 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .get-skeo-msg { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--ink); }
 .auth-form .get-skeo-btn { width: 100%; justify-content: center; text-decoration: none; }
 .get-skeo-note { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+
+/* ── Day / night toggle ────────────────────────────────────────────────────
+   The website's (skeo_web globals.css, .theme-toggle), rule for rule: a pill
+   track with the sun at one end and the moon at the other, and a knob that
+   slides under the live one, which is then painted in the paper colour so it
+   reads out of the knob. */
+.theme-toggle { display: inline-flex; align-items: center; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; flex: none; }
+.theme-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.theme-toggle-track {
+  position: relative; display: inline-flex; width: 56px; height: 30px;
+  align-items: center; justify-content: space-between; padding: 0 7px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+  transition: background .25s ease, border-color .25s ease;
+}
+.theme-toggle:hover .theme-toggle-track { border-color: color-mix(in srgb, var(--blue) 34%, var(--line)); }
+.theme-toggle-track svg { position: relative; z-index: 1; width: 13px; height: 13px; flex: none; color: var(--ink-4); transition: color .25s ease; }
+.theme-toggle[aria-checked='false'] .theme-toggle-track svg:nth-of-type(1),
+.theme-toggle[aria-checked='true'] .theme-toggle-track svg:nth-of-type(2) { color: var(--paper); }
+.theme-toggle-knob {
+  position: absolute; z-index: 0; top: 3px; left: 3px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--ink); box-shadow: 0 2px 6px rgb(20 12 45 / 22%);
+  transition: transform .28s cubic-bezier(.22,1,.36,1), background .25s ease;
+}
+.theme-toggle[aria-checked='true'] .theme-toggle-knob { transform: translateX(24px); }
+@media (prefers-reduced-motion: reduce) { .theme-toggle-knob { transition: none; } }
