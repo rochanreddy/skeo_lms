@@ -106,9 +106,24 @@ services:
       # they work on a host that allows SMTP, but setting them here would only
       # produce the hang described above.
       # ---------------------------------------------------------------------
+      # ZeptoMail is tried before Resend (utils/email.js). Every paid website
+      # order sends a login mail, and Resend's free 100 a day is not a ceiling a
+      # checkout can hit. MAIL_FROM must then be on a domain verified in
+      # ZeptoMail: skeo <noreply@skeoai.com> needs skeoai.com added there.
+      - key: ZEPTOMAIL_TOKEN
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM
+        sync: false
+      - key: MAIL_REPLY_TO
+        sync: false
+      # The shared secret skeoai.com's server sends to POST /api/skeo/provision
+      # after Cashfree confirms a payment. The SAME value is set on the website
+      # (Vercel) as SKEO_PROVISION_SECRET. At least 32 characters, or the route
+      # refuses everything — an endpoint that hands out accounts must not be
+      # open because someone forgot to set it.
+      - key: PROVISION_SECRET
         sync: false
       # Deliberately absent:
       #   PORT            — Render injects it; index.js reads process.env.PORT

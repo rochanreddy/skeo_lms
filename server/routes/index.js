@@ -21,6 +21,7 @@ import videoRoutes from './videos.js';
 import supportRoutes from './support.js';
 import webinarRoutes from './webinars.js';
 import certificateRoutes from './certificates.js';
+import provisionRoutes from './provision.js';
 
 const router = Router();
 
@@ -28,6 +29,8 @@ router.get('/', (_req, res) => res.json({ ok: true, service: 'skeo-lms', version
 
 // Phase 1
 router.use('/auth', authRoutes);
+// The website's server, after a confirmed payment. Secret-authenticated.
+router.use('/provision', provisionRoutes);
 router.use('/me', meRoutes);
 router.use('/programs', programRoutes);
 

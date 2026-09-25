@@ -40,7 +40,13 @@ router.get('/:id', requireAuth, async (req, res) => {
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { programId, name, startDate, endDate, status } = req.body || {};
   if (!programId || !name) return res.status(400).json({ error: 'programId and name are required.' });
-  const batch = await Batch.create({ programId, name, startDate: startDate || null, endDate: endDate || null, status: status || 'upcoming' });
+  // Everyone who bought Everything AI owns every batch, including this one —
+  // the plan is "unlocks all batches", not "the batches that existed the day
+  // you paid". So they are in it from the moment it exists.
+  const allAccess = await User.find({ allAccess: true, role: 'student' }).select('_id');
+  const studentIds = allAccess.map((u) => u._id);
+  const batch = await Batch.create({ programId, name, startDate: startDate || null, endDate: endDate || null, status: status || 'upcoming', studentIds });
+  if (studentIds.length) await User.updateMany({ _id: { $in: studentIds } }, { $addToSet: { batchIds: batch._id } });
   res.status(201).json({ batch });
 });
 
@@ -82,7 +88,7 @@ router.post('/:id/students', requireAuth, requireRole('admin'), async (req, res)
 // DELETE /api/skeo/batches/:id/members/:userId — admin unenrols a student.
 router.delete('/:id/members/:userId', requireAuth, requireRole('admin'), async (req, res) => {
   const { id, userId } = req.params;
-  await Batch.findByIdAndUpdate(id, { $pull$pull: { studentIds: userId } });
+  await Batch.findByIdAndUpdate(id, { $pull: { studentIds: userId } });
   await User.findByIdAndUpdate(userId, { $pull: { batchIds: id } });
   res.json({ ok: true });
 });

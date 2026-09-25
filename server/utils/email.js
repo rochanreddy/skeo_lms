@@ -1,5 +1,11 @@
-// Mailer. Three ways out, tried in this order:
+// Mailer. Four ways out, tried in this order:
 //
+//   0. ZeptoMail — ZEPTOMAIL_TOKEN set. HTTPS API, same as menler-lms. It is
+//                 first because it is credit-based rather than capped per day:
+//                 every paid order sends a login mail, and Resend's free 100 a
+//                 day is not a ceiling a checkout can be allowed to hit. The
+//                 sender must be on a domain verified in ZeptoMail —
+//                 noreply@skeoai.com needs skeoai.com added there.
 //   1. Resend   — RESEND_API_KEY set. Plain HTTPS on 443, no SDK. This is the
 //                 one that works on a managed host: Render and most others
 //                 firewall outbound 25/465/587, and the failure is not an auth
@@ -16,6 +22,10 @@
 // Ported from menler-lms, which arrived at this after SMTP silently failed in
 // production there.
 
+export function isZeptoConfigured() {
+  return !!process.env.ZEPTOMAIL_TOKEN;
+}
+
 export function isResendConfigured() {
   return !!process.env.RESEND_API_KEY;
 }
@@ -25,7 +35,7 @@ export function isSmtpConfigured() {
 }
 
 export function isMailConfigured() {
-  return isResendConfigured() || isSmtpConfigured();
+  return isZeptoConfigured() || isResendConfigured() || isSmtpConfigured();
 }
 
 /* MAIL_FROM wins; SMTP_FROM is honoured for installs that predate it. Quotes
@@ -57,6 +67,42 @@ async function getTransport() {
   return cachedTransport;
 }
 
+// ZeptoMail wants the sender split into name and address.
+function parseAddress(str) {
+  const m = /^s*(.*?)s*<([^>]+)>s*$/.exec(String(str || ''));
+  if (m) return { ...(m[1] ? { name: m[1] } : {}), email: m[2].trim() };
+  return { email: String(str || '').trim() };
+}
+
+// India data centre; ZEPTOMAIL_API_URL overrides it for the global (.com) one.
+const zeptoUrl = () => process.env.ZEPTOMAIL_API_URL || 'https://api.zeptomail.in/v1.1/email';
+
+async function sendViaZepto({ from, to, subject, text, html, replyTo }) {
+  const sender = parseAddress(from);
+  const token = process.env.ZEPTOMAIL_TOKEN;
+  const auth = token.startsWith('Zoho-enczapikey') ? token : `Zoho-enczapikey ${token}`;
+  const res = await fetch(zeptoUrl(), {
+    method: 'POST',
+    headers: { Authorization: auth, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      from: { address: sender.email, ...(sender.name ? { name: sender.name } : {}) },
+      to: [{ email_address: { address: to } }],
+      subject,
+      ...(html ? { htmlbody: html } : {}),
+      ...(text ? { textbody: text } : {}),
+      ...(replyTo ? { reply_to: [{ address: replyTo }] } : {}),
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) {
+    // ZeptoMail names the problem — an unverified sender domain reads as such,
+    // which is the difference between a config error and a bug.
+    const body = await res.text().catch(() => '');
+    throw new Error(`ZeptoMail ${res.status}: ${body.slice(0, 300)}`);
+  }
+  return { provider: 'zeptomail' };
+}
+
 async function sendViaResend({ from, to, subject, text, html, replyTo }) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -82,9 +128,11 @@ export async function sendMail({ to, subject, text, html, replyTo }) {
     console.log(`\n[email:dev] from=${from}\nto=${to}\nsubject=${subject}\n${text || ''}\n`);
     return { dev: true };
   }
-  if (isResendConfigured()) return sendViaResend({ from, to, subject, text, html, replyTo });
+  const reply = replyTo || unquote(process.env.MAIL_REPLY_TO) || undefined;
+  if (isZeptoConfigured()) return sendViaZepto({ from, to, subject, text, html, replyTo: reply });
+  if (isResendConfigured()) return sendViaResend({ from, to, subject, text, html, replyTo: reply });
   const transport = await getTransport();
-  const info = await transport.sendMail({ from, to, subject, text, html, replyTo });
+  const info = await transport.sendMail({ from, to, subject, text, html, replyTo: reply });
   return { id: info?.messageId, provider: 'smtp' };
 }
 
