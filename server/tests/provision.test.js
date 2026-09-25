@@ -24,6 +24,14 @@ test('Everything AI unlocks every batch, as a standing entitlement', () => {
   assert.deepEqual(r.warnings, []);
 });
 
+test('Early Access (₹499) unlocks exactly what Everything AI does', () => {
+  const r = batchesFor(['earlyaccess'], B);
+  assert.deepEqual(r.batchIds, ['b0', 'b1', 'b2', 'b3']);
+  assert.equal(r.allAccess, true);
+  assert.deepEqual(playbookSetsFor(['earlyaccess']), ['claude', 'ai']);
+  assert.equal(needsAccount(['earlyaccess']), true);
+});
+
 test('Everything AI wins even when bought with other items', () => {
   assert.equal(batchesFor(['claude', 'member'], B).batchIds.length, 4);
 });

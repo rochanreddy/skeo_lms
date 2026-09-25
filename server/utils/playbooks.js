@@ -27,8 +27,9 @@ export const PLAYBOOK_SETS = {
 export function playbookSetsFor(items) {
   const set = new Set(items);
   const out = [];
-  if (set.has('playbooks') || set.has('member')) out.push('claude');
-  if (set.has('library') || set.has('member')) out.push('ai');
+  const all = set.has('member') || set.has('earlyaccess');
+  if (set.has('playbooks') || all) out.push('claude');
+  if (set.has('library') || all) out.push('ai');
   return out;
 }
 

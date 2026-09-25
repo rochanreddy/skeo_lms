@@ -34,7 +34,11 @@ export const TOOL_BATCHES = {
 };
 
 /** What the website sells, as the LMS understands it. */
-export const ITEMS = ['member', 'playbooks', 'library', ...Object.keys(TOOL_BATCHES)];
+export const ITEMS = ['member', 'earlyaccess', 'playbooks', 'library', ...Object.keys(TOOL_BATCHES)];
+
+/** Everything AI, and its ₹499 early-access price from skeoai.com/early-access:
+ *  both unlock everything. */
+export const isAllAccess = (items) => items.includes('member') || items.includes('earlyaccess');
 
 /**
  * Which batches an order unlocks. Pure, so it is tested without a database.
@@ -52,7 +56,7 @@ export const ITEMS = ['member', 'playbooks', 'library', ...Object.keys(TOOL_BATC
 export function batchesFor(items, batches) {
   const set = new Set(items);
   const warnings = [];
-  if (set.has('member')) {
+  if (isAllAccess(items)) {
     return { batchIds: batches.map((b) => String(b._id)), allAccess: true, warnings };
   }
   const ids = new Set();
