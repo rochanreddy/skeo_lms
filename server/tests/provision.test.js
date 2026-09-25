@@ -9,7 +9,11 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { batchesFor, tempPassword } from '../utils/provision.js';
+import { batchesFor, getsPlaybooks, needsAccount, tempPassword } from '../utils/provision.js';
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { loadPlaybooks } from '../utils/playbooks.js';
 
 const B = ['Claude', 'ChatGPT', 'Gemini', 'AI Coding'].map((name, i) => ({ _id: `b${i}`, name }));
 
@@ -48,4 +52,38 @@ test('temporary passwords are 10 unambiguous characters and do not repeat', () =
     seen.add(p);
   }
   assert.equal(seen.size, 500);
+});
+
+test('each tool course unlocks the batch named after the tool', () => {
+  const tools = ['Claude', 'ChatGPT', 'Gemini', 'n8n', 'Lovable', 'Antigravity'].map((name, i) => ({ _id: `t${i}`, name }));
+  assert.deepEqual(batchesFor(['chatgpt'], tools).batchIds, ['t1']);
+  assert.deepEqual(batchesFor(['n8n', 'antigravity'], tools).batchIds.sort(), ['t3', 't5']);
+  assert.equal(batchesFor(['member'], tools).batchIds.length, 6);
+});
+
+test('playbooks go by mail, and a playbooks-only order needs no account', () => {
+  assert.equal(getsPlaybooks(['playbooks']), true);
+  assert.equal(getsPlaybooks(['member']), true, 'Everything AI includes them');
+  assert.equal(getsPlaybooks(['claude']), false);
+  assert.equal(needsAccount(['playbooks']), false);
+  assert.equal(needsAccount(['playbooks', 'claude']), true);
+  assert.equal(needsAccount(['member']), true);
+});
+
+test('no playbooks configured, or a bad or missing file, fails rather than mailing nothing', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'skeo-pb-'));
+  const list = (entries) => fs.writeFile(path.join(dir, 'playbooks.json'), JSON.stringify(entries));
+  await assert.rejects(loadPlaybooks(dir), /No playbooks/, 'no list at all');
+  await list([]);
+  await assert.rejects(loadPlaybooks(dir), /No playbooks/, 'empty list');
+  await list([{ title: 'x', file: '../../.env' }]);
+  await assert.rejects(loadPlaybooks(dir), /Not a playbook entry/, 'path escape refused');
+  await list([{ title: 'x', file: 'nope.pdf' }]);
+  await assert.rejects(loadPlaybooks(dir), /missing/);
+  await fs.writeFile(path.join(dir, 'a.pdf'), '%PDF-1.4 a');
+  await list([{ title: 'Playbook A', file: 'a.pdf' }]);
+  const pb = await loadPlaybooks(dir);
+  assert.deepEqual(pb.titles, ['Playbook A']);
+  assert.equal(pb.attachments[0].contentType, 'application/pdf');
+  await fs.rm(dir, { recursive: true, force: true });
 });

@@ -19,6 +19,9 @@ const provisionedOrderSchema = new mongoose.Schema(
     // Whether this order made the account, or added to one that existed.
     created: { type: Boolean, default: false },
     emailed: { type: Boolean, default: false },
+    // The playbooks mail, for an order that includes them. Its own flag, so a
+    // retry after it failed resends only the playbooks, not the login.
+    playbooksSent: { type: Boolean, default: false },
     // Things an admin should look at — e.g. a Claude Course bought while no
     // batch named "Claude" exists, so nothing could be unlocked.
     warnings: { type: [String], default: [] },

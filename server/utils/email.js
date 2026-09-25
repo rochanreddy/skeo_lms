@@ -77,7 +77,21 @@ function parseAddress(str) {
 // India data centre; ZEPTOMAIL_API_URL overrides it for the global (.com) one.
 const zeptoUrl = () => process.env.ZEPTOMAIL_API_URL || 'https://api.zeptomail.in/v1.1/email';
 
-async function sendViaZepto({ from, to, subject, text, html, replyTo }) {
+// `attachments` everywhere below is [{ filename, content: Buffer, contentType }]
+// — nodemailer's own shape. The two HTTPS providers want the bytes base64'd,
+// each under its own field names.
+const forZepto = (attachments) => attachments.map((a) => ({
+  content: Buffer.from(a.content).toString('base64'),
+  mime_type: a.contentType || 'application/octet-stream',
+  name: a.filename,
+}));
+const forResend = (attachments) => attachments.map((a) => ({
+  filename: a.filename,
+  content: Buffer.from(a.content).toString('base64'),
+  ...(a.contentType ? { content_type: a.contentType } : {}),
+}));
+
+async function sendViaZepto({ from, to, subject, text, html, replyTo, attachments }) {
   const sender = parseAddress(from);
   const token = process.env.ZEPTOMAIL_TOKEN;
   const auth = token.startsWith('Zoho-enczapikey') ? token : `Zoho-enczapikey ${token}`;
@@ -91,8 +105,10 @@ async function sendViaZepto({ from, to, subject, text, html, replyTo }) {
       ...(html ? { htmlbody: html } : {}),
       ...(text ? { textbody: text } : {}),
       ...(replyTo ? { reply_to: [{ address: replyTo }] } : {}),
+      ...(attachments?.length ? { attachments: forZepto(attachments) } : {}),
     }),
-    signal: AbortSignal.timeout(20000),
+    // Longer than a plain mail: a set of PDFs is megabytes on the wire.
+    signal: AbortSignal.timeout(attachments?.length ? 60000 : 20000),
   });
   if (!res.ok) {
     // ZeptoMail names the problem — an unverified sender domain reads as such,
@@ -103,12 +119,16 @@ async function sendViaZepto({ from, to, subject, text, html, replyTo }) {
   return { provider: 'zeptomail' };
 }
 
-async function sendViaResend({ from, to, subject, text, html, replyTo }) {
+async function sendViaResend({ from, to, subject, text, html, replyTo, attachments }) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: [to], subject, text, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
-    signal: AbortSignal.timeout(20000),
+    body: JSON.stringify({
+      from, to: [to], subject, text, html,
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(attachments?.length ? { attachments: forResend(attachments) } : {}),
+    }),
+    signal: AbortSignal.timeout(attachments?.length ? 60000 : 20000),
   });
   const body = await res.json().catch(() => ({}));
   // Resend puts the useful part in `message` — e.g. "The skeo.in domain is not
@@ -117,7 +137,7 @@ async function sendViaResend({ from, to, subject, text, html, replyTo }) {
   return { id: body.id, provider: 'resend' };
 }
 
-export async function sendMail({ to, subject, text, html, replyTo }) {
+export async function sendMail({ to, subject, text, html, replyTo, attachments }) {
   /* Resolved before the dev branch so the console prints the sender too. It is
      the one field you cannot check any other way short of actually sending, and
      getting it wrong is silent: the mail goes out from whatever mailbox the SMTP
@@ -125,14 +145,15 @@ export async function sendMail({ to, subject, text, html, replyTo }) {
      until a student replies to it. */
   const from = fromAddress();
   if (!isMailConfigured()) {
-    console.log(`\n[email:dev] from=${from}\nto=${to}\nsubject=${subject}\n${text || ''}\n`);
+    const files = attachments?.length ? `attachments=${attachments.map((a) => a.filename).join(', ')}\n` : '';
+    console.log(`\n[email:dev] from=${from}\nto=${to}\nsubject=${subject}\n${files}${text || ''}\n`);
     return { dev: true };
   }
   const reply = replyTo || unquote(process.env.MAIL_REPLY_TO) || undefined;
-  if (isZeptoConfigured()) return sendViaZepto({ from, to, subject, text, html, replyTo: reply });
-  if (isResendConfigured()) return sendViaResend({ from, to, subject, text, html, replyTo: reply });
+  if (isZeptoConfigured()) return sendViaZepto({ from, to, subject, text, html, replyTo: reply, attachments });
+  if (isResendConfigured()) return sendViaResend({ from, to, subject, text, html, replyTo: reply, attachments });
   const transport = await getTransport();
-  const info = await transport.sendMail({ from, to, subject, text, html, replyTo: reply });
+  const info = await transport.sendMail({ from, to, subject, text, html, replyTo: reply, ...(attachments?.length ? { attachments } : {}) });
   return { id: info?.messageId, provider: 'smtp' };
 }
 
