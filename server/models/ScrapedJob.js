@@ -26,6 +26,8 @@ const scrapedJobSchema = new mongoose.Schema(
     companyLogo: String,
     sources: [String],
     roleCategory: String,
+    // Filed by the pipeline's pipeline/domain.js. The board filters by it.
+    domain: String,
     workType: String,
     experienceLevel: String,
     // How well the posting matches the Menler syllabus, and which of its

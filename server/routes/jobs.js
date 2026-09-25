@@ -5,9 +5,12 @@ import { ScrapedJob } from '../models/ScrapedJob.js';
 import { jobsDbConfigured } from '../db.js';
 import {
   ROLE_CATEGORIES,
+  DOMAINS,
+  CATEGORY_TO_DOMAIN,
   WORK_TYPES,
   EXPERIENCE_LEVELS,
   isRoleCategory,
+  isDomain,
   isWorkType,
   isExperienceLevel,
   normalizeWorkType,
@@ -78,6 +81,7 @@ export function parseFilters(query) {
 
   return {
     categories: clean(query.category, isRoleCategory),
+    domains: clean(query.domain, isDomain),
     workTypes: clean(query.workType, isWorkType),
     levels: clean(query.experience, isExperienceLevel),
     places,
@@ -108,46 +112,85 @@ export function scrapedFilter(f) {
   const filter = { isActive: { $ne: false }, $and: and };
 
   if (f.categories.length) filter.roleCategory = { $in: f.categories };
+  // Every scraped row carries a domain - the pipeline files new jobs as it
+  // writes them and backfillDomain.js filed the rest - so this is a plain
+  // match with no fallback.
+  if (f.domains.length) filter.domain = { $in: f.domains };
   if (f.workTypes.length) filter.workType = { $in: f.workTypes };
   if (f.levels.length) filter.experienceLevel = { $in: f.levels };
 
-  if (f.places.length) {
-    const or = [];
-    if (f.places.includes('India')) or.push({ country: 'India' });
-    if (f.places.includes('International')) or.push({ country: { $ne: 'India' } });
-    if (f.places.includes('Remote')) or.push({ isRemote: true });
-    if (or.length) and.push({ $or: or });
-  }
+  const places = placeClause(f.places);
+  if (places) and.push(places);
 
   if (f.search) filter.$text = { $search: f.search };
 
   return filter;
 }
 
+/** "India", "International", "Remote" as one $or, or null when none are on. */
+function placeClause(places) {
+  const or = [];
+  if (places.includes('India')) or.push({ country: 'India' });
+  if (places.includes('International')) or.push({ country: { $ne: 'India' } });
+  if (places.includes('Remote')) or.push({ isRemote: true });
+  return or.length ? { $or: or } : null;
+}
+
+/**
+ * Which categories file into these domains. Used to reach hand-posted
+ * openings written before domains existed, which carry only a category.
+ */
+function categoriesFor(domains) {
+  return Object.entries(CATEGORY_TO_DOMAIN)
+    .filter(([, domain]) => domains.includes(domain))
+    .map(([category]) => category);
+}
+
 export function manualFilter(f) {
   const filter = { postedAt: { $gte: freshSince() } };
+  // Place, domain and search are each an $or. Assigned to filter.$or in turn,
+  // each would silently replace the one before - the same bug the pipeline's
+  // dashboard once had - so every one of them goes under a single $and.
+  const and = [];
 
   if (f.categories.length) filter.roleCategory = { $in: f.categories };
   if (f.workTypes.length) filter.workType = { $in: f.workTypes };
   if (f.levels.length) filter.experienceLevel = { $in: f.levels };
 
-  if (f.places.length) {
-    const or = [];
-    if (f.places.includes('India')) or.push({ country: 'India' });
-    if (f.places.includes('International')) or.push({ country: { $ne: 'India' } });
-    if (f.places.includes('Remote')) or.push({ isRemote: true });
-    if (or.length) filter.$or = or;
+  // Openings posted before domains existed carry only a category, so they are
+  // matched through it rather than dropping out of every domain filter.
+  if (f.domains.length) {
+    and.push({
+      $or: [
+        { domain: { $in: f.domains } },
+        { domain: null, roleCategory: { $in: categoriesFor(f.domains) } },
+      ],
+    });
   }
+
+  const places = placeClause(f.places);
+  if (places) and.push(places);
 
   // No text index on this collection — it holds dozens of rows, not
   // thousands, so a regex over two fields is cheaper than the index would be.
   if (f.search) {
     const safe = f.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const rx = new RegExp(safe, 'i');
-    filter.$and = [{ $or: [{ title: rx }, { company: rx }] }];
+    and.push({ $or: [{ title: rx }, { company: rx }] });
   }
 
+  if (and.length) filter.$and = and;
   return filter;
+}
+
+/** True for an absolute http(s) URL, which is the only kind a card links to. */
+export function isHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 /** One shape for the client, whichever half a listing came from. */
@@ -162,6 +205,7 @@ const shapeScraped = (job) => ({
   source: job.source,
   companyLogo: job.companyLogo || null,
   roleCategory: job.roleCategory,
+  domain: job.domain || CATEGORY_TO_DOMAIN[job.roleCategory] || null,
   workType: job.workType || 'unspecified',
   experienceLevel: job.experienceLevel || 'unspecified',
   // Which syllabus terms put this listing where it is — "claude", "n8n",
@@ -188,6 +232,8 @@ const shapeManual = (job) => ({
   source: 'manual',
   companyLogo: null,
   roleCategory: job.roleCategory,
+  // Openings posted before domains existed carry only a category.
+  domain: job.domain || CATEGORY_TO_DOMAIN[job.roleCategory] || null,
   // Rows written before the taxonomy change still carry the old enum.
   workType: job.workType || normalizeWorkType(job.type),
   experienceLevel: job.experienceLevel || 'unspecified',
@@ -226,7 +272,7 @@ router.get('/', requireAuth, async (req, res) => {
       page: 1,
       pages: 1,
       feedAvailable: false,
-      facets: { categories: ROLE_CATEGORIES, workTypes: WORK_TYPES, levels: EXPERIENCE_LEVELS },
+      facets: { domains: DOMAINS, categories: ROLE_CATEGORIES, workTypes: WORK_TYPES, levels: EXPERIENCE_LEVELS },
     });
   }
 
@@ -282,7 +328,7 @@ router.get('/', requireAuth, async (req, res) => {
     page: filters.page,
     pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
     feedAvailable,
-    facets: { categories: ROLE_CATEGORIES, workTypes: WORK_TYPES, levels: EXPERIENCE_LEVELS },
+    facets: { domains: DOMAINS, categories: ROLE_CATEGORIES, workTypes: WORK_TYPES, levels: EXPERIENCE_LEVELS },
   });
 });
 
@@ -295,6 +341,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
     applyUrl,
     description,
     roleCategory,
+    domain,
     workType,
     experienceLevel,
     isRemote,
@@ -304,15 +351,23 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   if (!title || !String(title).trim()) return res.status(400).json({ error: 'Title is required.' });
   if (!company || !String(company).trim()) return res.status(400).json({ error: 'Company is required.' });
 
+  // This becomes the href on the card's Apply button, so a javascript: or
+  // data: value would be a script a student clicks. Only http(s) goes in.
+  const link = typeof applyUrl === 'string' ? applyUrl.trim() : '';
+  if (link && !isHttpUrl(link)) {
+    return res.status(400).json({ error: 'The apply link has to start with http:// or https://.' });
+  }
+
   const job = await JobPosting.create({
     title: String(title).trim(),
     company: String(company).trim(),
     location: location || '',
     country: country || null,
     isRemote: Boolean(isRemote),
-    applyUrl: applyUrl || '',
+    applyUrl: link,
     description: description || '',
     roleCategory: isRoleCategory(roleCategory) ? roleCategory : null,
+    domain: isDomain(domain) ? domain : null,
     workType: isWorkType(workType) ? workType : normalizeWorkType(workType),
     experienceLevel: isExperienceLevel(experienceLevel) ? experienceLevel : 'unspecified',
     postedAt: new Date(),

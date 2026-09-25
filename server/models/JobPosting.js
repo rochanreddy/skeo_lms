@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import {
   ROLE_CATEGORY_VALUES,
+  DOMAIN_VALUES,
   WORK_TYPE_VALUES,
   EXPERIENCE_LEVEL_VALUES,
 } from '../lib/jobTaxonomy.js';
@@ -40,6 +41,9 @@ const jobPostingSchema = new mongoose.Schema(
     description: { type: String, default: '' },
 
     roleCategory: { type: String, default: null, enum: [...ROLE_CATEGORY_VALUES, null] },
+    // What the board filters by. Chosen by the admin who posts it, since a
+    // hand-typed opening has no classifier behind it.
+    domain: { type: String, default: null, enum: [...DOMAIN_VALUES, null] },
     workType: { type: String, default: 'unspecified', enum: WORK_TYPE_VALUES },
     experienceLevel: {
       type: String,

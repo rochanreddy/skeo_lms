@@ -37,7 +37,7 @@ const PLACES = [
 /** Query-string state, so a filtered board can be linked to and comes back. */
 const buildQuery = (filters, page) => {
   const q = new URLSearchParams();
-  filters.category.forEach((v) => q.append('category', v));
+  filters.domain.forEach((v) => q.append('domain', v));
   filters.workType.forEach((v) => q.append('workType', v));
   filters.experience.forEach((v) => q.append('experience', v));
   filters.place.forEach((v) => q.append('place', v));
@@ -46,6 +46,20 @@ const buildQuery = (filters, page) => {
   const s = q.toString();
   return s ? `/jobs?${s}` : '/jobs';
 };
+
+/**
+ * The URL if it is absolute http(s), otherwise null. Anything else - a
+ * javascript: or data: scheme, a relative path - is never put in an href.
+ */
+function httpUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
 
 /** How long ago, in the units people actually think in. */
 function ago(value) {
@@ -134,7 +148,7 @@ const CloseIcon = () => (
   </svg>
 );
 
-const EMPTY = { category: [], workType: [], experience: [], place: [], search: '' };
+const EMPTY = { domain: [], workType: [], experience: [], place: [], search: '' };
 
 export default function JobBoard() {
   const { user } = useOutletContext();
@@ -196,7 +210,10 @@ export default function JobBoard() {
   const groups = useMemo(() => {
     if (!facets) return [];
     return [
-      { key: 'category', label: 'Category', options: facets.categories },
+      // Domain is what a student browses by - Product, Founder's Office,
+      // Full Stack. It replaced the old category menu (AI Technical, Business
+      // and so on), which described the syllabus score rather than the job.
+      { key: 'domain', label: 'Domain', options: facets.domains || [] },
       { key: 'place', label: 'Place', options: PLACES },
       { key: 'workType', label: 'Type', options: facets.workTypes },
       { key: 'experience', label: 'Level', options: facets.levels },
@@ -214,7 +231,7 @@ export default function JobBoard() {
   const labelOf = useMemo(() => {
     const map = new Map();
     if (facets) {
-      [...facets.categories, ...facets.workTypes, ...facets.levels]
+      [...(facets.domains || []), ...facets.categories, ...facets.workTypes, ...facets.levels]
         .forEach((o) => map.set(o.value, o.label));
     }
     return (value) => map.get(value) || value;
@@ -278,7 +295,7 @@ export default function JobBoard() {
       </form>
 
       {/* The four vocabularies, one row. Each is a menu rather than its chips
-          laid out flat, so adding a category later costs nothing on screen. */}
+          laid out flat, so adding a domain later costs nothing on screen. */}
       <div className="jb-bar">
         {groups.map((g) => (
           <FilterMenu
@@ -434,6 +451,8 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
   // 'unspecified' is a real answer from the pipeline, but it is not a tag.
   const workType = job.workType !== 'unspecified' ? job.workType : '';
   const level = job.experienceLevel !== 'unspecified' ? job.experienceLevel : '';
+  const applyHref = httpUrl(job.url);
+  const canRemove = isAdmin && job.origin === 'manual';
 
   return (
     <article className="job-card">
@@ -444,8 +463,8 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
           <h3 className="job-title">
             {/* The link stretches over the card, so the whole listing opens the
                 posting while the accessible name stays the role itself. */}
-            {job.url ? (
-              <a href={job.url} target="_blank" rel="noreferrer noopener">
+            {applyHref ? (
+              <a href={applyHref} target="_blank" rel="noreferrer noopener">
                 {job.title || 'Untitled posting'}
               </a>
             ) : (
@@ -466,7 +485,9 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
       </div>
 
       <div className="job-tags">
-        {job.roleCategory && <span className="job-tag cat">{labelOf(job.roleCategory)}</span>}
+        {(job.domain || job.roleCategory) && (
+          <span className="job-tag cat">{labelOf(job.domain || job.roleCategory)}</span>
+        )}
         {job.origin === 'manual' && <span className="job-tag team">Shared by the team</span>}
         {job.country === 'India' && <span className="job-tag">India</span>}
         {job.isRemote && <span className="job-tag">Remote</span>}
@@ -496,13 +517,34 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
 
       {job.description && <p className="job-desc">{job.description}</p>}
 
-      {/* Only the team's own postings can be removed — a scraped listing has
-          no record here to delete, and drops off by itself. */}
-      {isAdmin && job.origin === 'manual' && (
+      {(applyHref || canRemove) && (
         <div className="job-actions">
-          <button className="btn sm ghost-danger" onClick={remove} disabled={busy}>
-            {busy ? 'Removing…' : 'Remove'}
-          </button>
+          {/* The whole card already opens the posting, but a card-sized link
+              is not something anybody recognises as "apply" - and the step a
+              student is here to take should look like a step.
+
+              Only http(s) is ever rendered as an href. Scraped URLs come from
+              eleven third-party sources and hand-posted ones from a form, and
+              a javascript: value here would be a script a student clicks. */}
+          {applyHref && (
+            <a
+              className="btn sm"
+              href={applyHref}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`Apply for ${job.title || 'this role'}${job.company ? ` at ${job.company}` : ''} (opens in a new tab)`}
+            >
+              Apply <span aria-hidden="true">↗</span>
+            </a>
+          )}
+
+          {/* Only the team's own postings can be removed — a scraped listing
+              has no record here to delete, and drops off by itself. */}
+          {canRemove && (
+            <button className="btn sm ghost-danger" onClick={remove} disabled={busy}>
+              {busy ? 'Removing…' : 'Remove'}
+            </button>
+          )}
         </div>
       )}
     </article>
@@ -515,7 +557,7 @@ const BLANK_FORM = {
   location: '',
   applyUrl: '',
   description: '',
-  roleCategory: '',
+  domain: '',
   workType: 'unspecified',
   experienceLevel: 'unspecified',
   isRemote: false,
@@ -536,7 +578,7 @@ function AdminPost({ onPosted, onClose, facets }) {
     try {
       await api('/jobs', {
         method: 'POST',
-        body: { ...form, roleCategory: form.roleCategory || null },
+        body: { ...form, domain: form.domain || null },
       });
       setForm(BLANK_FORM);
       onClose();
@@ -591,12 +633,12 @@ function AdminPost({ onPosted, onClose, facets }) {
         {/* A Select isn't a form control a <label> can own, so the caption is
             a sibling and the trigger names itself. */}
         <div className="jb-field">
-          <span>Category</span>
-          <Select value={form.roleCategory || 'none'} onValueChange={(v) => set('roleCategory', v === 'none' ? '' : v)}>
-            <SelectTrigger aria-label="Category"><SelectValue placeholder="Category" /></SelectTrigger>
+          <span>Domain</span>
+          <Select value={form.domain || 'none'} onValueChange={(v) => set('domain', v === 'none' ? '' : v)}>
+            <SelectTrigger aria-label="Domain"><SelectValue placeholder="Domain" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">No category</SelectItem>
-              {(facets?.categories || []).map((c) => (
+              <SelectItem value="none">No domain</SelectItem>
+              {(facets?.domains || []).map((c) => (
                 <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
               ))}
             </SelectContent>
