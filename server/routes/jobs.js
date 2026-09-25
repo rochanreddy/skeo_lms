@@ -160,6 +160,7 @@ const shapeScraped = (job) => ({
   isRemote: Boolean(job.isRemote),
   url: job.url,
   source: job.source,
+  companyLogo: job.companyLogo || null,
   roleCategory: job.roleCategory,
   workType: job.workType || 'unspecified',
   experienceLevel: job.experienceLevel || 'unspecified',
@@ -182,6 +183,7 @@ const shapeManual = (job) => ({
   isRemote: Boolean(job.isRemote),
   url: job.applyUrl,
   source: 'manual',
+  companyLogo: null,
   roleCategory: job.roleCategory,
   // Rows written before the taxonomy change still carry the old enum.
   workType: job.workType || normalizeWorkType(job.type),

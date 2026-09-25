@@ -2898,6 +2898,10 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .job-logo[data-tone='4'] { background: var(--a4-soft); color: var(--a4-ink); }
 .job-logo[data-tone='5'] { background: var(--a5-soft); color: var(--a5-ink); }
 .job-logo[data-tone='6'] { background: var(--a6-soft); color: var(--a6-ink); }
+/* A real logo, where the source gave us one. object-fit keeps a wide wordmark
+   from being stretched into the square, and the white plate stops a
+   transparent PNG from disappearing in dark mode. */
+.job-logo-img { object-fit: contain; background: #fff; border: 1px solid var(--line); padding: 3px; }
 
 .job-id { min-width: 0; flex: 1; }
 .job-title { font-family: var(--display); font-size: 16.5px; font-weight: 700; letter-spacing: -.025em; line-height: 1.3; margin: 0; color: var(--ink); }

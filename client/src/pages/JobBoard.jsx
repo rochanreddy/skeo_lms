@@ -76,6 +76,39 @@ function monogram(company) {
   return { initials, tone: String((hash % 6) + 1) };
 }
 
+/**
+ * The employer's logo, falling back to the monogram above.
+ *
+ * Only five of the eleven sources ship a logo URL and the company boards ship
+ * none, so most of the board has no image and the monogram is the normal
+ * case, not the error case.
+ *
+ * onError covers the other one: a URL we were handed that no longer resolves.
+ * Without it the card shows a broken-image icon, which looks worse than the
+ * monogram it replaced.
+ *
+ * referrerPolicy is no-referrer so loading a logo does not tell the employer's
+ * CDN which page a student was on.
+ */
+function CompanyLogo({ src, initials, tone }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return <div className="job-logo" data-tone={tone} aria-hidden="true">{initials}</div>;
+  }
+
+  return (
+    <img
+      className="job-logo job-logo-img"
+      src={src}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 const SearchIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
     <circle cx="11" cy="11" r="7" />
@@ -405,7 +438,7 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
   return (
     <article className="job-card">
       <div className="job-card-head">
-        <div className="job-logo" data-tone={tone} aria-hidden="true">{initials}</div>
+        <CompanyLogo src={job.companyLogo} initials={initials} tone={tone} />
 
         <div className="job-id">
           <h3 className="job-title">

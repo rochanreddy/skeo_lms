@@ -23,6 +23,7 @@ const scrapedJobSchema = new mongoose.Schema(
     isRemote: Boolean,
     url: String,
     source: String,
+    companyLogo: String,
     sources: [String],
     roleCategory: String,
     workType: String,
