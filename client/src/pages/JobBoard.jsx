@@ -477,11 +477,35 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
           </div>
         </div>
 
-        {fresh ? (
-          <span className="job-new">{ago(job.postedAt)}</span>
-        ) : (
-          <span className="job-age">{ago(job.postedAt)}</span>
-        )}
+        {/* Age on top, Apply under it, both on the right: the eye reads the
+            role on the left and lands on the one thing to do on the right.
+
+            The whole card already opens the posting, but a card-sized link is
+            not something anybody recognises as "apply", and the step a
+            student is here to take should look like a step.
+
+            Only http(s) is ever rendered as an href. Scraped URLs come from
+            eleven third-party sources and hand-posted ones from a form, and a
+            javascript: value here would be a script a student clicks. */}
+        <div className="job-side">
+          {fresh ? (
+            <span className="job-new">{ago(job.postedAt)}</span>
+          ) : (
+            <span className="job-age">{ago(job.postedAt)}</span>
+          )}
+
+          {applyHref && (
+            <a
+              className="btn job-apply"
+              href={applyHref}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`Apply for ${job.title || 'this role'}${job.company ? ` at ${job.company}` : ''} (opens in a new tab)`}
+            >
+              Apply <span aria-hidden="true">↗</span>
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="job-tags">
@@ -517,34 +541,13 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
 
       {job.description && <p className="job-desc">{job.description}</p>}
 
-      {(applyHref || canRemove) && (
+      {/* Only the team's own postings can be removed — a scraped listing has
+          no record here to delete, and drops off by itself. */}
+      {canRemove && (
         <div className="job-actions">
-          {/* The whole card already opens the posting, but a card-sized link
-              is not something anybody recognises as "apply" - and the step a
-              student is here to take should look like a step.
-
-              Only http(s) is ever rendered as an href. Scraped URLs come from
-              eleven third-party sources and hand-posted ones from a form, and
-              a javascript: value here would be a script a student clicks. */}
-          {applyHref && (
-            <a
-              className="btn sm"
-              href={applyHref}
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label={`Apply for ${job.title || 'this role'}${job.company ? ` at ${job.company}` : ''} (opens in a new tab)`}
-            >
-              Apply <span aria-hidden="true">↗</span>
-            </a>
-          )}
-
-          {/* Only the team's own postings can be removed — a scraped listing
-              has no record here to delete, and drops off by itself. */}
-          {canRemove && (
-            <button className="btn sm ghost-danger" onClick={remove} disabled={busy}>
-              {busy ? 'Removing…' : 'Remove'}
-            </button>
-          )}
+          <button className="btn sm ghost-danger" onClick={remove} disabled={busy}>
+            {busy ? 'Removing…' : 'Remove'}
+          </button>
         </div>
       )}
     </article>

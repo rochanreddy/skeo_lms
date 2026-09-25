@@ -2924,6 +2924,19 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 }
 .job-new::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
+/* The right-hand column: age on top, Apply beneath it. */
+.job-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+
+/* The one action on the card, so it is the largest thing on the right.
+   Lifted over the card's stretched link so it takes its own click, and the
+   underline removed - it is inherited from the global link style and made
+   the button read as a link sitting on a pill. */
+.job-apply {
+  z-index: 1; justify-content: center; min-width: 136px;
+  padding: 13px 28px; font-size: 15px; text-decoration: none;
+}
+.job-apply:hover, .job-apply:focus-visible { text-decoration: none; }
+
 .job-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .job-tag {
   display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--pill);
@@ -2972,4 +2985,8 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   .jb-bar > .btn { grid-column: 1 / -1; }
 
   .job-card-head { flex-wrap: wrap; }
+  /* No room beside the title on a phone, so the column drops beneath it and
+     turns into a row: age on the left, a full-width Apply filling the rest. */
+  .job-side { flex-basis: 100%; flex-direction: row; align-items: center; justify-content: space-between; }
+  .job-apply { flex: 1; max-width: 240px; }
 }
