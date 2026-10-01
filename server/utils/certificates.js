@@ -13,28 +13,20 @@ import { appUrl } from './appUrl.js';
  * actually requires.
  */
 
-/* The programme's segment of the code. "Fellowship" certificates read
-   SKEO-FELLO-…, "Kickstarter" ones SKEO-KICKS-….
+/* The programme's segment of the code: the Claude course's certificates read
+   SKEO-CLAUD-….
 
-   Matched on the title rather than the id so renaming a programme does not
-   silently change its certificate numbers, and so a batch of either programme
+   Taken from the title rather than the id, so every batch of a programme
    resolves the same way. A programme can also carry its own `certCode` field
-   and override all of this — nothing sets that today, but it is the seam to
-   use when a third programme arrives, rather than growing this table forever. */
-const PROGRAMME_SEGMENTS = [
-  { match: /fellow/i, segment: 'FELLO' },
-  { match: /kickstart/i, segment: 'KICKS' },
-];
-
+   and override this — nothing sets that today, but it is the seam to use if a
+   title change must not change the certificate numbers. */
 export function segmentFor(program) {
   if (program?.certCode) return String(program.certCode).toUpperCase();
   const title = String(program?.title || '');
-  const hit = PROGRAMME_SEGMENTS.find((p) => p.match.test(title));
-  if (hit) return hit.segment;
-  /* An unknown programme still has to be issuable — refusing here would mean a
-     new course cannot hand out certificates until someone edits this file.
-     Five letters off the title keeps the code readable and the uniqueness
-     index keeps it honest if two titles happen to collide. */
+  /* Any programme has to be issuable — refusing here would mean a new course
+     cannot hand out certificates until someone edits this file. Five letters
+     off the title keeps the code readable and the uniqueness index keeps it
+     honest if two titles happen to collide. */
   const letters = title.replace(/[^A-Za-z]/g, '').toUpperCase();
   return (letters.slice(0, 5) || 'SKEOX').padEnd(5, 'X');
 }
@@ -101,7 +93,7 @@ export function stampDateFor(batch, issuedAt = new Date()) {
 }
 
 /**
- * A code for a sample certificate: SKEO-FELLO-0926-0000.
+ * A code for a sample certificate: SKEO-CLAUD-0926-0000.
  *
  * The 0000 is the point. The counter behind nextCode() starts at 1 and only
  * ever goes up, so no certificate that was actually issued can end in 0000 —
@@ -116,13 +108,13 @@ export function sampleCode(program, batch = null) {
 }
 
 /**
- * The next code for a programme in a given month: SKEO-FELLO-0926-0001.
+ * The next code for a programme in a given month: SKEO-CLAUD-0926-0001.
  *
  * The number is drawn from an atomic counter keyed on programme and month, so
  * two admins issuing two cohorts at the same moment cannot both be given 0007.
  *
  * A NOTE ON WHAT THIS GIVES UP. These codes are sequential and therefore
- * guessable: holding SKEO-FELLO-0926-0007 tells you -0006 and -0008 almost
+ * guessable: holding SKEO-CLAUD-0926-0007 tells you -0006 and -0008 almost
  * certainly exist, and the verification endpoint will describe them. That is a
  * deliberate trade — a code in this shape can be read down a phone line, typed
  * off a printed page and sorted in a spreadsheet, which a random string cannot
