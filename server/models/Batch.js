@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-// A cohort of one program (e.g. "Kickstarter — July 2026"). Admins run it,
+// A cohort of one program (e.g. "Claude"). Admins run it,
 // students are enrolled. Assignments and quizzes reference batchId.
 const batchSchema = new mongoose.Schema(
   {
