@@ -25,7 +25,11 @@ router.get('/', requireAuth, async (req, res) => {
   assignments = assignments.filter((a) => !isBlockedFromAssignment(req.user, a._id));
 
   if (scope === 'mine') {
-    const subs = await Submission.find({ studentId: req.user._id, isDeleted: false, assignmentId: { $in: assignments.map((a) => a._id) } });
+    // A student reads their list as a schedule: soonest deadline first, which
+    // for the course is week order. No deadline sorts last; ties keep newest-first.
+    const due = (a) => (a.dueDate ? new Date(a.dueDate).getTime() : Infinity);
+    assignments.sort((a, b) => due(a) - due(b));
+    const subs =await Submission.find({ studentId: req.user._id, isDeleted: false, assignmentId: { $in: assignments.map((a) => a._id) } });
     const byId = new Map(subs.map((s) => [s.assignmentId.toString(), s]));
     return res.json({ assignments: assignments.map((a) => ({ ...a.toObject(), mySubmission: byId.get(a._id.toString()) || null })) });
   }
