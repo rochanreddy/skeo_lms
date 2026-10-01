@@ -184,7 +184,7 @@ export default function LoginArt() {
           <span className="la-seal" />
           <span>
             <span className="la-chip-title">Certificate unlocked</span>
-            <span className="la-chip-sub">SKEO-FELLO-0926-0007</span>
+            <span className="la-chip-sub">SKEO-CLAUD-0926-0007</span>
           </span>
         </div>
       </div>
