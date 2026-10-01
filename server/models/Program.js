@@ -65,7 +65,7 @@ const moduleSchema = new mongoose.Schema(
 
 const programSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, trim: true }, // e.g. "Kickstarter", "Fellowship"
+    title: { type: String, required: true, trim: true }, // e.g. "Claude"
     slug: { type: String, default: '', trim: true, index: true },
     type: { type: String, default: '' },
     description: { type: String, default: '' },
