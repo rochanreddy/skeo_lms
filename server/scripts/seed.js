@@ -1,4 +1,4 @@
-// Seed a first LMS admin + sample programs.  Run:  npm run seed
+// Seed a first LMS admin.  Run:  npm run seed
 import 'dotenv/config';
 import { hashPassword } from '../utils/password.js';
 import { connectDb } from '../db.js';
@@ -25,12 +25,9 @@ async function run() {
     console.log(`• Admin already exists: ${ADMIN_EMAIL}`);
   }
 
+  // The course itself — the Claude programme — comes from seed:claude.
   if ((await Program.countDocuments()) === 0) {
-    await Program.create([
-      { title: 'Kickstarter', type: 'cohort', description: 'Kickstarter program', published: true },
-      { title: 'Fellowship', type: 'cohort', description: 'Fellowship program', published: true },
-    ]);
-    console.log('✓ Created sample programs: Kickstarter, Fellowship');
+    console.log('• No programme yet: run `npm run seed:claude -- --write` to create the Claude course.');
   }
 
   console.log('\nDone. Change the admin password after first login.');
