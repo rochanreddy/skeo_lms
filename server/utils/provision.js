@@ -20,14 +20,15 @@ import { PLAYBOOK_SETS, loadPlaybookSet, playbookSetsFor, splitIntoMails } from 
 
 /**
  * One LMS batch per tool, named after it. A tool's course on the website
- * unlocks the batch of the same name. Only the Claude Course is on sale today;
- * the rest are listed so each goes live the day its course does, with no
- * change here.
+ * unlocks the batch of the same name. Claude, ChatGPT, Grok, n8n and Lovable
+ * are on sale; the rest are listed so each goes live the day its course does,
+ * with no change here.
  */
 export const TOOL_BATCHES = {
   claude: 'Claude',
   chatgpt: 'ChatGPT',
   gemini: 'Gemini',
+  grok: 'Grok',
   n8n: 'n8n',
   lovable: 'Lovable',
   antigravity: 'Antigravity',

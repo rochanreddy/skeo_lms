@@ -67,6 +67,10 @@ test('each tool course unlocks the batch named after the tool', () => {
   assert.deepEqual(batchesFor(['chatgpt'], tools).batchIds, ['t1']);
   assert.deepEqual(batchesFor(['n8n', 'antigravity'], tools).batchIds.sort(), ['t3', 't5']);
   assert.equal(batchesFor(['member'], tools).batchIds.length, 6);
+  // Grok sells on its own page; its buyer must land in the Grok batch.
+  const withGrok = [...tools, { _id: 'tg', name: 'Grok' }];
+  assert.deepEqual(batchesFor(['grok'], withGrok), { batchIds: ['tg'], allAccess: false, warnings: [] });
+  assert.equal(batchesFor(['grok'], tools).warnings.length, 1, 'no Grok batch yet → a warning, not silence');
 });
 
 test('which playbook sets an order gets, and which orders need no account', () => {
