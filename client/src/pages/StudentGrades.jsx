@@ -38,16 +38,16 @@ export default function StudentGrades() {
           <p className="muted">No assessments yet — assignments and quizzes appear here once they're posted.</p>
         ) : (
           <div className="table-wrap">
-            <table className="grade-table">
+            <table className="grade-table gt-cards">
               <thead><tr><th>Assessment</th><th>Type</th><th>Status</th><th>Score</th><th>Feedback</th></tr></thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={`${r.kind}-${r.id}`}>
                     <td>{r.title}</td>
-                    <td><span className={`gt-kind gt-${r.kind.toLowerCase()}`}>{r.kind}</span></td>
-                    <td><span className={`gt-status gt-${r.status}`}>{r.status}</span></td>
-                    <td>{scoreCell(r)}</td>
-                    <td className="muted">{r.feedback || '—'}</td>
+                    <td data-label="Type"><span className={`gt-kind gt-${r.kind.toLowerCase()}`}>{r.kind}</span></td>
+                    <td data-label="Status"><span className={`gt-status gt-${r.status}`}>{r.status}</span></td>
+                    <td data-label="Score">{scoreCell(r)}</td>
+                    <td data-label="Feedback" className={r.feedback ? 'muted' : 'muted gt-none'}>{r.feedback || '—'}</td>
                   </tr>
                 ))}
               </tbody>

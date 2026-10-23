@@ -541,6 +541,11 @@ function Content() {
     setOpenChap(String(f.chapId));
     // replace, not push — Prev/Next shouldn't fill the back button with lessons.
     if (program) setParams({ program: program._id, topic: String(f.topic._id) }, { replace: true });
+    // On a phone the reader sits under the syllabus, so a tapped lesson would
+    // open off-screen. Bring it into view once it has rendered.
+    if (window.matchMedia('(max-width: 820px)').matches) {
+      requestAnimationFrame(() => document.querySelector('.lesson')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
   }
 
   useEffect(() => {

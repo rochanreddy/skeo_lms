@@ -28,12 +28,30 @@ export default function AppShell({ user, setUser, logout }) {
   // Latches on the first open and stays latched — see the mount note below.
   const [everOpened, setEverOpened] = useState(false);
   const [stuck, setStuck] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
+
+  // Phones show the first DOCK_PRIMARY tabs and a "More" button for the rest:
+  // a scrolling dock hid sections past the edge with nothing to say they were
+  // there. The stylesheet decides when (only on narrow screens), so the dock
+  // markup is the same everywhere and desktop keeps every tab in view.
+  const DOCK_PRIMARY = 4;
+  const hasMore = tabs.length > DOCK_PRIMARY + 1;
+  const extraTabs = hasMore ? tabs.slice(DOCK_PRIMARY) : [];
+  const onExtra = extraTabs.some((t) => t.path && location.pathname.startsWith(`/app/${t.path}`));
 
   useEffect(() => { if (cmdOpen) setEverOpened(true); }, [cmdOpen]);
 
   // Landing on a new section should start at the top of it.
-  useEffect(() => { setCmdOpen(false); window.scrollTo({ top: 0 }); }, [location.pathname]);
+  useEffect(() => { setCmdOpen(false); setMoreOpen(false); window.scrollTo({ top: 0 }); }, [location.pathname]);
+
+  // The More sheet closes on Escape, like every other panel.
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMoreOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [moreOpen]);
 
   // ⌘K / Ctrl-K from anywhere, and "/" when not already typing. The chunk is
   // fetched once the shell is idle so the shortcut never waits on the network —
@@ -106,13 +124,13 @@ export default function AppShell({ user, setUser, logout }) {
       {/* The dock. Icons always; only the active item expands to show its
           label, which keeps it compact regardless of how many sections a role
           has. Same component and position on mobile — one pattern everywhere. */}
-      <nav className="dock" aria-label="Main">
-        {tabs.map((t) => (
+      <nav className={`dock ${hasMore ? 'has-more' : ''}`} aria-label="Main">
+        {tabs.map((t, i) => (
           <NavLink
             key={t.path}
             to={t.path ? `/app/${t.path}` : '/app'}
             end={t.path === ''}
-            className={({ isActive }) => `dock-item ${isActive ? 'on' : ''}`}
+            className={({ isActive }) => `dock-item ${isActive ? 'on' : ''} ${hasMore && i >= DOCK_PRIMARY ? 'dock-extra' : ''}`}
             title={t.label}
             aria-label={t.label}
           >
@@ -120,7 +138,42 @@ export default function AppShell({ user, setUser, logout }) {
             <span className="dock-label">{t.label}</span>
           </NavLink>
         ))}
+        {hasMore && (
+          <button
+            type="button"
+            className={`dock-item dock-more ${moreOpen || onExtra ? 'on' : ''}`}
+            aria-expanded={moreOpen}
+            aria-controls="dock-more-sheet"
+            onClick={() => setMoreOpen((v) => !v)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="19" cy="12" r="1.4" />
+            </svg>
+            <span className="dock-label">More</span>
+          </button>
+        )}
       </nav>
+
+      {/* The rest of the sections, as a sheet above the dock (phones only). */}
+      {hasMore && moreOpen && (
+        <>
+          <div className="dock-sheet-scrim" onClick={() => setMoreOpen(false)} aria-hidden="true" />
+          <div className="dock-sheet" id="dock-more-sheet" role="menu" aria-label="More sections">
+            {extraTabs.map((t) => (
+              <NavLink
+                key={t.path}
+                to={`/app/${t.path}`}
+                role="menuitem"
+                className={({ isActive }) => `dock-sheet-item ${isActive ? 'on' : ''}`}
+                onClick={() => setMoreOpen(false)}
+              >
+                <Icon name={t.label} />
+                <span>{t.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Mounted from the first open onwards, not on every open: unmounting on
           close would cut off Radix's exit animation. `null` is the right

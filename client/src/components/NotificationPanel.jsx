@@ -13,7 +13,7 @@ export default function NotificationPanel({ items, unread, open, onOpenChange, o
           <NotificationBellButton unread={unread} />
         </PopoverTrigger>
 
-        <PopoverContent align="end" sideOffset={8} className="notif-menu">
+        <PopoverContent align="end" sideOffset={8} collisionPadding={16} className="notif-menu">
           <div className="notif-head">Notifications</div>
           {items.length === 0 && <div className="notif-empty">You're all caught up 🎉</div>}
           {items.map((n) => (

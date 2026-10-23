@@ -3139,3 +3139,117 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 }
 .theme-toggle[aria-checked='true'] .theme-toggle-knob { transform: translateX(24px); }
 @media (prefers-reduced-motion: reduce) { .theme-toggle-knob { transition: none; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHONE & APP PASS
+   Everything a phone (and the app shell that will wrap this) needs, in one
+   place. Last in the file, so it wins over the rules it corrects.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The "More" button and its sheet exist only where the dock runs out of room. */
+.dock-more { display: none; }
+.dock-sheet, .dock-sheet-scrim { display: none; }
+
+/* "At a glance": columns may shrink below their longest one-line title. A plain
+   1fr track can't — its minimum is the content's width — so three cards with
+   unbreakable titles pushed past the screen edge. */
+.sh-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sh-card { min-width: 0; }
+@media (max-width: 1040px) { .sh-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px)  { .sh-cards { grid-template-columns: minmax(0, 1fr); } }
+
+@media (max-width: 900px) {
+  /* The route on the home card runs down the page on phones. It is a grid on
+     desktop, and a grid ignores flex-direction — so the vertical layout below
+     never applied and the stations overlapped side by side. */
+  .path { display: flex; flex-direction: column; overflow-x: visible; padding-top: 18px; }
+  .path-station { width: 100%; padding: 9px 0; }
+  .lesson { scroll-margin-top: 76px; }
+}
+
+@media (max-width: 640px) {
+  /* Notch and home bar: the app shell lets the page run under both. */
+  .topbar { padding-top: max(12px, env(safe-area-inset-top)); padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .main { padding-bottom: calc(116px + env(safe-area-inset-bottom)); }
+
+  /* Dock: at most five even tabs — four sections and More. */
+  .dock { bottom: max(12px, env(safe-area-inset-bottom)); justify-content: space-between; overflow: hidden; }
+  .dock-item { flex: 1 1 0; min-width: 0; padding: 8px 2px 7px; }
+  .dock-label { font-size: 10.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .dock.has-more .dock-extra { display: none; }
+  .dock.has-more .dock-more { display: flex; border: 0; background: none; font-family: var(--font); color: var(--muted); cursor: pointer; }
+  .dock.has-more .dock-more.on { background: var(--ink); color: var(--on-ink); }
+  .dock-sheet-scrim { display: block; position: fixed; inset: 0; z-index: 58; background: rgba(0, 0, 0, .35); }
+  .dock-sheet {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
+    position: fixed; left: 10px; right: 10px; z-index: 61;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 76px);
+    padding: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+    box-shadow: var(--shadow-lg); animation: dock-sheet-in .18s cubic-bezier(.3, 1, .4, 1);
+  }
+  .dock-sheet-item {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 12px 6px; border-radius: 14px; color: var(--ink); text-decoration: none;
+    font-size: 12px; font-weight: 600; text-align: center;
+  }
+  .dock-sheet-item.on { background: var(--ink); color: var(--on-ink); }
+  @keyframes dock-sheet-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* Search sheet: Tailwind v4 centres the dialog with the `translate`
+     property, not `transform`, so the bottom-sheet rule left it shifted half
+     its width off the left edge. */
+  .cmd { translate: none; padding-bottom: env(safe-area-inset-bottom); }
+
+  /* Notifications fill the width, 16px off each edge. */
+  .notif-menu { width: calc(100vw - 32px); max-width: none; }
+
+  /* Student grades: each assessment becomes a card instead of a table that
+     hid every column but the first. */
+  /* Title on top; type and status as chips with the score at the right;
+     feedback underneath only when there is some. */
+  .grade-table.gt-cards thead { display: none; }
+  .grade-table.gt-cards, .grade-table.gt-cards tbody { display: block; width: 100%; }
+  .grade-table.gt-cards tr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 13px 0; border-bottom: 1px solid var(--line-soft); }
+  .grade-table.gt-cards tr:last-child { border-bottom: 0; }
+  .grade-table.gt-cards td { display: block; border: 0; padding: 0; white-space: normal; }
+  .grade-table.gt-cards td:first-child { flex-basis: 100%; font-weight: 600; font-size: 14.5px; color: var(--ink); }
+  .grade-table.gt-cards td[data-label='Score'] { margin-left: auto; font-weight: 700; color: var(--ink); }
+  .grade-table.gt-cards td[data-label='Feedback'] { flex-basis: 100%; font-size: 13px; }
+  .grade-table.gt-cards td.gt-none { display: none; }
+
+  /* List rows: the name side shrinks and truncates; the actions keep their
+     line instead of wrapping differently on every row. */
+  .list-row > :first-child { min-width: 0; flex: 1; }
+  .list-row > :first-child .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-row > .row { flex: none; flex-wrap: nowrap; }
+  .inline-form input { min-width: 0; flex: 1 1 100%; }
+
+  /* Lesson footer: one line of buttons. */
+  .lesson-foot .btn { white-space: nowrap; }
+
+  /* Bigger tap targets in the top bar. */
+  .icon-btn { width: 40px; height: 40px; }
+
+  /* 16px fields: iOS zooms the page into any smaller input on focus. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea { font-size: 16px !important; }
+}
+
+/* Small phones: two figures a row, not one — a stack of single numbers was a
+   full screen of scrolling. A lone last card takes the whole row. */
+@media (max-width: 560px) {
+  .tiles, .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tiles > :last-child:nth-child(odd), .stats > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .tile { padding: 16px; }
+}
+
+/* Dialogs sit on z-index 50 and the dock on 60, so on a phone the dock covered
+   the bottom of every open dialog — the search sheet's last items, a file's
+   footer. While any dialog is open the dock steps aside. */
+body:has([role='dialog'][data-state='open']) .dock,
+body:has(.fv) .dock { visibility: hidden; }
+
+/* Tablets: the dock spans the width, so its tabs share it evenly rather than
+   bunching at the left. */
+@media (min-width: 641px) and (max-width: 900px) {
+  .dock-item { flex: 1 1 0; }
+}
