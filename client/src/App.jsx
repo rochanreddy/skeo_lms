@@ -19,6 +19,8 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 // The page behind the QR on a certificate. Lazy like the rest, and public:
 // whoever opens it is a stranger checking somebody else’s credential.
 const VerifyCertificate = lazy(() => import('./pages/VerifyCertificate.jsx'));
+// The link sent to students to get the app on their phone. Public too.
+const Install = lazy(() => import('./pages/Install.jsx'));
 
 // What's on screen while /me is in flight. The topbar and the page frame don't
 // depend on the answer, so they paint immediately rather than after a round
@@ -118,6 +120,7 @@ export default function App() {
           never redirects a signed-in one either: the person checking a
           certificate may well be an admin with a session open. */}
       <Route path="/verify/:code" element={<Suspense fallback={<AppSkeleton />}><VerifyCertificate /></Suspense>} />
+      <Route path="/install" element={<Suspense fallback={<AppSkeleton />}><Install /></Suspense>} />
       <Route
         path="/app"
         element={user ? <AppShell user={user} setUser={setUser} logout={logout} /> : <Navigate to="/login" />}

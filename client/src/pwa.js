@@ -48,11 +48,16 @@ export async function promptInstall() {
   return false;
 }
 
-/** { installed, canInstall } for the install buttons. */
+/**
+ * { installed, canInstall, canPrompt } for the install buttons. canPrompt is
+ * the browser's own dialog (Chrome, Edge, Samsung); canInstall also counts
+ * iOS, where installing means following the Add to Home Screen steps.
+ */
 export function useInstall() {
   useSyncExternalStore(subscribe, () => version);
   const installed = isStandalone();
-  return { installed, canInstall: !installed && (Boolean(deferredPrompt) || isIOS()) };
+  const canPrompt = !installed && Boolean(deferredPrompt);
+  return { installed, canPrompt, canInstall: canPrompt || (!installed && isIOS()) };
 }
 
 // ── Recovering from a deploy ─────────────────────────────────────────────
