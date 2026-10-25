@@ -42,9 +42,20 @@ const router = Router();
  *
  * Applied when the board reads rather than written into a flag overnight, so
  * it is exact to the second and changing it takes effect immediately.
- * Mirrors FRESH_DAYS in the pipeline's db/readJobs.js — change both.
+ *
+ * Thirty days, where the pipeline's own window (db/readJobs.js) and Menler's
+ * are ten. Skeo is the broad board and is meant to show 1,00,000 openings;
+ * ten days holds ~36,000 and thirty ~1,23,000, so thirty is the shortest
+ * window that fills it. The pipeline keeps sixty days, so the rows are there.
  */
-export const FRESH_DAYS = 10;
+export const FRESH_DAYS = 30;
+
+/**
+ * The board never lists more than this many, best-ranked first. Thirty days
+ * holds a little more than this on a typical day; the cap keeps the figure
+ * the board promises steady instead of drifting with each morning's run.
+ */
+export const MAX_JOBS = 100000;
 
 const PAGE_SIZE = 25;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -301,18 +312,23 @@ router.get('/', requireAuth, async (req, res) => {
 
   // Page one is shortened by however many manual postings sit above it, so
   // every page holds the same number of cards.
-  const take = Math.max(PAGE_SIZE - manual.length, 5);
-  const skip = filters.page === 1 ? 0 : (filters.page - 1) * PAGE_SIZE - manual.length;
+  //
+  // Nothing past the MAX_JOBS-th listing is ever read: a page beyond the cap
+  // comes back empty rather than reaching into the rest of the window.
+  const skip = Math.max(filters.page === 1 ? 0 : (filters.page - 1) * PAGE_SIZE - manual.length, 0);
+  const take = Math.min(Math.max(PAGE_SIZE - manual.length, 5), Math.max(MAX_JOBS - skip, 0));
 
   let scraped = [];
   let total = 0;
   let feedAvailable = true;
 
   try {
-    [scraped, total] = await Promise.all([
-      Scraped.find(filter, projection).sort(sort).skip(Math.max(skip, 0)).limit(take).lean(),
+    let count;
+    [scraped, count] = await Promise.all([
+      take > 0 ? Scraped.find(filter, projection).sort(sort).skip(skip).limit(take).lean() : [],
       Scraped.countDocuments(filter),
     ]);
+    total = Math.min(count, MAX_JOBS);
   } catch (err) {
     // The feed lives on another cluster. If it is unreachable the board
     // should still show what this LMS holds, and say why it looks thin.
