@@ -13,6 +13,7 @@ export default function PwaPrompts() {
   const navigate = useNavigate();
   const [offline, setOffline] = useState(() => !navigator.onLine);
   const [iosHelp, setIosHelp] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   const { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker } = useRegisterSW({
     onRegisteredSW(_url, reg) {
@@ -65,15 +66,28 @@ export default function PwaPrompts() {
         </div>
       )}
 
+      {/* The whole screen, so an update can't be missed. "Later" stays: an
+          update reloads the app, and someone halfway through a submission
+          must be able to finish it first. It comes back on the next launch. */}
       {needRefresh && (
-        <div className="pwa-toast" role="alert">
-          <div className="pwa-toast-text">
-            <strong>A new version of skeo is ready.</strong>
-            <span>Refresh to get it. Save anything you’re writing first.</span>
-          </div>
-          <div className="pwa-toast-actions">
-            <button type="button" className="btn sm quiet" onClick={() => setNeedRefresh(false)}>Later</button>
-            <button type="button" className="btn sm" onClick={() => updateServiceWorker(true)}>Refresh</button>
+        <div className="pwa-update" role="dialog" aria-modal="true" aria-labelledby="pwa-update-title">
+          <div className="pwa-update-body">
+            <img src="/icons/icon-192.png" alt="" width="88" height="88" />
+            <h2 id="pwa-update-title">A new version of skeo is here</h2>
+            <p>Update to get the latest fixes and features. It only takes a second.</p>
+            <button
+              type="button"
+              className="btn pwa-update-go"
+              disabled={updating}
+              onClick={() => { setUpdating(true); updateServiceWorker(true); }}
+            >
+              {updating ? 'Updating…' : 'Update now'}
+            </button>
+            {!updating && (
+              <button type="button" className="pwa-update-later" onClick={() => setNeedRefresh(false)}>
+                Later. I’m in the middle of something
+              </button>
+            )}
           </div>
         </div>
       )}
