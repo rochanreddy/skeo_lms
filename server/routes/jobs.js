@@ -43,19 +43,20 @@ const router = Router();
  * Applied when the board reads rather than written into a flag overnight, so
  * it is exact to the second and changing it takes effect immediately.
  *
- * Thirty days, where the pipeline's own window (db/readJobs.js) and Menler's
- * are ten. Skeo is the broad board and is meant to show 1,00,000 openings;
- * ten days holds ~36,000 and thirty ~1,23,000, so thirty is the shortest
- * window that fills it. The pipeline keeps sixty days, so the rows are there.
+ * Forty-five days, where the pipeline's own window (db/readJobs.js) and
+ * Menler's are ten. Skeo is the broad board and is meant to hold between
+ * 1 and 2 lakh openings. Measured on 26 Oct 2026: ten days held ~36,600,
+ * thirty ~1,23,600 and forty-five ~1,55,000. Forty-five sits in the middle
+ * of the band, so a slow week of scraping does not drop it under 1 lakh.
+ * The pipeline keeps sixty days, so the rows are there.
  */
-export const FRESH_DAYS = 30;
+export const FRESH_DAYS = 45;
 
 /**
- * The board never lists more than this many, best-ranked first. Thirty days
- * holds a little more than this on a typical day; the cap keeps the figure
- * the board promises steady instead of drifting with each morning's run.
+ * The top of the band: the board never lists more than this many,
+ * best-ranked first, however busy the feed gets.
  */
-export const MAX_JOBS = 100000;
+export const MAX_JOBS = 200000;
 
 const PAGE_SIZE = 25;
 const DAY_MS = 24 * 60 * 60 * 1000;

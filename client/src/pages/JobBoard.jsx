@@ -18,8 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
  * feed goes straight through, and the only thing an admin can do that a
  * student can't is add an opening and remove one they added.
  *
- * Listings show for thirty days from the date the role opened and then drop off
- * on their own, up to 1,00,000 best-ranked, so the board is a rolling month rather than an
+ * Listings show for 45 days from the date the role opened and then drop off
+ * on their own, 1 to 2 lakh of them, so the board is a rolling six weeks rather than an
  * archive nobody prunes.
  *
  * The page is laid out as a board: search across the top, the four filters
@@ -260,7 +260,7 @@ export default function JobBoard() {
           <h1>Openings</h1>
           <p>
             Roles from across the web, refreshed every morning, plus openings shared by the
-            team. Listings stay up for 30 days from the day they were posted.
+            team. Listings stay up for 45 days from the day they were posted.
           </p>
         </div>
         {isAdmin && !postOpen && (
@@ -600,7 +600,7 @@ function AdminPost({ onPosted, onClose, facets }) {
           <h3 style={{ margin: 0 }}>Post an opening</h3>
           <p className="muted">
             For roles that never reach a job board. It appears at the top of the list for
-            everyone, and drops off after 30 days like any other.
+            everyone, and drops off after 45 days like any other.
           </p>
         </div>
         <button type="button" className="btn sm ghost" onClick={onClose}>Cancel</button>
