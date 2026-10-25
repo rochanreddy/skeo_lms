@@ -20,6 +20,8 @@ export default function ThemeToggle() {
 
   function choose(next) {
     document.documentElement.dataset.palette = next;
+    // The installed app's title bar and Android's status bar follow the page.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'charcoal' ? '#131417' : '#fafaf7');
     setTheme(next);
     try {
       window.localStorage.setItem(THEME_KEY, next);

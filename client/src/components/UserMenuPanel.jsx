@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon.jsx';
 import UserMenuButton from './UserMenuButton.jsx';
+import { promptInstall, useInstall } from '../pwa.js';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 // trigger, arrow-key navigation and typeahead.
 export default function UserMenuPanel({ user, logout, open, onOpenChange }) {
   const navigate = useNavigate();
+  const { canInstall } = useInstall();
 
   const name = user.full_name || user.email;
   const initial = (name || '?')[0].toUpperCase();
@@ -63,6 +65,18 @@ export default function UserMenuPanel({ user, logout, open, onOpenChange }) {
               <DropdownMenuItem className="who-menu-item" onSelect={() => navigate('/app/support')}>
                 <Icon name="support" />
                 <span>Help &amp; support</span>
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {canInstall && (
+            <>
+              <DropdownMenuSeparator className="who-menu-sep" />
+              <DropdownMenuItem className="who-menu-item" onSelect={promptInstall}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M12 8v6" /><path d="m9.5 11.5 2.5 2.5 2.5-2.5" />
+                </svg>
+                <span>Install app</span>
               </DropdownMenuItem>
             </>
           )}

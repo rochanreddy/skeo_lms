@@ -22,6 +22,7 @@ import supportRoutes from './support.js';
 import webinarRoutes from './webinars.js';
 import certificateRoutes from './certificates.js';
 import provisionRoutes from './provision.js';
+import pushRoutes from './push.js';
 
 const router = Router();
 
@@ -53,5 +54,6 @@ router.use('/videos', videoRoutes); // VdoCipher: per-viewer playback OTPs + adm
 router.use('/support', supportRoutes); // help requests: students raise them, admins answer
 router.use('/webinars', webinarRoutes); // masterclasses an admin pushes to the whole school
 router.use('/certificates', certificateRoutes); // credentials, and the one public route a stranger can check one on
+router.use('/push', pushRoutes); // Web Push: devices that asked for notifications while the app is closed
 
 export default router;

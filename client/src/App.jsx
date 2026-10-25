@@ -3,8 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { api, getToken, setToken } from './api.js';
 import { navFor, extraRoutesFor } from './nav.jsx';
 import AppShell from './components/AppShell.jsx';
+import PwaPrompts from './components/PwaPrompts.jsx';
 import SkeoWordmark from './components/SkeoWordmark.jsx';
 import Login from './pages/Login.jsx';
+import { forgetDevice } from './pwa.js';
 
 // Login stays eager — it's the first paint for anyone signed out. The other
 // three are one-off detours (sign-up, a forced reset, a blocked account), so
@@ -63,12 +65,14 @@ export default function App() {
     return () => window.removeEventListener('skeo:blocked', onBlocked);
   }, []);
 
-  const logout = () => { setToken(''); setUser(null); setBlocked(null); };
+  // The device leaves the account first (push notifications), while there is
+  // still a token to tell the server with.
+  const logout = async () => { await forgetDevice(); setToken(''); setUser(null); setBlocked(null); };
 
-  if (loading) return <AppSkeleton />;
+  if (loading) return <><AppSkeleton /><PwaPrompts /></>;
 
   if (blocked !== null) {
-    return <Suspense fallback={<AppSkeleton />}><Blocked message={blocked} onLogout={logout} /></Suspense>;
+    return <><Suspense fallback={<AppSkeleton />}><Blocked message={blocked} onLogout={logout} /></Suspense><PwaPrompts /></>;
   }
 
   // Admin-provisioned / reset accounts must set their own password first.
@@ -93,6 +97,8 @@ export default function App() {
   }
 
   return (
+    <>
+    <PwaPrompts />
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/app" /> : <Login onLogin={setUser} />} />
       <Route
@@ -125,5 +131,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to={user ? '/app' : '/login'} />} />
     </Routes>
+    </>
   );
 }

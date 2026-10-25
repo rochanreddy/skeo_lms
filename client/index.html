@@ -4,7 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>skeo LMS</title>
+    <meta name="description" content="Your skeo courses, grades and masterclasses." />
     <meta name="color-scheme" content="light dark" />
+    <!-- The installable app (the manifest link is added at build time by
+         vite-plugin-pwa; see vite.config.js). theme-color is the page colour,
+         and follows day/night: set below before first paint, and by ThemeToggle. -->
+    <meta name="theme-color" content="#fafaf7" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="skeo" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Day or night before first paint, the website's way: the stored choice
          (same key as skeoai.com — see src/components/ThemeToggle.jsx), else the
          device's own preference. Without it a night-mode student would see a
@@ -15,6 +27,7 @@
         var p = (s === 'charcoal' || s === 'claude') ? s
           : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'charcoal' : 'claude');
         document.documentElement.dataset.palette = p;
+        if (p === 'charcoal') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#131417');
       } catch (e) { document.documentElement.dataset.palette = 'claude'; }
     </script>
     <!-- The fonts are self-hosted (see src/fonts.css and public/fonts). There is

@@ -2,10 +2,12 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { navFor } from '../nav.jsx';
 import Icon from './Icon.jsx';
+import InstallNudge from './InstallNudge.jsx';
 import NotificationBell from './NotificationBell.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import SkeoWordmark from './SkeoWordmark.jsx';
 import UserMenu from './UserMenu.jsx';
+import { syncPush } from '../pwa.js';
 
 // The palette is a modal that nothing renders until it's asked for, and it
 // drags in the whole Radix Dialog stack (focus trap, scroll lock, portal).
@@ -41,6 +43,10 @@ export default function AppShell({ user, setUser, logout }) {
   const onExtra = extraTabs.some((t) => t.path && location.pathname.startsWith(`/app/${t.path}`));
 
   useEffect(() => { if (cmdOpen) setEverOpened(true); }, [cmdOpen]);
+
+  // A device that already allows notifications gets filed under whoever is
+  // signed in now (see syncPush).
+  useEffect(() => { syncPush(); }, [user.id]);
 
   // Landing on a new section should start at the top of it.
   useEffect(() => { setCmdOpen(false); setMoreOpen(false); window.scrollTo({ top: 0 }); }, [location.pathname]);
@@ -174,6 +180,8 @@ export default function AppShell({ user, setUser, logout }) {
           </div>
         </>
       )}
+
+      <InstallNudge />
 
       {/* Mounted from the first open onwards, not on every open: unmounting on
           close would cut off Radix's exit animation. `null` is the right

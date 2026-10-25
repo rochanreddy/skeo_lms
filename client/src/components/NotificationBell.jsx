@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, clearApiCache } from '../api.js';
 import NotificationBellButton from './NotificationBellButton.jsx';
 
 // Live notification bell — polls, shows an unread badge, and a dropdown.
@@ -39,6 +39,20 @@ export default function NotificationBell() {
     document.addEventListener('visibilitychange', sync);
     return () => { stop(); document.removeEventListener('visibilitychange', sync); };
   }, []);
+
+  // A push just arrived (sw.js says so): show it now, not at the next poll.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    const onMessage = (e) => { if (e.data?.type === 'skeo:push') { clearApiCache(); load(); } };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, []);
+
+  // The installed app's home-screen icon carries the unread count.
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return;
+    (unread > 0 ? navigator.setAppBadge(unread) : navigator.clearAppBadge()).catch(() => {});
+  }, [unread]);
 
   async function onOpenChange(next) {
     setOpen(next);

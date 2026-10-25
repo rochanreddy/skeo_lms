@@ -239,3 +239,33 @@ test('the OTP route refuses a malformed video id without reaching the upstream',
   });
   assert.ok([404, 503].includes(r.status));
 });
+
+// Push notifications. Nothing here subscribes anything: each request is turned
+// away before it could write.
+test('the push key is public and says whether push is on', async () => {
+  const r = await get('/push/key');
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(typeof body.enabled, 'boolean');
+  if (body.enabled) assert.match(body.publicKey, /^[A-Za-z0-9_-]{80,}$/);
+});
+
+test('subscribing to push needs an account', async () => {
+  const r = await fetch(`${API}/push/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/x', keys: { p256dh: 'a', auth: 'b' } } }),
+  });
+  assert.equal(r.status, 401);
+});
+
+test('a push endpoint that is not a real push service is refused', async () => {
+  const { enabled } = await (await get('/push/key')).json();
+  const r = await fetch(`${API}/push/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${studentToken}` },
+    body: JSON.stringify({ subscription: { endpoint: 'https://169.254.169.254/latest/meta-data', keys: { p256dh: 'abc', auth: 'def' } } }),
+  });
+  // 503 when this server has no push keys, 400 when it does -- never stored.
+  assert.equal(r.status, enabled ? 400 : 503);
+});

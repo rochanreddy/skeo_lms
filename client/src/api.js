@@ -27,6 +27,9 @@ export function setToken(t, refreshToken) {
   } else {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    // pwa.js drops this device's push subscription, so a shared phone stops
+    // receiving the last person's notifications.
+    window.dispatchEvent(new Event('skeo:signed-out'));
   }
   if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
   // Whoever we were, we aren't any more — nothing read as them may be reused.

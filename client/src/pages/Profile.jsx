@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
 import CertificateModal from '../components/CertificateModal.jsx';
+import { promptInstall, useInstall, usePush } from '../pwa.js';
 
 // Fully wired against GET/PATCH /api/skeo/me. Sections from the spec:
 // Personal · Educational · Professional.
@@ -137,6 +138,7 @@ export default function Profile() {
       </form>
 
       <ChangePassword />
+      <AppSettings />
       {openCert && <CertificateModal cert={openCert} onClose={() => setOpenCert(null)} />}
     </div>
   );
@@ -187,5 +189,59 @@ function ChangePassword() {
         {msg && <span className="muted">{msg}</span>}
       </div>
     </form>
+  );
+}
+
+// This device: lock-screen notifications and installing the app. Both are per
+// device, not per account -- turning notifications on here says nothing about
+// the laptop.
+const PUSH_COPY = {
+  on: 'On for this device. Grades, new work, announcements and replies arrive even with skeo closed.',
+  off: 'Get grades, new work, announcements and replies on this device, even with skeo closed.',
+  denied: 'Blocked in your browser settings. Allow notifications for this site there, then come back.',
+  'needs-install': 'On iPhone and iPad, notifications work once skeo is on your Home Screen.',
+  unsupported: 'This browser can’t receive notifications from skeo.',
+  unavailable: 'Notifications aren’t switched on for skeo yet.',
+};
+
+function AppSettings() {
+  const push = usePush();
+  const { installed, canInstall } = useInstall();
+  if (!push.state) return null;
+
+  return (
+    <section className="panel app-settings">
+      <h3>This device</h3>
+
+      <div className="setting-row">
+        <div className="setting-text">
+          <div className="setting-name">Notifications</div>
+          <div className="muted">{push.error || PUSH_COPY[push.state]}</div>
+        </div>
+        {push.state === 'on' && (
+          <button type="button" className="btn sm quiet" onClick={push.disable} disabled={push.busy}>{push.busy ? 'Turning off…' : 'Turn off'}</button>
+        )}
+        {push.state === 'off' && (
+          <button type="button" className="btn sm" onClick={push.enable} disabled={push.busy}>{push.busy ? 'Turning on…' : 'Turn on'}</button>
+        )}
+        {push.state === 'needs-install' && (
+          <button type="button" className="btn sm ghost" onClick={promptInstall}>How</button>
+        )}
+      </div>
+
+      <div className="setting-row">
+        <div className="setting-text">
+          <div className="setting-name">skeo app</div>
+          <div className="muted">
+            {installed
+              ? 'You’re using the installed app.'
+              : canInstall
+                ? 'Install skeo to open it from your home screen, full screen.'
+                : 'Use your browser’s menu to install skeo or add it to your home screen.'}
+          </div>
+        </div>
+        {canInstall && <button type="button" className="btn sm" onClick={promptInstall}>Install</button>}
+      </div>
+    </section>
   );
 }
