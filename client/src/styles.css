@@ -1775,8 +1775,13 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
   /* Path turns vertical — the rule runs down the left edge. */
   .path { flex-direction: column; align-items: stretch; gap: 0; overflow-x: visible; padding-left: 4px; }
   .path-station { flex-direction: row; align-items: center; justify-content: flex-start; gap: 13px; min-width: 0; max-width: none; padding: 14px 0; text-align: left; }
-  .path-station::before { top: auto; bottom: 50%; right: auto; left: 9px; width: 2px; height: 100%; }
-  .path-code { margin-top: 0; flex: none; }
+  /* left = half the 14px dot minus half the 2px rule, so the rule runs
+     through every dot's centre. */
+  .path-station::before { top: auto; bottom: 50%; right: auto; left: 6px; width: 2px; height: 100%; }
+  .path-dot { flex: none; }
+  /* A fixed column so every title starts at the same x whatever the code's
+     glyph widths ("M01" vs "M08"). */
+  .path-code { margin-top: 0; flex: none; width: 3.4em; font-variant-numeric: tabular-nums; }
   .path-label { text-align: left; flex: 1; -webkit-line-clamp: 2; }
   .path-state { flex: none; font-size: 10px; }
   /* No overlap on narrow screens — it just crowds. */
@@ -3255,9 +3260,10 @@ body:has(.fv) .dock { visibility: hidden; }
 }
 
 /* ── Installed app (PWA) ──────────────────────────────────────────────────
-   The update toast and the install offer float above the dock; the offline
-   notice sits under the status bar; the iPhone steps are a bottom sheet. */
-.pwa-toast, .pwa-nudge {
+   The update takes the whole screen; the install offer floats above the dock;
+   the offline notice sits under the status bar; the iPhone steps are a bottom
+   sheet. */
+.pwa-nudge {
   position: fixed; left: 50%; transform: translateX(-50%); z-index: 70;
   bottom: calc(max(20px, env(safe-area-inset-bottom, 0px)) + 88px);
   width: min(460px, calc(100vw - 24px));
@@ -3265,10 +3271,23 @@ body:has(.fv) .dock { visibility: hidden; }
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--shadow-lg); animation: pwa-rise .22s cubic-bezier(.3, 1, .4, 1);
 }
-.pwa-toast-text, .pwa-nudge-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: var(--muted); line-height: 1.35; }
-.pwa-toast-text strong, .pwa-nudge-text strong { font-size: 14px; color: var(--ink); font-weight: 650; }
-.pwa-toast-actions { display: flex; gap: 6px; flex: none; }
+.pwa-nudge-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: var(--muted); line-height: 1.35; }
+.pwa-nudge-text strong { font-size: 14px; color: var(--ink); font-weight: 650; }
 .pwa-nudge { padding-left: 12px; }
+
+.pwa-update {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  background: var(--bg); animation: pwa-fade .25s ease-out;
+}
+.pwa-update-body { width: min(380px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
+.pwa-update-body img { border-radius: 22px; box-shadow: var(--shadow-lg); margin-bottom: 28px; }
+.pwa-update-body h2 { margin: 0 0 10px; font-size: 26px; line-height: 1.2; }
+.pwa-update-body p { margin: 0 0 32px; font-size: 15.5px; line-height: 1.55; color: var(--ink-2); }
+.pwa-update-go { width: 100%; justify-content: center; padding: 15px 20px; font-size: 16px; }
+.pwa-update-later { margin-top: 14px; padding: 10px; border: 0; background: none; font: inherit; font-size: 14px; color: var(--muted); cursor: pointer; }
+.pwa-update-later:hover { color: var(--ink); }
+@keyframes pwa-fade { from { opacity: 0; } to { opacity: 1; } }
 .pwa-nudge img { flex: none; border-radius: 10px; }
 .pwa-nudge-close { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer; }
 .pwa-nudge-close:hover { background: var(--line-soft); color: var(--ink); }
@@ -3323,7 +3342,7 @@ body:has(.fv) .dock { visibility: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pwa-toast, .pwa-nudge, .pwa-sheet { animation: none; }
+  .pwa-update, .pwa-nudge, .pwa-sheet { animation: none; }
 }
 
 /* ── /install ── the link sent to students to get the app. */
