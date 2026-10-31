@@ -39,7 +39,20 @@ export default function AppShell({ user, setUser, logout }) {
   // markup is the same everywhere and desktop keeps every tab in view.
   const DOCK_PRIMARY = 4;
   const hasMore = tabs.length > DOCK_PRIMARY + 1;
-  const extraTabs = hasMore ? tabs.slice(DOCK_PRIMARY) : [];
+
+  // A featured tab (Job Board) sits in the middle of the dock: the middle of
+  // every tab on desktop, the middle of the five slots on a phone. The two
+  // middles differ for a long role, so the phone order rides on a CSS variable
+  // rather than on DOM order.
+  const featured = tabs.find((t) => t.featured);
+  const rest = tabs.filter((t) => t !== featured);
+  const dockTabs = featured
+    ? [...rest.slice(0, Math.floor(rest.length / 2)), featured, ...rest.slice(Math.floor(rest.length / 2))]
+    : tabs;
+  const phoneTabs = featured
+    ? [...rest.slice(0, 2), featured, ...rest.slice(2, DOCK_PRIMARY - 1)]
+    : tabs.slice(0, DOCK_PRIMARY);
+  const extraTabs = hasMore ? tabs.filter((t) => !phoneTabs.includes(t)) : [];
   const onExtra = extraTabs.some((t) => t.path && location.pathname.startsWith(`/app/${t.path}`));
 
   useEffect(() => { if (cmdOpen) setEverOpened(true); }, [cmdOpen]);
@@ -131,12 +144,13 @@ export default function AppShell({ user, setUser, logout }) {
           label, which keeps it compact regardless of how many sections a role
           has. Same component and position on mobile — one pattern everywhere. */}
       <nav className={`dock ${hasMore ? 'has-more' : ''}`} aria-label="Main">
-        {tabs.map((t, i) => (
+        {dockTabs.map((t) => (
           <NavLink
             key={t.path}
             to={t.path ? `/app/${t.path}` : '/app'}
             end={t.path === ''}
-            className={({ isActive }) => `dock-item ${isActive ? 'on' : ''} ${hasMore && i >= DOCK_PRIMARY ? 'dock-extra' : ''}`}
+            style={{ '--dock-phone-order': phoneTabs.indexOf(t) }}
+            className={({ isActive }) => `dock-item ${isActive ? 'on' : ''} ${t.featured ? 'dock-feature' : ''} ${hasMore && !phoneTabs.includes(t) ? 'dock-extra' : ''}`}
             title={t.label}
             aria-label={t.label}
           >

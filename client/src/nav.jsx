@@ -42,6 +42,7 @@ export function extraRoutesFor(role) {
 }
 
 // Each role's nav tabs. path '' is the index (Home). label drives the sidebar;
+// featured puts a tab in the middle of the dock with the accent on it (AppShell).
 // Component drives the route. Kept in one place so nav + routing never drift.
 export function navFor(role) {
   switch (role) {
@@ -52,7 +53,7 @@ export function navFor(role) {
         { label: 'Grades', path: 'grades', Component: StudentGrades },
         { label: 'Webinars', path: 'webinars', Component: Webinars },
         { label: 'Library', path: 'library', Component: Library },
-        { label: 'Job Board', path: 'jobs', Component: JobBoard },
+        { label: 'Job Board', path: 'jobs', Component: JobBoard, featured: true },
       ];
     case 'admin':
       return [
@@ -64,7 +65,7 @@ export function navFor(role) {
         { label: 'Certificates', path: 'certificates', Component: AdminCertificates },
         { label: 'Webinars', path: 'webinars', Component: Webinars },
         { label: 'Library', path: 'library', Component: Library },
-        { label: 'Job Board', path: 'jobs', Component: JobBoard },
+        { label: 'Job Board', path: 'jobs', Component: JobBoard, featured: true },
       ];
     // Unknown/retired roles (legacy 'mentor' or 'partner' accounts) get no tabs — App
     // treats an empty nav as "no access" rather than rendering a blank shell.

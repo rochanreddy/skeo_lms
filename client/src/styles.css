@@ -3361,3 +3361,72 @@ body:has(.fv) .dock { visibility: hidden; }
 .install-qr p { margin: 0; font-size: 13.5px; line-height: 1.5; }
 .install-foot { margin: 22px 0 0; font-size: 13.5px; text-align: center; }
 .install-foot a { color: var(--muted); }
+
+/* ── Job Board in the dock ────────────────────────────────────────────────
+   The one featured section. It sits in the middle and wears the accent even
+   at rest — Claude terracotta by day, violet on Charcoal — so it reads as the
+   centre of the dock rather than one tab among many. On it, the fill goes
+   solid. */
+.dock-item.dock-feature { color: var(--blue-ink); background: var(--blue-soft); box-shadow: inset 0 0 0 1px var(--blue-line); }
+.dock-item.dock-feature:hover { color: var(--blue-ink); background: color-mix(in srgb, var(--blue) 16%, var(--blue-soft)); }
+.dock-item.dock-feature .dock-label { font-weight: 700; }
+.dock-item.dock-feature.on { background: var(--blue); color: #fff; box-shadow: 0 4px 14px var(--blue-glow); }
+.dock-item.dock-feature:focus-visible { box-shadow: 0 0 0 3px var(--blue-glow); }
+
+/* On a phone the dock shows five slots, and the featured tab takes the middle
+   one whatever the DOM order (AppShell sets --dock-phone-order). */
+@media (max-width: 640px) {
+  .dock.has-more .dock-item { order: var(--dock-phone-order, 0); }
+  .dock.has-more .dock-more { order: 99; }
+}
+
+/* ── Assignments & projects on a phone ────────────────────────────────────
+   The desktop card is two columns with a status badge in the corner. Stacked
+   on a phone that left the type badge stretched across the card, the status
+   floating under the dates, and a rail boxed inside a card boxed inside the
+   page. Here: both badges on one line, the title under them, the dates under
+   that, and the boxes lose the padding they can't spare. */
+@media (max-width: 640px) {
+  .tabs { gap: 22px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding: 0 16px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: none; white-space: nowrap; font-size: 14.5px; }
+
+  .assign-card { padding: 18px 16px 20px; }
+  .assign-head {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'type state' 'name name' 'meta meta';
+    align-items: center; gap: 10px 12px;
+  }
+  .assign-headline, .assign-title { display: contents; }
+  .assign-title .badge { grid-area: type; justify-self: start; }
+  .assign-head > .badge { grid-area: state; margin: 0; }
+  .assign-title h3 { grid-area: name; font-size: 18px; overflow-wrap: anywhere; }
+  .assign-meta { grid-area: meta; margin-top: 0; gap: 6px 12px; }
+  .assign-meta-item { font-size: 12.5px; }
+
+  .assign-split { margin-top: 18px; gap: 22px; }
+  .assign-work { gap: 22px; }
+  .assign-pane-head { margin-bottom: 10px; }
+  .assign-video .lesson-video { margin-bottom: 10px; }
+  .assign-resource { padding: 11px 12px; gap: 12px; }
+  .assign-resource-icon { width: 36px; height: 36px; }
+
+  .assign-brief { overflow-wrap: anywhere; }
+  .assign-brief .md { font-size: 14.5px; }
+  .assign-brief .md-pre, .assign-brief table { max-width: 100%; overflow-x: auto; }
+
+  /* The rail runs edge to edge inside the card rather than nesting a third box. */
+  .assign-rail { margin: 0 -16px -20px; padding: 18px 16px 20px; border-width: 1px 0 0; border-radius: 0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px); }
+  /* Dates read as two label/value rows — a 2-up grid can't fit "Thu, 30 Oct, 10:00 am". */
+  .assign-dates { grid-template-columns: 1fr; gap: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  .assign-dates > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: none; border: 0; border-radius: 0; padding: 10px 12px; }
+  .assign-dates > div + div { border-top: 1px solid var(--line-soft); }
+  .assign-dates dd { margin: 0; text-align: right; font-size: 13px; }
+  .sub-form .assign-submit .btn { flex: 1; justify-content: center; }
+  .assign-submit > .btn.sm { flex: 1; justify-content: center; }
+
+  /* Admin list (Course → projects): title on its own line, tools at the foot. */
+  .assignment-head > strong { flex-basis: 100%; overflow-wrap: anywhere; }
+  .assignment-tools { margin-left: 0; width: 100%; }
+  .assignment-tools .btn { flex: 1; justify-content: center; }
+}
