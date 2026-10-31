@@ -3383,16 +3383,13 @@ body:has(.fv) .dock { visibility: hidden; }
 .dock-item.dock-feature:focus-visible { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--blue); }
 
 /* On a phone the dock shows five slots, and the featured tab takes the middle
-   one whatever the DOM order (AppShell sets --dock-phone-order). It also rises
-   out of the dock as the raised centre button. */
+   one whatever the DOM order (AppShell sets --dock-phone-order). It sits level
+   with the other tabs, at their size — the colour is what marks it out. */
 @media (max-width: 640px) {
   .dock.has-more .dock-item { order: var(--dock-phone-order, 0); }
   .dock.has-more .dock-more { order: 99; }
   .dock { overflow: visible; }
-  .dock-item.dock-feature { flex: 1.35 1 0; transform: translateY(-14px); margin: 0 6px; border-radius: 18px; padding-top: 10px; padding-bottom: 9px; }
   .dock-item.dock-feature .dock-label { overflow: visible; text-overflow: clip; }
-  .dock-item.dock-feature:not(.on) { box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 0 0 4px var(--card), 0 8px 20px var(--blue-glow); }
-  .dock-item.dock-feature.on { box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 0 0 4px var(--card), 0 0 0 6px var(--blue), 0 10px 24px var(--blue-glow); }
 }
 
 /* ── Assignments & projects on a phone ────────────────────────────────────
