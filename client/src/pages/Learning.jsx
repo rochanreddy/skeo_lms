@@ -35,7 +35,7 @@ export default function Learning() {
 
   if (!isStudent) {
     return (
-      <div>
+      <div className="learning-page">
         <h1>Learning</h1>
         <p className="muted">The course content your students see — teach from this. Create &amp; grade projects and quizzes under <b>Course</b>.</p>
         <Content />
@@ -44,7 +44,7 @@ export default function Learning() {
   }
 
   return (
-    <div>
+    <div className="learning-page">
       <h1>Learning</h1>
       <div className="tabs">
         <button className={`tab ${tab === 'content' ? 'active' : ''}`} onClick={() => setTab('content')}>Content</button>
