@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
 import LineIcon from '../components/LineIcon.jsx';
+import LessonIcon from '../components/LessonIcon.jsx';
 
 // THE STUDENT HOME — four movements, in the order a student actually needs them.
 //
@@ -141,6 +142,7 @@ export default function StudentHome() {
               : "Once an admin enrols you, your path shows up here."}
           </div>
         ) : (
+          <>
           <div className="sp">
             <div className="sp-top">
               <div className="sp-lead">
@@ -177,29 +179,6 @@ export default function StudentHome() {
               })}
             </div>
 
-            {/* The one next thing */}
-            {nextLesson ? (
-              <div className="sp-next">
-                <div className="sp-next-body">
-                  <div className="sp-next-eyebrow">Next for you</div>
-                  <h2 className="sp-next-title">{nextLesson.topic.title}</h2>
-                  <div className="sp-next-meta">
-                    {nextLesson.station.title} · {nextLesson.topic.contentType || 'text'} · lesson {doneTopics + 1} of {totalTopics}
-                  </div>
-                </div>
-                <button className="btn on-stage" onClick={() => navigate('/app/learning')}>Continue →</button>
-              </div>
-            ) : (
-              <div className="sp-next">
-                <div className="sp-next-body">
-                  <div className="sp-next-eyebrow">Every lesson done</div>
-                  <h2 className="sp-next-title">You've finished {program?.title}.</h2>
-                  <div className="sp-next-meta">Claim your certificate from the Learning page.</div>
-                </div>
-                <button className="btn on-stage" onClick={() => navigate('/app/learning')}>View certificate</button>
-              </div>
-            )}
-
             <button
               type="button"
               className="sp-toggle"
@@ -227,6 +206,31 @@ export default function StudentHome() {
               </div>
             )}
           </div>
+
+          {/* The one next thing — its own card under the progress, so the
+              thing to do next is never buried inside a diagram. */}
+          {nextLesson ? (
+            <div className="sh-next">
+              <span className="sh-next-icon"><LessonIcon type={nextLesson.topic.contentType} size={22} /></span>
+              <div className="sh-next-body">
+                <div className="sh-next-eyebrow">Next for you</div>
+                <h2 className="sh-next-title">{nextLesson.topic.title}</h2>
+                <div className="sh-next-meta">{nextLesson.station.title} · lesson {doneTopics + 1} of {totalTopics}</div>
+              </div>
+              <button className="btn" onClick={() => navigate('/app/learning')}>Continue →</button>
+            </div>
+          ) : (
+            <div className="sh-next">
+              <span className="sh-next-icon is-done"><LineIcon name="check" size={22} /></span>
+              <div className="sh-next-body">
+                <div className="sh-next-eyebrow">Every lesson done</div>
+                <h2 className="sh-next-title">You've finished {program?.title}.</h2>
+                <div className="sh-next-meta">Claim your certificate from the Learning page.</div>
+              </div>
+              <button className="btn" onClick={() => navigate('/app/learning')}>View certificate</button>
+            </div>
+          )}
+          </>
         )}
       </section>
 
@@ -236,25 +240,32 @@ export default function StudentHome() {
           rest — Home answers "where am I", not "show me everything". */}
       <section className="sh-sec">
         <SecHead n="02" title="At a glance" />
-        <div className="sh-cards">
+        <div className="hg">
 
-          {/* Projects — most urgent first, same ordering the full list used. */}
-          <div className="sh-card">
-            <div className="sh-card-head">Projects</div>
+          {/* Projects — most urgent first. */}
+          <div className="hg-card">
+            <div className="hg-head">
+              <h3>Projects</h3>
+              {assignments.length > 0 && (
+                <button className="hg-link" onClick={() => navigate('/app/learning?tab=assignments')}>
+                  {assignments.length > 3 ? `All ${assignments.length} →` : 'Open →'}
+                </button>
+              )}
+            </div>
             {assignments.length === 0 ? (
-              <p className="sh-card-empty">Projects and assignments show up here when your team publishes them.</p>
+              <p className="hg-empty">Projects and assignments show up here when your team publishes them.</p>
             ) : (
-              <div className="sh-card-list">
+              <div className="hg-rows">
                 {[...assignments].sort(byUrgency).slice(0, 3).map((a) => {
                   const st = projectStatus(a);
                   return (
-                    <button className="sh-row" key={a._id} onClick={() => navigate('/app/learning')}>
-                      <span className={`sh-row-mark ${st.mark}`}><LineIcon name={a.type === 'project' ? 'rocket' : 'folder'} size={16} /></span>
-                      <span className="sh-row-body">
-                        <span className="sh-row-title">{a.title}</span>
-                        <span className="sh-row-sub">
+                    <button className="hg-row" key={a._id} onClick={() => navigate('/app/learning?tab=assignments')}>
+                      <span className={`hg-mark ${st.mark}`}><LineIcon name={a.type === 'project' ? 'rocket' : 'folder'} size={17} /></span>
+                      <span className="hg-text">
+                        <span className="hg-title">{a.title}</span>
+                        <span className="hg-sub">
                           {a.type === 'project' ? 'Project' : 'Assignment'}
-                          {a.dueDate && <> · {st.late ? 'Was due ' : 'Due '}{fmtDate(a.dueDate)}</>}
+                          {a.dueDate && <> · {st.late ? 'was due' : 'due'} {fmtDate(a.dueDate)}</>}
                         </span>
                       </span>
                       <span className={`status ${st.cls}`}>{st.label}</span>
@@ -263,61 +274,49 @@ export default function StudentHome() {
                 })}
               </div>
             )}
-            <button className="sh-card-more" onClick={() => navigate('/app/learning')}>
-              {assignments.length > 3 ? `Open all ${assignments.length} →` : 'Open all →'}
-            </button>
           </div>
 
           {/* Updates — announcements and notifications, one feed. */}
-          <div className="sh-card">
-            <div className="sh-card-head">Updates</div>
+          <div className="hg-card">
+            <div className="hg-head">
+              <h3>Updates</h3>
+              {updates.length > 3 && <span className="hg-note">+{updates.length - 3} more</span>}
+            </div>
             {updates.length === 0 ? (
-              <p className="sh-card-empty">Announcements and alerts from your team will collect here.</p>
+              <p className="hg-empty">Announcements and alerts from your team will collect here.</p>
             ) : (
-              <div className="sh-card-list">
+              <div className="hg-rows">
                 {updates.slice(0, 3).map((u) => (
-                  <div className="sh-row is-static" key={u.id}>
-                    <span className={`sh-row-mark ${u.kind === 'Announcement' ? 'is-amber' : 'is-sky'}`}>
-                      <LineIcon name={u.kind === 'Announcement' ? 'megaphone' : 'bell'} size={16} />
+                  <div className="hg-row" key={u.id}>
+                    <span className={`hg-mark ${u.kind === 'Announcement' ? 'is-amber' : 'is-sky'}`}>
+                      <LineIcon name={u.kind === 'Announcement' ? 'megaphone' : 'bell'} size={17} />
                     </span>
-                    <span className="sh-row-body">
-                      <span className="sh-row-title">{u.title}</span>
-                      <span className="sh-row-sub">{u.kind} · {fmtDate(u.at)}</span>
+                    <span className="hg-text">
+                      <span className="hg-title">{u.title}</span>
+                      <span className="hg-sub">{u.kind} · {fmtDate(u.at)}</span>
                     </span>
-                    {u.unread && <span className="dot now" />}
+                    {u.unread && <span className="hg-dot" aria-label="Unread" />}
                   </div>
                 ))}
               </div>
             )}
-            {updates.length > 3 && <div className="sh-card-more is-note">{updates.length - 3} more</div>}
           </div>
 
-          {/* Your standing — only figures we actually hold. There is no
-              attendance endpoint, so no attendance row: a permanent "0 of 0"
-              would look like a broken stat rather than an absent feature. */}
-          <div className="sh-card">
-            <div className="sh-card-head">Your standing</div>
-            <div className="sh-stats">
-              <div className="sh-stat">
-                <div className="sh-stat-label">
-                  <strong>Assignments</strong>
-                  <span>submitted</span>
-                </div>
-                <div className="sh-stat-value">{submittedCount}<span>/{assignments.length}</span></div>
+          {/* Your standing — only figures we actually hold. */}
+          <div className="hg-card hg-standing">
+            <div className="hg-head"><h3>Your standing</h3></div>
+            <div className="hg-stats">
+              <div className="hg-stat">
+                <span className="hg-stat-n">{submittedCount}<small>/{assignments.length}</small></span>
+                <span className="hg-stat-l">Submitted</span>
               </div>
-              <div className="sh-stat">
-                <div className="sh-stat-label">
-                  <strong>Lessons</strong>
-                  <span>completed</span>
-                </div>
-                <div className="sh-stat-value">{doneTopics}<span>/{totalTopics}</span></div>
+              <div className="hg-stat">
+                <span className="hg-stat-n">{doneTopics}<small>/{totalTopics}</small></span>
+                <span className="hg-stat-l">Lessons done</span>
               </div>
-              <div className="sh-stat">
-                <div className="sh-stat-label">
-                  <strong>Programme</strong>
-                  <span>{stations.length ? `${stations.length} module${stations.length === 1 ? '' : 's'}` : 'not started'}</span>
-                </div>
-                <div className="sh-stat-value">{pct}<span>%</span></div>
+              <div className="hg-stat">
+                <span className="hg-stat-n">{pct}<small>%</small></span>
+                <span className="hg-stat-l">{stations.length ? `${stations.length} module${stations.length === 1 ? '' : 's'}` : 'Programme'}</span>
               </div>
             </div>
           </div>
