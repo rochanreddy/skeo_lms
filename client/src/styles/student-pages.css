@@ -53,3 +53,46 @@
   .webinar-page .webinar-actions .btn { min-height: 44px; flex: 1 1 auto; }
   .webinar-page .webinar-form-foot .btn { width: 100%; justify-content: center; min-height: 44px; }
 }
+
+/* ── Job board ──────────────────────────────────────────────────────────────
+   styles.css already wraps the card head and drops the Apply row under the
+   title at 560px. What a phone still needed: the admin's "Post an opening"
+   as a full-width button under the lead, 44px filter pills, chips, options
+   and pager buttons, a filter menu that fits the screen, and the posting
+   form's buttons filling the width. */
+@media (max-width: 640px) {
+  .jb > .page-head > .btn { width: 100%; justify-content: center; min-height: 44px; }
+
+  .jb-search { gap: 8px; }
+  .jb-search-field input { padding-left: 40px; }
+  .jb-search .btn { padding: 12px 16px; min-height: 44px; }
+
+  .jb-menu-trigger { min-height: 44px; padding: 8px 12px; }
+  .jb-bar > .btn { min-height: 44px; }
+  .jb-active-chip { min-height: 44px; padding: 6px 12px 6px 14px; }
+
+  .job-card { padding: 16px; gap: 10px; }
+  .job-card-head { gap: 12px; }
+  .job-title { font-size: 16px; }
+  .job-apply { min-height: 44px; }
+  .job-actions .btn { flex: 1; justify-content: center; min-height: 44px; }
+
+  .jb-pager { gap: 10px; margin-top: 18px; }
+  .jb-pager .btn { flex: 1; justify-content: center; min-height: 44px; }
+
+  /* Admin: the posting form. Cancel drops under the copy rather than
+     squeezing it, and Post fills the foot. */
+  .jb-post-head { flex-wrap: wrap; }
+  .jb-post-head > .btn { min-height: 44px; }
+  .jb form.panel > .row > .btn { width: 100%; justify-content: center; min-height: 44px; }
+}
+
+/* The filter menus are portalled by Radix, so they sit outside .jb: these
+   are sized by their own class. Each option is a 44px row on a phone, and
+   the menu never runs wider than the screen. */
+@media (max-width: 640px) {
+  .jb-pop { width: min(280px, calc(100vw - 24px)); max-height: min(380px, 60vh); }
+  .jb-opt { min-height: 44px; padding: 10px; }
+  .jb-pop-head { padding: 8px 10px 10px; }
+  .jb-pop-clear { padding: 6px 4px; min-height: 32px; }
+}

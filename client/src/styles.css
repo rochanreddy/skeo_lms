@@ -2998,7 +2998,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 @media (max-width: 560px) {
   /* Four triggers no longer fit on a line. Two by two, rather than letting
      them wrap into a ragged row and a stretched leftover. */
-  .jb-bar { display: grid; grid-template-columns: 1fr 1fr; }
+  .jb-bar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .jb-bar > * { justify-content: center; }
   .jb-bar > .btn { grid-column: 1 / -1; }
 
