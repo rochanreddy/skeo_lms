@@ -12,4 +12,7 @@ const libraryItemSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// The library is listed newest-first and nothing else.
+libraryItemSchema.index({ createdAt: -1 });
+
 export const LibraryItem = mongoose.model('LibraryItem', libraryItemSchema, 'skeo_library');

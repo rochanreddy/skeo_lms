@@ -34,4 +34,9 @@ const provisionedOrderSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// hasPaidAccess() falls back to this on sign-in for the buyer whose batch did
+// not exist yet. orderId is unique and status is indexed, but neither helps a
+// lookup by user.
+provisionedOrderSchema.index({ userId: 1, status: 1 });
+
 export const ProvisionedOrder = mongoose.model('ProvisionedOrder', provisionedOrderSchema, 'skeo_provisioned_orders');

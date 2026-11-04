@@ -56,4 +56,7 @@ const certificateSchema = new mongoose.Schema(
 // failed — and it must not mint a second code for someone who already has one.
 certificateSchema.index({ studentId: 1, programId: 1, batchId: 1 }, { unique: true });
 
+// A student's own credentials, newest first.
+certificateSchema.index({ studentId: 1, issuedAt: -1 });
+
 export const Certificate = mongoose.model('Certificate', certificateSchema, 'skeo_certificates');

@@ -19,4 +19,9 @@ const notificationSchema = new mongoose.Schema(
 // index and stops at 30.
 notificationSchema.index({ userId: 1, createdAt: -1 });
 
+// The unread badge counts with this one. The two single-field indexes could
+// only narrow to one side or the other, so the count then had to look at every
+// one of the user's notifications -- and the bell asks for it every 20 seconds.
+notificationSchema.index({ userId: 1, read: 1 });
+
 export const Notification = mongoose.model('Notification', notificationSchema, 'skeo_notifications');

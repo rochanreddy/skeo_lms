@@ -75,4 +75,7 @@ const programSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// /programs is the most-requested endpoint in the app, and always newest-first.
+programSchema.index({ createdAt: -1 });
+
 export const Program = mongoose.model('Program', programSchema, 'skeo_programs');

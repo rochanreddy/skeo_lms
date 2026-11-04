@@ -57,6 +57,11 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// The admin student list: filtered by role, newest first. `role` alone was
+// indexed, which narrowed the scan but still left every student document to be
+// sorted in memory.
+userSchema.index({ role: 1, createdAt: -1 });
+
 userSchema.methods.toPublic = function toPublic() {
   return {
     id: this._id.toString(),

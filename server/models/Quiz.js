@@ -29,6 +29,11 @@ const quizSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// The batch gradebook and the per-module lesson gates, which are the two ways
+// quizzes are ever listed.
+quizSchema.index({ batchId: 1, createdAt: -1 });
+quizSchema.index({ programId: 1, moduleId: 1 });
+
 // Student-facing shape: never leaks the correct answers.
 quizSchema.methods.forStudent = function forStudent() {
   return {

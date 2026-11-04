@@ -29,4 +29,10 @@ const assignmentSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Both shapes the lists come in: newest-first for the board, due-date order
+// for a student's schedule and for ⌘K. The leading batchId also serves the
+// plain `find({ batchId })` and `find({ batchId: { $in } })` filters.
+assignmentSchema.index({ batchId: 1, createdAt: -1 });
+assignmentSchema.index({ batchId: 1, dueDate: 1 });
+
 export const Assignment = mongoose.model('Assignment', assignmentSchema, 'skeo_assignments');

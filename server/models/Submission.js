@@ -52,4 +52,10 @@ const submissionSchema = new mongoose.Schema(
 // One submission per student per assignment (re-submitting updates it).
 submissionSchema.index({ assignmentId: 1, studentId: 1 }, { unique: true });
 
+// "My submissions, for these assignments" -- /assignments?scope=mine on every
+// student home and Learning load, and the admin student overview. The unique
+// index above is the wrong way round for it: that one is keyed by assignment,
+// this one by the student asking.
+submissionSchema.index({ studentId: 1, isDeleted: 1, assignmentId: 1 });
+
 export const Submission = mongoose.model('Submission', submissionSchema, 'skeo_submissions');
