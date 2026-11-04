@@ -1643,7 +1643,7 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 
 /* Tablet: tighten dense multi-column layouts. */
 @media (max-width: 1024px) {
-  .main { padding: 26px 22px; }
+  .main { padding: 26px 22px 120px; }
   .home-row, .home-row-2 { grid-template-columns: 1fr; }
   .tiles { grid-template-columns: repeat(2, 1fr); }
 }

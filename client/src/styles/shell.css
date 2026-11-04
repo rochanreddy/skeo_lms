@@ -1,0 +1,74 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHELL — the app frame and the global primitives on a phone
+
+   Loaded right after styles.css (see main.jsx), unlayered like it, so a rule
+   here with the same selector wins by source order and nothing in styles.css
+   has to move. Everything in this file is about the shell (topbar, dock,
+   search, panels over the page) or about a primitive every page shares
+   (.main, .panel, .btn, .tabs, .stats…). Page-specific rules do not belong
+   here — they live with their page.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* A badge is one label. Letting it break mid-word turned "SUBMITTED" into two
+   lines in any card narrower than its row. */
+.badge { white-space: nowrap; }
+
+/* ── Phones: the primitives give up size, not shape ─────────────────────────
+   A 390px screen with 34px of padding each side left 322px for the page.
+   16px is the system gutter; the notch insets win where they are larger. */
+@media (max-width: 640px) {
+  .main {
+    padding-top: 18px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  /* Type: the display sizes were set for a 1440px measure. */
+  h1 { font-size: 27px; letter-spacing: -0.025em; }
+  .display { font-size: 32px; }
+  .serif-lead { font-size: 20.5px; line-height: 1.4; }
+  .page-head { flex-wrap: wrap; margin-bottom: 20px; }
+  .page-head p { font-size: 14.5px; }
+
+  /* Surfaces: a card on a phone is nearly the screen, so its padding is
+     margin twice over. */
+  .panel { padding: 16px; }
+  .stat { padding: 16px 18px; }
+  .stat::before { left: 18px; }
+  .stat-value { font-size: 30px; }
+  .empty { padding: 24px 16px; }
+  .empty-state { min-height: 160px; padding: 28px 16px; }
+
+  /* Figures: two a row from here down, not just under 560px — between the two
+     breakpoints .stats was still four columns of 80px each. */
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .tiles { gap: 12px; }
+
+  /* Rows: every child may shrink below its content, so a long title truncates
+     instead of pushing its buttons off the screen. */
+  .row { gap: 10px; }
+  .list-row > * { min-width: 0; }
+  .list-row { gap: 10px; }
+
+  /* Tabs scroll as a strip (styles.css); a trailing gutter so the last tab
+     can be scrolled fully into view past the edge. */
+  .tabs::after { content: ''; flex: none; width: 4px; }
+}
+
+/* Touch: the smallest reliable target is 44px. Buttons grow in height only,
+   so their rows and widths read the same as on a desktop. */
+@media (max-width: 640px) and (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn.sm { min-height: 40px; }
+}
+
+/* ── The dock on a narrow phone ──────────────────────────────────────────────
+   Five slots in 300px is 60px each. The labels keep their words — an icon on
+   its own was what made the dock unreadable in the first place — and give up
+   half a point and their tracking instead. The featured tab's label may run
+   a pixel past its slot (styles.css lets it); the others ellipsise. */
+@media (max-width: 360px) {
+  .dock { left: 8px; right: 8px; padding: 4px; }
+  .dock-item { padding-left: 1px; padding-right: 1px; gap: 4px; }
+  .dock-label { font-size: 10px; letter-spacing: -0.01em; }
+}
