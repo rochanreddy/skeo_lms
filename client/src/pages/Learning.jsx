@@ -745,6 +745,25 @@ function Content() {
 
                   <ChipRow media={topic ? mediaOf(topic) : page.media} subtitle={topic ? topic.title : page.crumb} onOpen={setViewer} />
 
+                </div>
+
+                {/* Phones only: About and the list share the space under the
+                    player. Without any text there is nothing to switch to. */}
+                {hasAbout && (
+                  <div className="cp-seg" role="tablist" aria-label="Lesson view">
+                    <button type="button" role="tab" aria-selected={mobileTab === 'about'} onClick={() => setMobileTab('about')}>This lesson</button>
+                    <button type="button" role="tab" aria-selected={mobileTab === 'lessons'} onClick={() => setMobileTab('lessons')}>All lessons <span className="cp-seg-n">{flat.length}</span></button>
+                  </div>
+                )}
+
+                {/* The lesson's own notes, then — and only then — what comes
+                    after it. Up next above the notes read as their heading. */}
+                <div className={`cp-after ${hasAbout && mobileTab !== 'about' ? 'phone-hide' : ''}`}>
+                  {hasAbout ? (
+                    <div className="cp-body"><Markdown text={bodyText} /></div>
+                  ) : topic && !hasVideo ? (
+                    <p className="cp-empty">Nothing has been added to this lesson yet. Check back soon.</p>
+                  ) : null}
                   {/* Up next — so finishing a lesson never means hunting the
                       list for the one after it. Lit once this one is done. */}
                   {topic && (next && !nextLocked ? (
@@ -780,21 +799,6 @@ function Content() {
                     </div>
                   ) : null)}
                 </div>
-
-                {/* Phones only: About and the list share the space under the
-                    player. Without any text there is nothing to switch to. */}
-                {hasAbout && (
-                  <div className="cp-seg" role="tablist" aria-label="Lesson view">
-                    <button type="button" role="tab" aria-selected={mobileTab === 'about'} onClick={() => setMobileTab('about')}>About</button>
-                    <button type="button" role="tab" aria-selected={mobileTab === 'lessons'} onClick={() => setMobileTab('lessons')}>Lessons <span className="cp-seg-n">{flat.length}</span></button>
-                  </div>
-                )}
-
-                {hasAbout ? (
-                  <div className={`cp-body ${mobileTab !== 'about' ? 'phone-hide' : ''}`}><Markdown text={bodyText} /></div>
-                ) : topic && !hasVideo ? (
-                  <p className="cp-empty">Nothing has been added to this lesson yet. Check back soon.</p>
-                ) : null}
               </>
             ) : (
               /* Nothing open — only reachable by folding a page away, since

@@ -42,7 +42,8 @@
 .cp-chip:hover { border-color: var(--purple-line); background: var(--purple-soft); color: var(--purple); }
 
 /* Up next: quiet while the lesson is in progress, lit once it's marked done. */
-.cp-next { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); box-shadow: var(--shadow); transition: background .2s, border-color .2s; }
+.cp-after { min-width: 0; }
+.cp-next { display: flex; align-items: center; gap: 14px; margin-top: 22px; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); box-shadow: var(--shadow); transition: background .2s, border-color .2s; }
 .cp-next.lit { border-color: var(--purple-line); background: var(--purple-soft); box-shadow: none; }
 .cp-next-icon { flex: none; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--purple-soft); color: var(--purple); }
 .cp-next.lit .cp-next-icon { background: var(--card); }
