@@ -2,11 +2,27 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { api, getToken, setToken } from './api.js';
 import { navFor, extraRoutesFor } from './nav.jsx';
-import AppShell from './components/AppShell.jsx';
 import PwaPrompts from './components/PwaPrompts.jsx';
 import SkeoWordmark from './components/SkeoWordmark.jsx';
 import Login from './pages/Login.jsx';
 import { forgetDevice } from './pwa.js';
+
+// The signed-in frame — topbar, dock, notification bell, avatar menu, ⌘K entry
+// point. Nobody signed out can see any of it, so it does not belong in the
+// bundle a first-time visitor downloads to reach the sign-in screen.
+//
+// Prefetched below for the people who DO need it, so splitting it out costs
+// them nothing: the chunk is fetched while /me is in flight rather than after
+// it answers, and /me is a cross-origin round trip while this is a same-origin
+// file the service worker has usually already precached. The screen shown
+// during that wait is AppSkeleton either way — the same one /me already waits
+// behind — so there is no new loading state anywhere.
+const AppShell = lazy(() => import('./components/AppShell.jsx'));
+
+// Read once, at module scope, before React starts: the answer cannot change
+// between here and the first render, and starting the fetch this early is the
+// whole point.
+if (getToken()) import('./components/AppShell.jsx');
 
 // Login stays eager — it's the first paint for anyone signed out. The other
 // three are one-off detours (sign-up, a forced reset, a blocked account), so
@@ -124,7 +140,9 @@ export default function App() {
       <Route path="/install" element={<Suspense fallback={<AppSkeleton />}><Install /></Suspense>} />
       <Route
         path="/app"
-        element={user ? <AppShell user={user} setUser={setUser} logout={logout} /> : <Navigate to="/login" />}
+        element={user
+          ? <Suspense fallback={<AppSkeleton />}><AppShell user={user} setUser={setUser} logout={logout} /></Suspense>
+          : <Navigate to="/login" />}
       >
         {tabs.map((t) => (
           <Route key={t.path} index={t.path === ''} path={t.path || undefined} element={<t.Component />} />
