@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { issueCertificate, qrDataUri, verifyUrl } from '../utils/certificates.js';
 import { requireAuth } from '../middleware/auth.js';
 import { Progress } from '../models/Progress.js';
+import { Batch } from '../models/Batch.js';
 import { Program, TOPIC_COUNT } from '../models/Program.js';
 
 const router = Router();
@@ -27,11 +28,35 @@ async function programWithTotal(programId) {
   return p || null;
 }
 
-const EMPTY = { completedTopics: [], total: 0, completed: 0, pct: 0, certificateIssuedAt: null };
+const EMPTY = { programId: null, completedTopics: [], total: 0, completed: 0, pct: 0, certificateIssuedAt: null };
 
-// GET /api/skeo/progress/me?programId= — the student's completion for one program.
+/* The programme a student is "on": the one their newest cohort teaches.
+ *
+ * Here so the caller does not have to make two trips to find out. The student
+ * home needs this progress to draw its very first card, but it could not ask
+ * for it until /batches had come back and told it which programme to ask
+ * about -- so the request went out one full round trip behind the other five,
+ * and on a phone in India talking to Singapore that is the slowest card on
+ * the screen by a wide margin, every single load.
+ *
+ * Same rule the client uses when it picks which programme to display (the
+ * first batch of /batches, which is sorted newest-first), so the two agree.
+ * The answer carries its programId back so the client can confirm that rather
+ * than assume it.
+ */
+async function primaryProgramId(user) {
+  const [b] = await Batch.find({ studentIds: user._id })
+    .sort({ createdAt: -1 })
+    .select('programId')
+    .limit(1)
+    .lean();
+  return b?.programId ? String(b.programId) : null;
+}
+
+// GET /api/skeo/progress/me?programId= — the student's completion for one
+// program. With no programId, the programme their newest cohort teaches.
 router.get('/me', requireAuth, async (req, res) => {
-  const { programId } = req.query;
+  const programId = req.query.programId || (await primaryProgramId(req.user));
   if (!programId) return res.json(EMPTY);
   // A malformed id is a 404, as it was when findById() raised a CastError for
   // it -- aggregate() will not cast, so the check is explicit now.
@@ -46,7 +71,7 @@ router.get('/me', requireAuth, async (req, res) => {
   const total = program.total || 0;
   const completedTopics = p?.completedTopics || [];
   const completed = Math.min(completedTopics.length, total);
-  res.json({ completedTopics, total, completed, pct: total ? Math.round((completed / total) * 100) : 0, certificateIssuedAt: p?.certificateIssuedAt || null });
+  res.json({ programId: String(programId), completedTopics, total, completed, pct: total ? Math.round((completed / total) * 100) : 0, certificateIssuedAt: p?.certificateIssuedAt || null });
 });
 
 // POST /api/skeo/progress/toggle { programId, topicId } — mark a lesson (in)complete.

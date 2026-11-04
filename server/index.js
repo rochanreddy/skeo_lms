@@ -53,6 +53,23 @@ app.use(
       if (!origin || allowedOrigins.has(normalizeOrigin(origin))) return cb(null, true);
       return cb(null, false);
     },
+    /* Let the browser remember the preflight.
+     *
+     * Every request this API receives carries an Authorization header, which
+     * makes it a request the browser will not send until it has first asked
+     * OPTIONS whether it may -- a whole extra round trip, and the first thing
+     * that happens on every cold load, ahead of /me. Without maxAge the
+     * browser's own default applies, which in Chrome is five seconds: so a
+     * student reading a lesson for half a minute and then tapping a tab pays
+     * for another preflight before their data can even be requested.
+     *
+     * 7200 is as long as it is worth asking for -- Chrome caps the preflight
+     * cache at two hours whatever is sent. The answer being cached is "this
+     * origin may call us", which is exactly as true in two hours as it is
+     * now; it is not an authorisation decision, and requireAuth re-checks
+     * that against the live user record on every single request regardless.
+     */
+    maxAge: 7200,
   }),
 );
 

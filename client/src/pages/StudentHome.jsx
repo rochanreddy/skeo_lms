@@ -38,7 +38,16 @@ export default function StudentHome() {
       api('/assignments?scope=mine').catch(() => ({ assignments: [] })),
       api('/announcements').catch(() => ({ announcements: [] })),
       api('/notifications').catch(() => ({ items: [] })),
-    ]).then(async ([bd, pd, ad, nd, nt]) => {
+      // Progress goes out with the rest, not behind them. It is keyed on a
+      // programme id this screen does not know until /batches answers — so
+      // asking for it used to mean a second round trip, which on a phone in
+      // India talking to Singapore made the Progress card, the first thing on
+      // the screen, reliably the last thing to fill in. Asked with no id, the
+      // server resolves the programme the student's newest cohort teaches —
+      // the same rule used below — and says which one it picked, so the answer
+      // can be checked rather than assumed.
+      api('/progress/me').catch(() => null),
+    ]).then(async ([bd, pd, ad, nd, nt, pg]) => {
       if (!alive) return;
       setAssignments(ad.assignments || []);
       setAnnouncements(nd.announcements || []);
@@ -49,13 +58,15 @@ export default function StudentHome() {
 
       // The list usually carries the curriculum tree already; only pay for the
       // detail request when it doesn't, since the Path is built from modules.
-      // Progress is keyed on the programme id, which is known here — so it
-      // goes out beside the tree instead of a round trip behind it.
       if (p) {
-        const [full] = await Promise.all([
-          p.modules?.length ? p : api(`/programs/${p._id}`).then((d) => d.program).catch(() => p),
-          api(`/progress/me?programId=${p._id}`).then((d) => { if (alive) setProgress(d); }).catch(() => {}),
-        ]);
+        if (pg && String(pg.programId) === String(p._id)) {
+          setProgress(pg);
+        } else {
+          // The two disagreed — the fallback above picked a different
+          // programme, or this student has no cohort. Ask again, by id.
+          api(`/progress/me?programId=${p._id}`).then((d) => { if (alive) setProgress(d); }).catch(() => {});
+        }
+        const full = p.modules?.length ? p : await api(`/programs/${p._id}`).then((d) => d.program).catch(() => p);
         if (!alive) return;
         setProgram(full);
       }
