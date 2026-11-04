@@ -72,3 +72,36 @@
   .dock-item { padding-left: 1px; padding-right: 1px; gap: 4px; }
   .dock-label { font-size: 10px; letter-spacing: -0.01em; }
 }
+
+/* ── Topbar on a phone ───────────────────────────────────────────────────────
+   styles.css already collapses the search field to its icon and hides the
+   name and role beside the avatar under 900px. What is left is four controls
+   at the right; here each becomes a 40px target without changing its look —
+   the padding grows, the icon stays where it was. */
+@media (max-width: 900px) {
+  .topbar { gap: 6px; }
+  .search-trigger { width: 40px; height: 40px; padding: 0; justify-content: center; }
+  .search-trigger svg { flex: none; }
+  .notif-btn { padding: 10px; }
+  .notif-badge { top: 3px; right: 3px; }
+  /* The 30px track keeps its size; the button around it grows to 40px. */
+  .theme-toggle { padding: 5px 0; }
+  .who-btn { min-height: 40px; }
+}
+
+@media (max-width: 640px) {
+  /* Both panels hang from the top bar. Radix reports how much room there is
+     below the trigger (collision padding included), so a long list scrolls
+     inside the panel rather than running under the dock or off the screen. */
+  .notif-menu {
+    max-height: min(70vh, var(--radix-popover-content-available-height, 70vh));
+    overscroll-behavior: contain;
+  }
+  .notif-item { min-height: 44px; }
+  .who-menu {
+    width: min(268px, calc(100vw - 24px));
+    max-height: var(--radix-dropdown-menu-content-available-height, 80vh);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .who-menu-item { min-height: 44px; }
+}
