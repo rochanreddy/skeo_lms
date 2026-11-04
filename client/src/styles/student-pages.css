@@ -186,3 +186,23 @@
 .blocked-page { padding: 24px 16px; }
 .blocked-page .blocked-panel { width: 100%; }
 .blocked-page .btn { min-height: 44px; }
+
+/* ── /install and /verify ───────────────────────────────────────────────────
+   Both are one card, already phone-first. The QR row on /install (shown on a
+   laptop, or a narrow window) wraps rather than squeezing its caption. */
+@media (max-width: 480px) {
+  .install-head { gap: 14px; }
+  .install-qr { flex-wrap: wrap; }
+}
+
+/* ── VdoCipher library (admin picker) ───────────────────────────────────────
+   The dialog was full-bleed on a phone with no height limit (styles.css now
+   gives it a gutter and a scroll). Here: tighter padding, and the rows and
+   buttons are tap targets. */
+@media (max-width: 640px) {
+  .vdo-dialog { padding: 18px 16px; }
+  .vdo-upload { padding: 12px; }
+  .vdo-upload .row .btn { min-height: 44px; }
+  .vdo-item { min-height: 56px; }
+  .vdo-list { max-height: 50vh; }
+}

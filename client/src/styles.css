@@ -991,6 +991,7 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .verify-fact-value.mono { font-family: Consolas, Menlo, monospace; font-weight: 500; font-size: 13px; letter-spacing: .03em; overflow-wrap: normal; }
 
 @media (max-width: 480px) {
+  .verify { padding: 20px 16px; }
   .verify-card { padding: 24px 20px 20px; }
   /* Stacked, because a long name and its label side by side on a phone
      leaves the value squeezed into a column two words wide. */
@@ -2496,7 +2497,7 @@ a.sh-ad:hover { border-color: var(--purple); box-shadow: var(--shadow); transfor
 .vdo-loading .muted { color: var(--ink-2); background: rgba(16, 16, 20, .6); padding: 6px 12px; border-radius: 999px; }
 
 /* The admin picker: upload strip on top, searchable library below. */
-.vdo-dialog { max-width: 720px; }
+.vdo-dialog { width: calc(100% - 24px); max-width: 720px; max-height: calc(100vh - 24px); overflow-y: auto; }
 .vdo-upload { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 14px 0; }
 .vdo-title { flex: 1; min-width: 180px; }
 .vdo-filename { font-size: 12px; margin-top: 8px; }
