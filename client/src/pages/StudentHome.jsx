@@ -214,8 +214,8 @@ export default function StudentHome() {
               <span className="sh-next-icon"><LessonIcon type={nextLesson.topic.contentType} size={22} /></span>
               <div className="sh-next-body">
                 <div className="sh-next-eyebrow">Next for you</div>
-                <h2 className="sh-next-title">{nextLesson.topic.title}</h2>
-                <div className="sh-next-meta">{nextLesson.station.title} · lesson {doneTopics + 1} of {totalTopics}</div>
+                <h2 className="sh-next-title">{shortLesson(nextLesson.topic.title)}</h2>
+                <div className="sh-next-meta">Module {stations.indexOf(nextLesson.station) + 1} · Lesson {doneTopics + 1} of {totalTopics}</div>
               </div>
               <button className="btn" onClick={() => navigate('/app/learning')}>Continue →</button>
             </div>
@@ -388,6 +388,9 @@ function SecHead({ n, title, children }) {
 }
 
 // ── formatting ────────────────────────────────────────────────────────────
+// "1.2 · Tokens, Context Windows & Why Claude Forgets" → the words only. The
+// card has one short line for a pointer, and the number is said by the meta.
+const shortLesson = (t) => (t || '').replace(/^\s*[A-Za-z]?\d+(?:\.\d+)*\s*[·:.\-–—]\s*/, '').trim() || t;
 const fmtDate = (d) => new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short' });
 
 // Graded → Submitted → Overdue → To do, each with its own dot colour.
