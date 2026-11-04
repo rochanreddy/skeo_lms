@@ -164,6 +164,9 @@ export default function CommandPalette({ open, onClose, tabs, user, onLogout }) 
             onKeyDown={onKeyDown}
           />
           {q && <button className="cmd-clear" onMouseDown={(e) => e.preventDefault()} onClick={() => { setQ(''); inputRef.current?.focus(); }} aria-label="Clear">✕</button>}
+          {/* Phones only (styles/shell.css): the sheet fills the screen, so there
+              is no scrim to tap and the footer hint is hidden. */}
+          <button type="button" className="cmd-close" onClick={onClose}>Cancel</button>
         </div>
 
         <div className="cmd-list" ref={listRef}>
