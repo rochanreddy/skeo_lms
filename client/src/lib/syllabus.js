@@ -69,3 +69,12 @@ export function writeLastLesson(programId, topicId) {
   if (!programId || !topicId) return;
   try { window.localStorage.setItem(lastKey(programId), String(topicId)); } catch { /* ignore */ }
 }
+
+// "1.2 · Tokens, Context Windows & Why Claude Forgets" → the words only, for
+// the places that point at a lesson rather than list it: the number is said
+// by the line underneath ("Module 1 · Lesson 2 of 54"), so saying it twice
+// just costs a phone its one short line.
+export function lessonWords(title) {
+  const t = (title || '').replace(/^\s*[A-Za-z]?\d+(?:\.\d+)*\s*[·:.\-–—]\s*/, '').trim();
+  return t || title || '';
+}

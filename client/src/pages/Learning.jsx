@@ -8,7 +8,7 @@ import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
-import { mediaOf, mediaFrom, stripParentContext, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
+import { mediaOf, mediaFrom, stripParentContext, lessonWords, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
 import CertificateModal from '../components/CertificateModal.jsx';
 
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
@@ -752,7 +752,7 @@ function Content() {
                       <span className="cp-next-icon"><LessonIcon type={next.topic.contentType} size={16} /></span>
                       <div className="cp-next-text">
                         <div className="cp-next-eyebrow">Up next</div>
-                        <div className="cp-next-title">{next.topic.title}</div>
+                        <div className="cp-next-title">{lessonWords(next.topic.title)}</div>
                         {String(next.modId) !== String(current.modId) && <div className="cp-next-crumb">{next.mod}</div>}
                       </div>
                       <button className={`btn sm ${isDone ? '' : 'ghost'}`} onClick={() => selectTopic(next)}>Continue →</button>
@@ -807,9 +807,8 @@ function Content() {
                   <div className="cp-resume-row">
                     <span className="cp-resume-icon"><LessonIcon type={resume.f.topic.contentType} size={22} /></span>
                     <div className="cp-resume-text">
-                      <div className="cp-resume-crumb">{resume.f.mod}</div>
-                      <div className="cp-resume-title">{resume.f.topic.title}</div>
-                      <div className="cp-resume-pos">Lesson {resume.idx + 1} of {flat.length}</div>
+                      <div className="cp-resume-crumb">Module {modIndexOf(resume.f.modId) + 1} · Lesson {resume.idx + 1} of {flat.length}</div>
+                      <div className="cp-resume-title">{lessonWords(resume.f.topic.title)}</div>
                     </div>
                   </div>
                   <button className="btn cp-resume-btn" onClick={() => selectTopic(resume.f)}>
