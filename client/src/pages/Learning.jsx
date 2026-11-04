@@ -1047,7 +1047,7 @@ function AssignmentCard({ a, onChange }) {
           <div className="assign-meta">
             {start && <span className="assign-meta-item"><LineIcon name="calendar" size={13} /> Opens {start}</span>}
             {due && (
-              <span className={`assign-meta-item ${overdue && !sub ? 'overdue' : ''}`}>
+              <span className="assign-meta-item">
                 <LineIcon name="clock" size={13} /> Due {due}
               </span>
             )}
