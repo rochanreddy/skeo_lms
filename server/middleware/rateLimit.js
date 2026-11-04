@@ -6,7 +6,7 @@
 // runaway clients, not to be a quota system. If this service is ever scaled
 // past one instance, move the counters to Redis and keep these signatures.
 
-import { verifyToken } from '../utils/token.js';
+import { accessPayload } from '../utils/token.js';
 
 const buckets = new Map();
 
@@ -69,14 +69,14 @@ export const clear = (key) => buckets.delete(key);
  * does that, against the live user record. Falling back to the IP covers
  * everything unauthenticated, which is exactly where per-IP counting still
  * earns its place.
+ *
+ * accessPayload() caches the verification on the request, so requireAuth gets
+ * it for free rather than running the same HMAC over again.
  */
 function identify(req) {
   if (req.user?._id) return `u:${req.user._id}`;
-  const header = req.headers.authorization || '';
-  if (header.startsWith('Bearer ')) {
-    const payload = verifyToken(header.slice(7));
-    if (payload?.sub && payload.typ === 'access') return `u:${payload.sub}`;
-  }
+  const payload = accessPayload(req);
+  if (payload) return `u:${payload.sub}`;
   return `ip:${req.ip}`;
 }
 

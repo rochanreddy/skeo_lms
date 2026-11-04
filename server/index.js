@@ -88,7 +88,25 @@ process.on('uncaughtException', (err) => {
 async function start() {
   try {
     await connectDb();
-    app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
+    const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
+
+    /* Keep connections open longer than the proxy in front of us does.
+     *
+     * Node closes an idle keep-alive connection after 5 seconds. The hosting
+     * proxy holds its side of that connection open for longer, so it will
+     * sometimes send a request down a socket this process has just decided to
+     * close -- which the client sees as a dropped connection, and which the
+     * frontend's retry then has to paper over. Outliving the proxy's own idle
+     * timeout hands the decision to the proxy, which knows when it is done.
+     *
+     * It also means a student's next request reuses the open connection rather
+     * than paying for a TCP handshake and a TLS handshake again, which on a
+     * phone in India talking to Singapore is the difference between one round
+     * trip and three. headersTimeout must stay above keepAliveTimeout or the
+     * header-read deadline fires first and undoes it.
+     */
+    server.keepAliveTimeout = 65_000;
+    server.headersTimeout = 66_000;
   } catch (err) {
     console.error('Failed to start LMS server:', err);
     process.exit(1);

@@ -8,7 +8,25 @@ const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/skeo';
 
 export async function connectDb() {
   mongoose.set('strictQuery', true);
-  await mongoose.connect(mongoUri);
+  await mongoose.connect(mongoUri, {
+    /* A pool sized for the box, not for the default.
+     *
+     * The driver opens up to 100 sockets by default. This service runs on one
+     * small instance with a single event loop: it cannot usefully have a
+     * hundred queries in flight, and every idle socket in the pool is one more
+     * connection Atlas counts against the cluster's limit -- a limit this
+     * shares with the second pool in jobsDb() below. Twenty is well above what
+     * one event loop can keep busy, and minPoolSize keeps a few warm so the
+     * first request after a quiet spell does not wait for a TCP and TLS
+     * handshake to Singapore before it can ask anything.
+     */
+    maxPoolSize: 20,
+    minPoolSize: 2,
+    // Fail a query rather than hang a request for the default 30 seconds. A
+    // page that says something went wrong beats one that never answers.
+    serverSelectionTimeoutMS: 10_000,
+    socketTimeoutMS: 45_000,
+  });
   console.log('LMS DB connected →', mongoose.connection.name);
 }
 

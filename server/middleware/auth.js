@@ -1,5 +1,5 @@
 import { User, ROLES } from '../models/User.js';
-import { verifyToken } from '../utils/token.js';
+import { accessPayload } from '../utils/token.js';
 
 // ── The user cache ────────────────────────────────────────────────────────
 //
@@ -54,11 +54,10 @@ async function loadUser(id) {
 
 /** Reads the Bearer token, loads the user, or null. */
 async function getUser(req) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) return null;
-  const payload = verifyToken(token);
-  if (!payload?.sub || payload.typ !== 'access') return null;
+  // accessPayload() memoises the verification on the request -- the rate
+  // limiter ahead of this already needed the same answer.
+  const payload = accessPayload(req);
+  if (!payload) return null;
 
   const doc = await loadUser(payload.sub);
   // Hydrate rather than hand back the cached object: routes expect a real
