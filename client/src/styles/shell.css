@@ -134,3 +134,18 @@
   }
   .cmd-close:focus-visible { outline: none; box-shadow: var(--ring); }
 }
+
+/* ── The file reader on a phone ─────────────────────────────────────────────
+   styles.css makes it full-bleed under 720px, at 100dvh. The head clears the
+   notch, the close button and the reader's toolbar buttons grow to thumb
+   size, and the find box takes its whole row at a size iOS will not zoom. */
+@media (max-width: 720px) {
+  .fv-head { padding: max(10px, env(safe-area-inset-top)) 12px 10px 16px; gap: 10px; }
+  .fv-title { font-size: 16px; }
+  .fv-escape { font-size: 12px; }
+  .fv-close { width: 40px; height: 40px; }
+  .pdfr-btn { width: 36px; height: 36px; }
+  .pdfr-pagebox { padding: 8px; }
+  .pdfr-input { max-width: none; padding: 9px 12px; font-size: 16px; }
+  .pdfr-stage { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+}
