@@ -3,7 +3,7 @@
 // 'skeo:blocked' event.
 export default function Blocked({ message, onLogout }) {
   return (
-    <div className="center">
+    <div className="center blocked-page">
       <div className="panel blocked-panel">
         <div className="blocked-icon">🚫</div>
         <h2>Account blocked</h2>

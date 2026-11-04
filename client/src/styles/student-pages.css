@@ -154,3 +154,35 @@
   .support-page .support-ticket-head { min-height: 44px; }
   .support-page .support-msg-head { flex-wrap: wrap; }
 }
+
+/* ── Signing in, resetting, the plans page ──────────────────────────────────
+   Under 900px the dark hero (and the syllabus drawing with it) is gone and
+   the form stands alone — styles.css. On a phone the card fills the width
+   with a 16px gutter, sits at the top rather than re-centring every time the
+   keyboard opens, and its controls are full tap targets. */
+@media (max-width: 900px) {
+  .auth { min-height: 100dvh; }
+}
+@media (max-width: 640px) {
+  .auth-form-wrap { align-items: flex-start; padding: 36px 16px calc(32px + env(safe-area-inset-bottom)); }
+  .auth-form { max-width: 440px; }
+  .auth-form h1 { font-size: 28px; }
+  .auth-form .btn { min-height: 48px; }
+  .auth .field-with-action input { padding-right: 50px; }
+  .auth .field-action { width: 40px; height: 40px; }
+  .auth .demo-row-btn { min-height: 44px; }
+}
+
+/* ── First login: set your password ─────────────────────────────────────────
+   The panel was a fixed 380px, which is wider than a 360px phone. It now
+   takes the width it is given, up to that. */
+.fpc { padding: 24px 16px; }
+.fpc-panel { width: 100%; max-width: 380px; }
+.fpc-panel h1 { font-size: 24px; }
+.fpc-panel .btn { width: 100%; justify-content: center; min-height: 48px; }
+.fpc-foot { text-align: center; margin: 14px 0 0; }
+
+/* ── Blocked ── */
+.blocked-page { padding: 24px 16px; }
+.blocked-page .blocked-panel { width: 100%; }
+.blocked-page .btn { min-height: 44px; }

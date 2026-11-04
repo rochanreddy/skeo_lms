@@ -22,10 +22,10 @@ export default function ForcePasswordChange({ user, onDone, onLogout }) {
   }
 
   return (
-    <div className="center">
-      <form className="panel" style={{ width: 380 }} onSubmit={submit}>
+    <div className="center fpc">
+      <form className="panel fpc-panel" onSubmit={submit}>
         <div className="eyebrow">First login</div>
-        <h1 style={{ fontSize: 24 }}>Set your password</h1>
+        <h1>Set your password</h1>
         <p className="muted">Welcome, {user.full_name || user.email}. For security, choose your own password before continuing.</p>
         <div className="field" style={{ marginTop: 14 }}>
           <label htmlFor="fpc-new">New password</label>
@@ -36,8 +36,8 @@ export default function ForcePasswordChange({ user, onDone, onLogout }) {
           <input id="fpc-confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required aria-describedby={err ? 'fpc-error' : undefined} />
         </div>
         {err && <div id="fpc-error" className="error auth-error" role="alert">{err}</div>}
-        <button className="btn" style={{ width: '100%', justifyContent: 'center' }} disabled={busy}>{busy ? 'Saving…' : 'Set password & continue'}</button>
-        <p style={{ textAlign: 'center', marginTop: 14 }}>
+        <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Set password & continue'}</button>
+        <p className="fpc-foot">
           <button type="button" className="linklike" onClick={onLogout}>Log out</button>
         </p>
       </form>
