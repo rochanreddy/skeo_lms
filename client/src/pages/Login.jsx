@@ -58,7 +58,7 @@ export default function Login({ onLogin }) {
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
           <h2><span>Build.</span><span>Learn.</span><span>Monetize.</span></h2>
-          <p>A hands-on fellowship where you build real products, learn the craft by shipping them, and turn that portfolio into paid work.</p>
+          <p>skeo is where you learn AI by doing it — lessons, hands-on projects and live masterclasses that leave you with real work to show, a certificate to prove it, and a job board to take it to.</p>
         </div>
         <LoginArt />
       </div>
@@ -97,9 +97,11 @@ export default function Login({ onLogin }) {
           </div>
           {notPurchased && <GetSkeo id="login-error" message={notPurchased} />}
           {err && <div id="login-error" className="error auth-error" role="alert">{err}</div>}
-          <button className="btn" disabled={busy}>{busy ? 'Signing in…' : 'Sign in →'}</button>
-          <p className="auth-alt"><Link to="/forgot">Forgot your password?</Link></p>
-          <p className="auth-alt">New to skeo? <a href={PRICING_URL}>See plans</a></p>
+          <button className="btn auth-submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+          <div className="auth-actions">
+            <Link className="auth-action" to="/forgot">Forgot password?</Link>
+            <a className="auth-action is-strong" href={PRICING_URL}>New to skeo? See plans →</a>
+          </div>
 
           {SHOW_DEMOS && (
             <div className="demo-box">

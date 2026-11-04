@@ -229,3 +229,18 @@
   .vdo-item { min-height: 56px; }
   .vdo-list { max-height: 50vh; }
 }
+
+/* ── Sign in ──
+   One solid button, then the two side roads as quiet buttons of their own on
+   one line — not underlined sentences stacked under it. */
+.auth-form .auth-submit { min-height: 50px; padding: 13px 20px; font-size: 15.5px; font-weight: 700; border-radius: 14px; box-shadow: 0 6px 18px color-mix(in srgb, var(--purple) 28%, transparent); }
+.auth-form .auth-submit:hover { box-shadow: 0 8px 22px color-mix(in srgb, var(--purple) 36%, transparent); }
+.auth-actions { display: flex; gap: 10px; margin-top: 14px; }
+.auth-action {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink-2);
+  font-size: 13.5px; font-weight: 600; text-decoration: none; white-space: nowrap; transition: border-color .12s, background .12s, color .12s;
+}
+.auth-action:hover { border-color: var(--purple-line); background: var(--purple-soft); color: var(--purple); }
+.auth-action.is-strong { color: var(--purple); border-color: var(--purple-line); }
+@media (max-width: 420px) { .auth-actions { flex-direction: column; } }
