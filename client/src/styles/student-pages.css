@@ -96,3 +96,49 @@
   .jb-pop-head { padding: 8px 10px 10px; }
   .jb-pop-clear { padding: 6px 4px; min-height: 32px; }
 }
+
+/* ── Profile ────────────────────────────────────────────────────────────────
+   The hero wraps and the field grids already drop to one column. On a phone
+   the save buttons fill the width, a certificate row's name may break, and
+   "This device" puts its button under its text rather than beside it. */
+.profile-page .cert-row > span:first-child { min-width: 0; }
+.profile-page .cert-row-name,
+.profile-page .cert-row-meta { overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .profile-page .profile-hero { padding: 18px 16px; gap: 18px; }
+  .profile-page .profile-hero-id { min-width: 0; flex-basis: 100%; }
+  .profile-page .profile-hero-name { font-size: 20px; }
+  .profile-page .profile-sections > .row > .btn,
+  .profile-page form.panel > .row > .btn { width: 100%; justify-content: center; min-height: 44px; }
+  .profile-page .cert-row { min-height: 44px; }
+  .profile-page .setting-row { flex-wrap: wrap; gap: 10px 16px; }
+  .profile-page .setting-text { flex: 1 1 100%; }
+  .profile-page .setting-row .btn { width: 100%; justify-content: center; min-height: 44px; }
+}
+
+/* ── The certificate sheet ──────────────────────────────────────────────────
+   The dialog is centred and had no height limit, so on a short phone (or a
+   phone on its side) the actions under the card were off the bottom with no
+   way to reach them. It now scrolls inside the viewport; the dock already
+   steps aside while any dialog is open. */
+@media (max-width: 640px) {
+  .cert {
+    width: calc(100% - 24px);
+    max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px);
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  }
+  .cert-actions { gap: 8px; }
+  .cert-actions .btn { flex: 1; justify-content: center; min-height: 44px; }
+}
+/* The narrowest phones: the card is 270px across inside its frame, which is
+   less than the accreditation row and the foot were drawn for. */
+@media (max-width: 400px) {
+  .cert-inner { padding: 16px 14px 14px; }
+  .cert-head { gap: 10px; }
+  .cert-accred-row { gap: 8px; }
+  .cert-accred-logo { height: 10px; max-width: 48px; }
+  .cert-accred-logo--square { height: 15px; }
+  .cert-name { font-size: 23px; }
+  .cert-foot { flex-wrap: wrap; gap: 8px 14px; }
+}
