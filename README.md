@@ -46,6 +46,35 @@ Optional: `npm run seed:demo` fills a batch with students, a course, and a quiz
 with attempts, so the dashboards have something to show. It needs the admin from
 `npm run seed` to exist first, since the admin owns the demo batch.
 
+### 3. Tests
+`cd server && npm test` runs two different kinds of test together, and the
+second kind needs a world to run against:
+
+- `tests/curriculumMerge.test.js` and `tests/provision.test.js` are pure unit
+  tests. They need nothing and run anywhere.
+- `tests/api.test.js` talks to a **running server over HTTP**, on purpose: what
+  it protects is the whole chain — the auth middleware, the role guard and the
+  error handler together, so that forgetting `requireRole` on a new admin route
+  fails a test. It expects `http://localhost:4200` (override with
+  `TEST_API_URL`) and a database seeded well enough to sign in as both roles.
+
+So before `npm test`, in order:
+
+```bash
+npm run seed                     # the admin
+npm run seed:claude -- --write   # a programme with a curriculum to count
+npm run seed:demo                # the student aarav@demo.skeo.in, a batch, a quiz
+npm run dev                      # leave this running, then npm test elsewhere
+```
+
+It only reads — nothing in `api.test.js` creates, edits or deletes a document —
+but point `MONGODB_URI` at a scratch database rather than anything real.
+
+Driving the built frontend by hand? Use port **5175**. The CORS allowlist is
+`SKEO_APP_URL` plus exactly `http://localhost:5175`, so a `vite preview` on any
+other port has every request refused by the browser, which looks like the API
+being down rather than like a wrong port.
+
 ## Roles
 `student` · `admin` — a user has exactly one. Signup is student-only; admins are
 provisioned by another admin. Access is role-gated end to end: the API rejects
