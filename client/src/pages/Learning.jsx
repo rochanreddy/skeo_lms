@@ -815,8 +815,10 @@ function Content() {
                           const tdone = completed.has(t._id);
                           return (
                             <button key={t._id} className={`cur-topic ${active ? 'active' : ''} ${tdone ? 'done' : ''}`} onClick={() => selectTopic({ topic: t, modId: m._id, chapId: c._id })}>
-                              {/* The dot carries state here exactly as it does on the Path. */}
+                              {/* The dot carries state here exactly as it does on the Path;
+                                  the icon says what kind of lesson it is. */}
                               <span className="cur-tick" />
+                              <span className="cur-topic-kind" aria-hidden="true"><LessonIcon type={t.contentType} size={13} /></span>
                               <span className="cur-topic-title">{t.title}</span>
                             </button>
                           );
