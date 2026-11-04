@@ -37,7 +37,7 @@ export default function Library() {
   const shown = filter === 'All' ? items : items.filter((i) => i.category === filter);
 
   return (
-    <div>
+    <div className="lib-page">
       <div className="page-head">
         <div>
           <div className="eyebrow">Library</div>

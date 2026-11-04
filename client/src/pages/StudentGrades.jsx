@@ -19,7 +19,7 @@ export default function StudentGrades() {
   };
 
   return (
-    <div>
+    <div className="grades-page">
       <div className="page-head">
         <div>
           <div className="eyebrow">Student board</div>

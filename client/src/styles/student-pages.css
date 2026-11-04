@@ -1,0 +1,55 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   STUDENT PAGES — the phone pass
+   Grades, library, masterclasses, job board, profile, support, the auth
+   screens, /install and /verify. Everything here is scoped to a page's own
+   wrapper class (or a class only that page uses) and corrects the desktop
+   rule in styles.css rather than restating it. Loaded straight after
+   styles.css, so a rule here wins over the one it corrects.
+
+   Phone means 640px and under, the same floor the dock uses. Tap targets are
+   44px: the smallest a thumb reliably lands on.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── My grades ──────────────────────────────────────────────────────────────
+   The table is already a stack of cards on a phone (.gt-cards in styles.css);
+   what was missing is a long assessment title or a long feedback note being
+   allowed to break, so neither can push the card past the screen edge. */
+@media (max-width: 640px) {
+  .grades-page .gt-cards td { overflow-wrap: anywhere; }
+  .grades-page .gt-cards td:first-child { line-height: 1.35; }
+}
+
+/* ── Library ────────────────────────────────────────────────────────────────
+   One card to a row on a phone. Titles clamp at two lines and descriptions at
+   three, so a wordy card does not make its row twice the height of the next. */
+.lib-page .lib-card { min-width: 0; }
+.lib-page .lib-card strong,
+.lib-page .lib-card .muted {
+  overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+}
+.lib-page .lib-card strong { -webkit-line-clamp: 2; }
+.lib-page .lib-card .muted { -webkit-line-clamp: 3; }
+
+@media (max-width: 640px) {
+  .lib-page .lib-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  /* The category tabs scroll sideways (styles.css); each is a 44px target. */
+  .lib-page .tab { padding: 13px 0 14px; }
+  /* Admin's add-by-link form: the category menu and the button take the full
+     width under the stacked inputs, instead of two things sharing a line. */
+  .lib-page .inline-form [data-slot='select-trigger'] { width: 100%; }
+  .lib-page .inline-form .btn { width: 100%; justify-content: center; min-height: 44px; }
+}
+
+/* ── Masterclasses ──────────────────────────────────────────────────────────
+   The card is already stacked on a phone; the title clamps and every button
+   is a full 44px, including the admin's Edit and Remove. */
+@media (max-width: 640px) {
+  .webinar-page .panel.webinar { padding: 16px; }
+  .webinar-page .webinar-title {
+    font-size: 17px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .webinar-page .webinar-actions .btn { min-height: 44px; flex: 1 1 auto; }
+  .webinar-page .webinar-form-foot .btn { width: 100%; justify-content: center; min-height: 44px; }
+}
