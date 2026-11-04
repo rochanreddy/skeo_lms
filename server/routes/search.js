@@ -43,7 +43,7 @@ router.get('/', requireAuth, async (req, res) => {
   // Which batches (and therefore which programs) this user can see at all.
   const batchIds = await myBatchIds(user);
   const batches = batchIds.length
-    ? await Batch.find({ _id: { $in: batchIds } }).select('name programId')
+    ? await Batch.find({ _id: { $in: batchIds } }).select('name programId').lean()
     : [];
   const batchName = new Map(batches.map((b) => [String(b._id), b.name]));
   const myProgramIds = new Set(batches.map((b) => b.programId).filter(Boolean).map(String));
@@ -61,7 +61,7 @@ router.get('/', requireAuth, async (req, res) => {
       { 'modules.chapters.topics.title': rx },
       { 'modules.chapters.topics.body': rx },
     ],
-  }).select('title modules published');
+  }).select('title modules published').lean();
 
   for (const p of programs) {
     for (const m of p.modules || []) {
@@ -103,7 +103,8 @@ router.get('/', requireAuth, async (req, res) => {
       $or: [{ title: rx }, { description: rx }],
     })
       .sort({ dueDate: 1 })
-      .limit(8);
+      .limit(8)
+      .lean();
     for (const a of assignments) {
       results.push({
         type: a.type === 'project' ? 'project' : 'assignment',
@@ -119,7 +120,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   // ── Library ──────────────────────────────────────────────────────────────
-  const items = await LibraryItem.find({ $or: [{ title: rx }, { description: rx }] }).limit(6);
+  const items = await LibraryItem.find({ $or: [{ title: rx }, { description: rx }] }).limit(6).lean();
   for (const it of items) {
     results.push({
       type: 'library',
@@ -138,7 +139,8 @@ router.get('/', requireAuth, async (req, res) => {
       $or: [{ fullName: rx }, { email: rx }],
     })
       .select('fullName email role')
-      .limit(6);
+      .limit(6)
+      .lean();
     for (const p of people) {
       results.push({
         type: p.role,

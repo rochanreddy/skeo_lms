@@ -10,7 +10,7 @@ import { Submission } from '../models/Submission.js';
 import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Progress } from '../models/Progress.js';
-import { Program } from '../models/Program.js';
+import { programOutlines } from '../models/Program.js';
 
 const router = Router();
 
@@ -19,9 +19,15 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   const q = {};
   if (req.query.role) q.role = req.query.role;
   if (req.query.search) {
-    const rx = new RegExp(String(req.query.search).trim(), 'i');
+    // Escaped, like the one in routes/search.js. Dropping a raw query string
+    // into a RegExp handed the caller a pattern to run against every user row,
+    // and a pathological one ("(a+)+$" and its relatives) backtracks long
+    // enough to pin the single CPU this service runs on. An admin typing a name
+    // wants those characters matched literally anyway.
+    const rx = new RegExp(String(req.query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     q.$or = [{ email: rx }, { fullName: rx }];
   }
+  // Hydrated on purpose, unlike most reads here — toPublic() is an instance method.
   const users = await User.find(q).sort({ createdAt: -1 }).limit(200);
   res.json({ users: users.map((u) => u.toPublic()) });
 });
@@ -73,18 +79,30 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
   if (!user) return res.status(404).json({ error: 'User not found.' });
   const uid = user._id;
 
-  const batches = await Batch.find({ studentIds: uid })
-    .populate('programId', 'title modules')
-    .sort({ createdAt: -1 });
+  // The roster's own ids are not wanted here, only its size, and the programme
+  // is wanted by title and outline rather than in full -- so neither the other
+  // students nor the curriculum travel. This used to populate `modules`, which
+  // pulled every lesson body of every programme the student is enrolled on.
+  const batches = await Batch.aggregate([
+    { $match: { studentIds: uid } },
+    { $sort: { createdAt: -1 } },
+    {
+      $project: {
+        name: 1, status: 1, programId: 1,
+        studentCount: { $size: { $ifNull: ['$studentIds', []] } },
+      },
+    },
+  ]);
   const batchIds = batches.map((b) => b._id);
 
-  const [assignments, submissions, quizzes, attempts, progress] = await Promise.all([
-    Assignment.find({ batchId: { $in: batchIds } }).sort({ createdAt: -1 }),
+  const [assignments, submissions, quizzes, attempts, progress, outlines] = await Promise.all([
+    Assignment.find({ batchId: { $in: batchIds } }).select('title type batchId dueDate').sort({ createdAt: -1 }).lean(),
     Submission.find({ studentId: uid, isDeleted: false })
-      .select('assignmentId status score feedback updatedAt driveLink url checkStatus errorDetail files locked checkedAt'),
-    Quiz.find({ batchId: { $in: batchIds } }).select('title type batchId'),
-    QuizAttempt.find({ studentId: uid }).select('quizId score total createdAt'),
-    Progress.find({ studentId: uid }).select('programId completedTopics'),
+      .select('assignmentId status score feedback updatedAt driveLink url checkStatus errorDetail files locked checkedAt').lean(),
+    Quiz.find({ batchId: { $in: batchIds } }).select('title type batchId').lean(),
+    QuizAttempt.find({ studentId: uid }).select('quizId score total createdAt').lean(),
+    Progress.find({ studentId: uid }).select('programId completedTopics').lean(),
+    programOutlines(batches.map((b) => b.programId)),
   ]);
 
   const subByAssignment = new Map(submissions.map((s) => [String(s.assignmentId), s]));
@@ -93,21 +111,16 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
   const blockedAssignments = new Set((user.blocked?.assignmentIds || []).map(String));
   const blockedBatches = new Set((user.blocked?.batchIds || []).map(String));
 
-  const lessonTotal = (p) =>
-    (p?.modules || []).reduce((n, m) => n + (m.chapters || []).reduce((k, c) => k + (c.topics || []).length, 0), 0);
-
   const out = {
     user: user.toPublic(),
-    batches: batches.map((b) => {
-      return {
-        id: b._id,
-        name: b.name,
-        status: b.status,
-        program: b.programId?.title || '',
-        studentCount: (b.studentIds || []).length,
-        blocked: blockedBatches.has(String(b._id)),
-      };
-    }),
+    batches: batches.map((b) => ({
+      id: b._id,
+      name: b.name,
+      status: b.status,
+      program: outlines.get(String(b.programId))?.title || '',
+      studentCount: b.studentCount,
+      blocked: blockedBatches.has(String(b._id)),
+    })),
     assignments: user.role === 'student'
       ? assignments.map((a) => {
           const s = subByAssignment.get(String(a._id));
@@ -155,12 +168,12 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
         };
       }),
     progress: progress.map((p) => {
-      const b = batches.find((x) => String(x.programId?._id) === String(p.programId));
-      const total = lessonTotal(b?.programId);
+      const outline = outlines.get(String(p.programId));
+      const total = outline?.total || 0;
       const done = (p.completedTopics || []).length;
       return {
         programId: p.programId,
-        title: b?.programId?.title || 'Program',
+        title: outline?.title || 'Program',
         done,
         total,
         pct: total ? Math.round((Math.min(done, total) / total) * 100) : null,
@@ -175,15 +188,16 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
     const seenPrograms = new Set();
     out.modules = [];
     for (const b of batches) {
-      const prog = b.programId;
-      if (!prog?._id || seenPrograms.has(String(prog._id))) continue;
-      seenPrograms.add(String(prog._id));
-      for (const m of prog.modules || []) {
+      const pid = String(b.programId || '');
+      const outline = outlines.get(pid);
+      if (!outline || seenPrograms.has(pid)) continue;
+      seenPrograms.add(pid);
+      for (const m of outline.modules || []) {
         out.modules.push({
           id: m._id,
           title: m.title,
-          program: prog.title,
-          lessons: (m.chapters || []).reduce((n, c) => n + (c.topics || []).length, 0),
+          program: outline.title,
+          lessons: m.lessons,
           blocked: blockedModules.has(String(m._id)),
         });
       }

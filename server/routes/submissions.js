@@ -48,7 +48,8 @@ router.post('/', requireAuth, async (req, res) => {
   if (isBlockedFromAssignment(req.user, a._id)) return res.status(403).json({ error: 'This item has been blocked for your account.' });
   if (!(await canAccessBatch(req.user, a.batchId))) return res.status(403).json({ error: 'You are not in this batch.' });
 
-  const existing = await Submission.findOne({ assignmentId: a._id, studentId: req.user._id });
+  // Only `locked` is read off it, so only `locked` is fetched.
+  const existing = await Submission.findOne({ assignmentId: a._id, studentId: req.user._id }).select('locked').lean();
   if (existing?.locked) return res.status(403).json({ error: 'This submission has been reviewed and is locked. Ask your administrator to unlock it before resubmitting.' });
   if (isBeforeStart(a)) return res.status(403).json({ error: startsAtMsg(a) });
   if (isPastDue(a)) return res.status(403).json({ error: 'The due date for this assignment has passed.' });
@@ -66,10 +67,10 @@ router.post('/', requireAuth, async (req, res) => {
 // GET /api/skeo/submissions/assignment/:assignmentId — admin lists submissions
 // for one assignment (used by the existing grading UI).
 router.get('/assignment/:assignmentId', requireAuth, async (req, res) => {
-  const a = await Assignment.findById(req.params.assignmentId);
+  const a = await Assignment.findById(req.params.assignmentId).select('_id').lean();
   if (!a) return res.status(404).json({ error: 'Assignment not found.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
-  const submissions = await Submission.find({ assignmentId: a._id, isDeleted: false }).populate('studentId', 'fullName email');
+  const submissions = await Submission.find({ assignmentId: a._id, isDeleted: false }).populate('studentId', 'fullName email').lean();
   res.json({ submissions });
 });
 
@@ -81,10 +82,11 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   if (assignmentId) q.assignmentId = assignmentId;
   if (status) q.checkStatus = status;
 
-  let submissions = await Submission.find(q)
+  const submissions = await Submission.find(q)
     .populate('assignmentId', 'title type batchId dueDate')
     .populate('studentId', 'fullName email')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   res.json({ submissions });
 });
@@ -93,7 +95,8 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
 router.get('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, isDeleted: false })
     .populate('assignmentId', 'title type batchId dueDate')
-    .populate('studentId', 'fullName email');
+    .populate('studentId', 'fullName email')
+    .lean();
   if (!sub) return res.status(404).json({ error: 'Submission not found.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
   res.json({ submission: sub });
@@ -116,8 +119,10 @@ router.patch('/:id', requireAuth, async (req, res) => {
     if (!newAssignment) return res.status(404).json({ error: 'Assignment not found.' });
     if (!(await canAccessBatch(req.user, newAssignment.batchId))) return res.status(403).json({ error: 'You are not in this batch.' });
     if (isPastDue(newAssignment)) return res.status(403).json({ error: 'The due date for that assignment has passed.' });
-    const clash = await Submission.findOne({ assignmentId: newAssignment._id, studentId: req.user._id, isDeleted: false });
-    if (clash) return res.status(409).json({ error: 'You already have a submission for that assignment.' });
+    // Another existence question, so exists() rather than a whole document.
+    if (await Submission.exists({ assignmentId: newAssignment._id, studentId: req.user._id, isDeleted: false })) {
+      return res.status(409).json({ error: 'You already have a submission for that assignment.' });
+    }
     sub.assignmentId = newAssignment._id;
     assignment = newAssignment;
   }

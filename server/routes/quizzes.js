@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
-import { Quiz } from '../models/Quiz.js';
+import { Quiz, QUIZ_STUDENT_FIELDS } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Batch } from '../models/Batch.js';
 import { canAccessBatch, canManageBatch, myBatchIds } from '../utils/access.js';
@@ -25,13 +25,21 @@ router.get('/', requireAuth, async (req, res) => {
   } else {
     filter = { batchId: { $in: await myBatchIds(req.user) } };
   }
-  const quizzes = await Quiz.find(filter).populate('batchId', 'name').sort({ createdAt: -1 });
+  // A student's list is projected to the student shape in the query, so the
+  // answers never travel; an admin's is the whole thing. Either way lean --
+  // both go straight out as JSON.
+  const studentShape = req.user.role === 'student' || scope === 'mine';
+  const quizzes = await Quiz.find(filter)
+    .select(studentShape ? QUIZ_STUDENT_FIELDS : '')
+    .populate('batchId', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
 
-  if (req.user.role === 'student' || scope === 'mine') {
-    const attempts = await QuizAttempt.find({ studentId: req.user._id, quizId: { $in: quizzes.map((q) => q._id) } });
+  if (studentShape) {
+    const attempts = await QuizAttempt.find({ studentId: req.user._id, quizId: { $in: quizzes.map((q) => q._id) } }).lean();
     const byId = new Map(attempts.map((a) => [a.quizId.toString(), a]));
     return res.json({
-      quizzes: quizzes.map((q) => ({ ...q.forStudent(), batchId: q.batchId, myAttempt: byId.get(q._id.toString()) || null })),
+      quizzes: quizzes.map((q) => ({ ...q, myAttempt: byId.get(q._id.toString()) || null })),
     });
   }
   res.json({ quizzes });
@@ -39,12 +47,13 @@ router.get('/', requireAuth, async (req, res) => {
 
 // GET /api/skeo/quizzes/:id — student gets answer-stripped; admin gets full.
 router.get('/:id', requireAuth, async (req, res) => {
-  const quiz = await Quiz.findById(req.params.id);
+  const student = req.user.role === 'student';
+  const quiz = await Quiz.findById(req.params.id).select(student ? QUIZ_STUDENT_FIELDS : '').lean();
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
   if (quiz.batchId && !(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'Forbidden.' });
-  if (req.user.role === 'student') {
-    const myAttempt = await QuizAttempt.findOne({ quizId: quiz._id, studentId: req.user._id });
-    return res.json({ quiz: quiz.forStudent(), myAttempt });
+  if (student) {
+    const myAttempt = await QuizAttempt.findOne({ quizId: quiz._id, studentId: req.user._id }).lean();
+    return res.json({ quiz, myAttempt });
   }
   res.json({ quiz });
 });
@@ -68,7 +77,7 @@ router.post('/', requireAuth, async (req, res) => {
     })),
   });
   if (batchId) {
-    const batch = await Batch.findById(batchId).select('studentIds');
+    const batch = await Batch.findById(batchId).select('studentIds').lean();
     notifyMany(batch?.studentIds || [], { type: 'quiz', text: `New ${quiz.type}: ${title}`, link: '/app/learning' });
   }
   res.status(201).json({ quiz });
@@ -115,10 +124,12 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 // POST /api/skeo/quizzes/:id/attempt  { answers: [idx,...] } — student attempts once.
 router.post('/:id/attempt', requireAuth, async (req, res) => {
-  const quiz = await Quiz.findById(req.params.id);
+  const quiz = await Quiz.findById(req.params.id).select('batchId questions').lean();
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
   if (quiz.batchId && !(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'You are not in this batch.' });
-  if (await QuizAttempt.findOne({ quizId: quiz._id, studentId: req.user._id })) {
+  // exists(): the answer wanted is yes/no, so there is no reason to read and
+  // hydrate a whole attempt document to find out.
+  if (await QuizAttempt.exists({ quizId: quiz._id, studentId: req.user._id })) {
     return res.status(409).json({ error: 'You have already attempted this quiz.' });
   }
   const answers = Array.isArray(req.body?.answers) ? req.body.answers : [];
@@ -132,7 +143,7 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
 // Gated on an attempt existing, so answers can never be fetched before sitting
 // the quiz. Admins may review a specific student via ?studentId=.
 router.get('/:id/review', requireAuth, async (req, res) => {
-  const quiz = await Quiz.findById(req.params.id);
+  const quiz = await Quiz.findById(req.params.id).lean();
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
   if (quiz.batchId && !(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'Forbidden.' });
 
@@ -142,7 +153,7 @@ router.get('/:id/review', requireAuth, async (req, res) => {
   if (requested && !mongoose.isValidObjectId(requested)) return res.status(400).json({ error: 'Invalid studentId.' });
   const studentId = requested || req.user._id;
 
-  const attempt = await QuizAttempt.findOne({ quizId: quiz._id, studentId });
+  const attempt = await QuizAttempt.findOne({ quizId: quiz._id, studentId }).lean();
   if (!attempt) return res.status(404).json({ error: 'No attempt to review yet.' });
 
   const questions = quiz.questions.map((q, i) => {
@@ -169,10 +180,10 @@ router.get('/:id/review', requireAuth, async (req, res) => {
 
 // GET /api/skeo/quizzes/:id/results — admin sees all attempts.
 router.get('/:id/results', requireAuth, async (req, res) => {
-  const quiz = await Quiz.findById(req.params.id);
+  const quiz = await Quiz.findById(req.params.id).select('title questions').lean();
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
-  const attempts = await QuizAttempt.find({ quizId: quiz._id }).populate('studentId', 'fullName email').sort({ score: -1 });
+  const attempts = await QuizAttempt.find({ quizId: quiz._id }).populate('studentId', 'fullName email').sort({ score: -1 }).lean();
   res.json({ quiz: { _id: quiz._id, title: quiz.title, total: quiz.questions.length }, attempts });
 });
 

@@ -6,7 +6,7 @@ const router = Router();
 
 // GET /api/skeo/library — everyone can browse.
 router.get('/', requireAuth, async (_req, res) => {
-  res.json({ items: await LibraryItem.find().sort({ createdAt: -1 }) });
+  res.json({ items: await LibraryItem.find().sort({ createdAt: -1 }).lean() });
 });
 
 // POST /api/skeo/library — admin add a resource (by link).

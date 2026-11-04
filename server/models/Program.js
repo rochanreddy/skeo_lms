@@ -78,4 +78,85 @@ const programSchema = new mongoose.Schema(
 // /programs is the most-requested endpoint in the app, and always newest-first.
 programSchema.index({ createdAt: -1 });
 
+/* How many lessons a programme has, as an aggregation expression.
+ *
+ * Several places want this number and nothing else: a student's progress
+ * percentage, the at-risk scorer, the admin's per-student overview. Every one
+ * of them used to do it by loading `modules` -- the entire curriculum, every
+ * chapter and every lesson body, which for the Claude track is hundreds of
+ * kilobytes -- and reducing over it in JS. The arithmetic is three nested
+ * counts; it belongs where the documents already are.
+ *
+ * Use it inside a $project:  { total: TOPIC_COUNT }  */
+export const TOPIC_COUNT = {
+  $sum: {
+    $map: {
+      input: { $ifNull: ['$modules', []] },
+      as: 'm',
+      in: {
+        $sum: {
+          $map: {
+            input: { $ifNull: ['$$m.chapters', []] },
+            as: 'c',
+            in: { $size: { $ifNull: ['$$c.topics', []] } },
+          },
+        },
+      },
+    },
+  },
+};
+
+/** { programId -> lesson count } for the given programmes, counted in the database. */
+export async function topicCounts(programIds) {
+  const ids = [...new Set((programIds || []).filter(Boolean).map(String))]
+    .filter((id) => mongoose.isValidObjectId(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (!ids.length) return new Map();
+  const rows = await Program.aggregate([
+    { $match: { _id: { $in: ids } } },
+    { $project: { total: TOPIC_COUNT } },
+  ]);
+  return new Map(rows.map((r) => [String(r._id), r.total || 0]));
+}
+
+/* The shape of a curriculum without the curriculum in it: per programme, its
+ * title, its total lesson count, and one row per module with that module's
+ * lesson count. Everything the admin's per-student view and its module-block
+ * toggles display -- and nothing else, so the lesson bodies that make up
+ * almost all of a programme's bytes stay in the database.
+ *
+ * Returns Map<programId, { title, total, modules: [{ _id, title, lessons }] }>. */
+export async function programOutlines(programIds) {
+  const ids = [...new Set((programIds || []).filter(Boolean).map(String))]
+    .filter((id) => mongoose.isValidObjectId(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (!ids.length) return new Map();
+  const lessonsIn = {
+    $sum: {
+      $map: {
+        input: { $ifNull: ['$$m.chapters', []] },
+        as: 'c',
+        in: { $size: { $ifNull: ['$$c.topics', []] } },
+      },
+    },
+  };
+  const rows = await Program.aggregate([
+    { $match: { _id: { $in: ids } } },
+    {
+      $project: {
+        title: 1,
+        total: TOPIC_COUNT,
+        modules: {
+          $map: {
+            input: { $ifNull: ['$modules', []] },
+            as: 'm',
+            in: { _id: '$$m._id', title: '$$m.title', lessons: lessonsIn },
+          },
+        },
+      },
+    },
+  ]);
+  return new Map(rows.map((r) => [String(r._id), r]));
+}
+
 export const Program = mongoose.model('Program', programSchema, 'skeo_programs');

@@ -40,7 +40,7 @@ const badDate = (d) => d instanceof Date && Number.isNaN(d.getTime());
 // GET /api/skeo/webinars — everyone sees the same board, newest push first.
 // The client splits it into what's coming and what's been.
 router.get('/', requireAuth, async (_req, res) => {
-  const webinars = await Webinar.find().sort({ createdAt: -1 }).limit(100);
+  const webinars = await Webinar.find().sort({ createdAt: -1 }).limit(100).lean();
   res.json({ webinars });
 });
 

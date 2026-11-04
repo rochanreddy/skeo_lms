@@ -38,7 +38,8 @@ router.get('/', requireAuth, async (req, res) => {
     SupportTicket.find(filter)
       .populate('userId', 'fullName email role')
       .sort({ updatedAt: -1 })
-      .limit(100),
+      .limit(100)
+      .lean(),
     // Counts drive the queue's tabs, so they have to span every status —
     // they're counted over `scope`, not `filter`.
     SupportTicket.aggregate([{ $match: scope }, { $group: { _id: '$status', n: { $sum: 1 } } }]),
@@ -88,7 +89,7 @@ router.post(
 
 // GET /api/skeo/support/:id — one thread, for a permalink or a refresh.
 router.get('/:id', requireAuth, async (req, res) => {
-  const ticket = await SupportTicket.findById(req.params.id).populate('userId', 'fullName email role');
+  const ticket = await SupportTicket.findById(req.params.id).populate('userId', 'fullName email role').lean();
   if (!ticket) return res.status(404).json({ error: 'Not found.' });
   // Someone else's ticket is not "forbidden", it is not theirs to know about.
   if (!canSee(req.user, ticket)) return res.status(404).json({ error: 'Not found.' });

@@ -27,10 +27,10 @@ const pct = (part, total) => (total ? `${Math.round((part / total) * 100)}%` : '
 
 // GET /api/skeo/reports/platform — one row per batch: enrolment + engagement.
 router.get('/platform', requireAuth, requireRole('admin'), async (_req, res) => {
-  const batches = await Batch.find().populate('programId', 'title').sort({ createdAt: -1 });
+  const batches = await Batch.find().populate('programId', 'title').sort({ createdAt: -1 }).lean();
   const batchIds = batches.map((b) => b._id);
-  const assignments = await Assignment.find({ batchId: { $in: batchIds } }).select('batchId');
-  const submissions = await Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) } }).select('assignmentId status');
+  const assignments = await Assignment.find({ batchId: { $in: batchIds } }).select('batchId').lean();
+  const submissions = await Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) } }).select('assignmentId status').lean();
   const batchOfAssignment = new Map(assignments.map((a) => [String(a._id), String(a.batchId)]));
 
   const rows = [['Batch', 'Program', 'Status', 'Students', 'Assignments', 'Submissions', 'Graded']];
@@ -53,16 +53,16 @@ router.get('/platform', requireAuth, requireRole('admin'), async (_req, res) => 
 // GET /api/skeo/reports/batch/:id — one row per enrolled student. Admin only.
 router.get('/batch/:id', requireAuth, requireRole('admin'), async (req, res) => {
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
-  const batch = await Batch.findById(req.params.id).populate('programId', 'title').populate('studentIds', 'fullName email blocked lastActiveAt');
+  const batch = await Batch.findById(req.params.id).populate('programId', 'title').populate('studentIds', 'fullName email blocked lastActiveAt').lean();
   if (!batch) return res.status(404).json({ error: 'Batch not found.' });
 
   const [assignments, quizzes] = await Promise.all([
-    Assignment.find({ batchId: batch._id }).select('_id'),
-    Quiz.find({ batchId: batch._id }).select('_id'),
+    Assignment.find({ batchId: batch._id }).select('_id').lean(),
+    Quiz.find({ batchId: batch._id }).select('_id').lean(),
   ]);
   const [submissions, attempts] = await Promise.all([
-    Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) } }).select('studentId status score'),
-    QuizAttempt.find({ quizId: { $in: quizzes.map((q) => q._id) } }).select('studentId score total'),
+    Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) } }).select('studentId status score').lean(),
+    QuizAttempt.find({ quizId: { $in: quizzes.map((q) => q._id) } }).select('studentId score total').lean(),
   ]);
 
   const rows = [['Student', 'Email', 'Submitted', 'Graded', 'Avg score', 'Quizzes taken', 'Quiz avg %', 'Blocked', 'Last active']];
@@ -95,16 +95,16 @@ router.get('/student/:id', requireAuth, requireRole('admin'), async (req, res) =
   const student = await User.findById(req.params.id);
   if (!student) return res.status(404).json({ error: 'Student not found.' });
 
-  const batches = await Batch.find({ studentIds: student._id }).populate('programId', 'title');
+  const batches = await Batch.find({ studentIds: student._id }).populate('programId', 'title').lean();
   const batchIds = batches.map((b) => b._id);
   const batchName = new Map(batches.map((b) => [String(b._id), b.name]));
 
-  const assignments = await Assignment.find({ batchId: { $in: batchIds } }).sort({ createdAt: 1 });
+  const assignments = await Assignment.find({ batchId: { $in: batchIds } }).sort({ createdAt: 1 }).lean();
   const [submissions, quizzes] = await Promise.all([
-    Submission.find({ studentId: student._id }).select('assignmentId status score feedback updatedAt'),
-    Quiz.find({ batchId: { $in: batchIds } }).select('title batchId'),
+    Submission.find({ studentId: student._id }).select('assignmentId status score feedback updatedAt').lean(),
+    Quiz.find({ batchId: { $in: batchIds } }).select('title batchId').lean(),
   ]);
-  const attempts = await QuizAttempt.find({ studentId: student._id, quizId: { $in: quizzes.map((q) => q._id) } });
+  const attempts = await QuizAttempt.find({ studentId: student._id, quizId: { $in: quizzes.map((q) => q._id) } }).lean();
   const subByAssignment = new Map(submissions.map((s) => [String(s.assignmentId), s]));
   const quizById = new Map(quizzes.map((q) => [String(q._id), q]));
 

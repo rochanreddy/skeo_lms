@@ -22,21 +22,58 @@ function withoutBlockedModules(program, user) {
   return p;
 }
 
-// GET /api/skeo/programs — any logged-in user lists programs.
-//
-// Read lean. This returns every program with its whole module/chapter/topic
-// tree, and it is the most-requested endpoint in the app; hydrating all of that
-// into Mongoose documents costs real CPU and garbage for objects that are only
-// going to be serialised straight back out to JSON.
+/* ── The list cache ──────────────────────────────────────────────────────
+ *
+ * /programs is the largest response the API sends and the one it sends most:
+ * every programme, with its whole module/chapter/topic tree, lesson bodies
+ * included. Student home asks for it, Learning asks for it, and ⌘K reaches it.
+ * Hundreds of kilobytes of BSON decoded into JS objects and serialised back to
+ * JSON, every time — and the curriculum changes when an admin edits it, which
+ * is to say almost never.
+ *
+ * So the finished JSON string is kept for a few seconds and sent again as-is.
+ * Repeat callers skip the query, the decode AND the stringify; on the small
+ * instance this runs on, that last one was the most expensive part.
+ *
+ * Keyed by which modules the caller cannot see, because that is the only thing
+ * that varies between two users asking: everyone with no module blocks (which
+ * is everyone, normally) shares one entry. The TTL is the real guarantee —
+ * writes below also drop the cache, so an admin's own edit shows up at once,
+ * but a seed script writing straight to the database is covered too, within
+ * TTL rather than never.
+ */
+const LIST_TTL_MS = 30_000;
+const listCache = new Map(); // blocked-module signature -> { at, body }
+
+const dropListCache = () => listCache.clear();
+
 router.get('/', requireAuth, async (req, res) => {
-  const programs = await Program.find().sort({ createdAt: -1 }).lean();
-  res.json({ programs: programs.map((p) => withoutBlockedModules(p, req.user)) });
+  const blocked = (req.user.role === 'admin' ? [] : (req.user.blocked?.moduleIds || []).map(String)).sort();
+  const key = blocked.join(',');
+
+  const hit = listCache.get(key);
+  let body = hit && Date.now() - hit.at < LIST_TTL_MS ? hit.body : null;
+
+  if (!body) {
+    const programs = await Program.find().sort({ createdAt: -1 }).lean();
+    body = JSON.stringify({ programs: programs.map((p) => withoutBlockedModules(p, req.user)) });
+    // One entry per distinct block set. In practice that is one.
+    if (listCache.size > 32) listCache.clear();
+    listCache.set(key, { at: Date.now(), body });
+  }
+
+  // Revalidate, don't re-download: express attaches an ETag to the body below,
+  // so a browser that already has this curriculum gets a 304 and reads it from
+  // its own cache. 'private' keeps it out of any shared cache in between.
+  res.set('Cache-Control', 'private, no-cache');
+  res.type('json').send(body);
 });
 
 // GET /api/skeo/programs/:id — full curriculum tree.
 router.get('/:id', requireAuth, async (req, res) => {
-  const program = await Program.findById(req.params.id);
+  const program = await Program.findById(req.params.id).lean();
   if (!program) return res.status(404).json({ error: 'Program not found.' });
+  res.set('Cache-Control', 'private, no-cache');
   res.json({ program: withoutBlockedModules(program, req.user) });
 });
 
@@ -45,6 +82,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { title, type, description, slug } = req.body || {};
   if (!title) return res.status(400).json({ error: 'Title is required.' });
   const program = await Program.create({ title, type: type || '', description: description || '', slug: slug || '' });
+  dropListCache();
   res.status(201).json({ program });
 });
 
@@ -73,6 +111,7 @@ router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const allowed = {};
   for (const k of editable) if (req.body?.[k] !== undefined) allowed[k] = req.body[k];
   const program = await Program.findByIdAndUpdate(req.params.id, allowed, { new: true });
+  dropListCache();
   res.json({ program });
 });
 

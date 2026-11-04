@@ -4,6 +4,7 @@ import { hashPassword } from '../utils/password.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { Batch } from '../models/Batch.js';
 import { User } from '../models/User.js';
+import { Program } from '../models/Program.js';
 import { canAccessBatch, myBatchIds } from '../utils/access.js';
 
 const router = Router();
@@ -11,15 +12,36 @@ const router = Router();
 // GET /api/skeo/batches — role-scoped: admin=all, student=their own batches.
 router.get('/', requireAuth, async (req, res) => {
   const ids = await myBatchIds(req.user);
-  const batches = await Batch.find({ _id: { $in: ids } })
-    .populate('programId', 'title')
-    .sort({ createdAt: -1 });
+  // Projected and lean. Only the roster's LENGTH is wanted, so $size it in the
+  // database: this used to ship every batch's full studentIds array to the
+  // server process -- the single biggest field on the document -- hydrate it
+  // into a Mongoose array of ObjectIds, and then read .length off it. On a
+  // cohort of 300 that is 300 ids over the wire per batch, per page load, to
+  // produce one integer.
+  const batches = await Batch.aggregate([
+    { $match: { _id: { $in: ids } } },
+    { $sort: { createdAt: -1 } },
+    {
+      $project: {
+        name: 1, status: 1, startDate: 1, endDate: 1, programId: 1,
+        studentCount: { $size: { $ifNull: ['$studentIds', []] } },
+      },
+    },
+  ]);
+  // The programme titles, in one query rather than a populate per batch. There
+  // are a handful of programmes and they are looked up by _id, so this is
+  // cheaper than teaching the pipeline above about another collection.
+  const titles = new Map(
+    (await Program.find({ _id: { $in: batches.map((b) => b.programId).filter(Boolean) } })
+      .select('title')
+      .lean()).map((p) => [String(p._id), p.title]),
+  );
   res.json({
     batches: batches.map((b) => ({
       id: b._id, name: b.name, status: b.status,
-      program: b.programId?.title || '', programId: b.programId?._id,
+      program: titles.get(String(b.programId)) || '', programId: b.programId,
       startDate: b.startDate, endDate: b.endDate,
-      studentCount: b.studentIds.length,
+      studentCount: b.studentCount,
     })),
   });
 });
@@ -31,7 +53,8 @@ router.get('/:id', requireAuth, async (req, res) => {
   const memberFields = req.user.role === 'admin' ? 'fullName email blocked' : 'fullName email';
   const b = await Batch.findById(req.params.id)
     .populate('programId', 'title')
-    .populate('studentIds', memberFields);
+    .populate('studentIds', memberFields)
+    .lean();
   if (!b) return res.status(404).json({ error: 'Batch not found.' });
   res.json({ batch: b });
 });
@@ -43,8 +66,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   // Everyone who bought Everything AI owns every batch, including this one —
   // the plan is "unlocks all batches", not "the batches that existed the day
   // you paid". So they are in it from the moment it exists.
-  const allAccess = await User.find({ allAccess: true, role: 'student' }).select('_id');
-  const studentIds = allAccess.map((u) => u._id);
+  const studentIds = await User.distinct('_id', { allAccess: true, role: 'student' });
   const batch = await Batch.create({ programId, name, startDate: startDate || null, endDate: endDate || null, status: status || 'upcoming', studentIds });
   if (studentIds.length) await User.updateMany({ _id: { $in: studentIds } }, { $addToSet: { batchIds: batch._id } });
   res.status(201).json({ batch });

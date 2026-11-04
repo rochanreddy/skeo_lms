@@ -30,7 +30,7 @@ router.get('/verify/:code', async (req, res) => {
   // Uppercased and de-spaced before lookup: this code gets read off paper and
   // typed by hand, and "skeo fello 0926 0001" is the same certificate.
   const code = String(req.params.code || '').trim().toUpperCase().replace(/\s+/g, '');
-  const cert = await Certificate.findOne({ code });
+  const cert = await Certificate.findOne({ code }).lean();
 
   // A 404 says "no such certificate", which is the honest answer and also the
   // one that tells an enumerator nothing they did not already know.
@@ -42,7 +42,7 @@ router.get('/verify/:code', async (req, res) => {
 
 // GET /api/skeo/certificates/mine — what I hold, with the QR to print.
 router.get('/mine', requireAuth, async (req, res) => {
-  const certs = (await Certificate.find({ studentId: req.user._id }).sort({ issuedAt: -1 }))
+  const certs = (await Certificate.find({ studentId: req.user._id }).sort({ issuedAt: -1 }).lean())
     // A minted-but-unsent certificate is not yet the student's news to have.
     .filter(studentCanSee);
   const out = await Promise.all(
@@ -67,7 +67,8 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   const certs = await Certificate.find(filter)
     .sort({ issuedAt: -1 })
     .limit(500)
-    .populate('studentId', 'fullName email');
+    .populate('studentId', 'fullName email')
+    .lean();
   res.json({
     certificates: certs.map((c) => ({
       id: c._id,

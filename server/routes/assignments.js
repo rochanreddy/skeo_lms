@@ -20,7 +20,9 @@ router.get('/', requireAuth, async (req, res) => {
   } else {
     filter = { batchId: { $in: await myBatchIds(req.user) } };
   }
-  let assignments = await Assignment.find(filter).populate('batchId', 'name').sort({ createdAt: -1 });
+  // lean(): these are serialised straight back out as JSON, so there is nothing
+  // for a Mongoose document to do but cost CPU and garbage on the way.
+  let assignments = await Assignment.find(filter).populate('batchId', 'name').sort({ createdAt: -1 }).lean();
   // Admin-blocked assignments/projects simply don't exist for this user.
   assignments = assignments.filter((a) => !isBlockedFromAssignment(req.user, a._id));
 
@@ -29,9 +31,10 @@ router.get('/', requireAuth, async (req, res) => {
     // for the course is week order. No deadline sorts last; ties keep newest-first.
     const due = (a) => (a.dueDate ? new Date(a.dueDate).getTime() : Infinity);
     assignments.sort((a, b) => due(a) - due(b));
-    const subs =await Submission.find({ studentId: req.user._id, isDeleted: false, assignmentId: { $in: assignments.map((a) => a._id) } });
+    const subs = await Submission.find({ studentId: req.user._id, isDeleted: false, assignmentId: { $in: assignments.map((a) => a._id) } }).lean();
     const byId = new Map(subs.map((s) => [s.assignmentId.toString(), s]));
-    return res.json({ assignments: assignments.map((a) => ({ ...a.toObject(), mySubmission: byId.get(a._id.toString()) || null })) });
+    // Plain objects already, so no toObject() conversion on the way out either.
+    return res.json({ assignments: assignments.map((a) => ({ ...a, mySubmission: byId.get(a._id.toString()) || null })) });
   }
   res.json({ assignments });
 });
@@ -61,7 +64,7 @@ router.post('/', requireAuth, async (req, res) => {
     dueDate: dueDate || null,
     ...(required ? { requiredDriveTypes: required } : {}),
   });
-  const batch = await Batch.findById(batchId).select('studentIds');
+  const batch = await Batch.findById(batchId).select('studentIds').lean();
   notifyMany(batch?.studentIds || [], { type: 'assignment', text: `New ${assignment.type}: ${title}`, link: '/app/learning' });
   res.status(201).json({ assignment });
 });
@@ -112,7 +115,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 // GET /api/skeo/assignments/:id
 router.get('/:id', requireAuth, async (req, res) => {
-  const a = await Assignment.findById(req.params.id).populate('batchId', 'name');
+  const a = await Assignment.findById(req.params.id).populate('batchId', 'name').lean();
   if (!a) return res.status(404).json({ error: 'Assignment not found.' });
   if (isBlockedFromAssignment(req.user, a._id)) return res.status(403).json({ error: 'This item has been blocked for your account.' });
   if (!(await canAccessBatch(req.user, a.batchId._id || a.batchId))) return res.status(403).json({ error: 'Forbidden.' });

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { User } from '../models/User.js';
 import { Batch } from '../models/Batch.js';
-import { Program } from '../models/Program.js';
+import { Program, topicCounts } from '../models/Program.js';
 import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Assignment } from '../models/Assignment.js';
@@ -123,36 +123,36 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
   if (batchId && !canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
   const batchIds = batchId ? [batchId] : await myBatchIds(req.user);
 
-  const batches = await Batch.find({ _id: { $in: batchIds } }).select('name studentIds programId');
+  const batches = await Batch.find({ _id: { $in: batchIds } }).select('name studentIds programId').lean();
   const studentIds = [...new Set(batches.flatMap((b) => b.studentIds.map(String)))];
   if (studentIds.length === 0) return res.json({ students: [], scanned: 0 });
 
   const programIds = [...new Set(batches.map((b) => b.programId).filter(Boolean).map(String))];
 
   // Fetch every signal in two batched rounds, then score in memory. Per-student
-  // queries would be N+1 and get slow the moment a cohort grows.
-  const [users, assignments, quizzes, programs, progress] = await Promise.all([
-    User.find({ _id: { $in: studentIds } }).select('fullName email lastActiveAt'),
-    Assignment.find({ batchId: { $in: batchIds } }).select('batchId dueDate'),
-    Quiz.find({ batchId: { $in: batchIds } }).select('batchId'),
-    Program.find({ _id: { $in: programIds } }).select('modules'),
-    Progress.find({ studentId: { $in: studentIds }, programId: { $in: programIds } }).select('studentId programId completedTopics'),
+  // queries would be N+1 and get slow the moment a cohort grows. All lean: this
+  // is the widest read in the app -- every student, assignment, quiz, attempt
+  // and progress row across every cohort -- and not one of these documents is
+  // saved or has a method called on it, so hydrating them all into Mongoose
+  // documents was pure cost.
+  const [users, assignments, quizzes, lessonTotals, progress] = await Promise.all([
+    User.find({ _id: { $in: studentIds } }).select('fullName email lastActiveAt').lean(),
+    Assignment.find({ batchId: { $in: batchIds } }).select('batchId dueDate').lean(),
+    Quiz.find({ batchId: { $in: batchIds } }).select('batchId').lean(),
+    // Counted in the database rather than by pulling every curriculum tree.
+    topicCounts(programIds),
+    Progress.find({ studentId: { $in: studentIds }, programId: { $in: programIds } }).select('studentId programId completedTopics').lean(),
   ]);
 
   const [submissions, attempts] = await Promise.all([
-    Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) }, studentId: { $in: studentIds } }).select('assignmentId studentId'),
-    QuizAttempt.find({ quizId: { $in: quizzes.map((q) => q._id) }, studentId: { $in: studentIds } }).select('quizId studentId score total'),
+    Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) }, studentId: { $in: studentIds } }).select('assignmentId studentId').lean(),
+    QuizAttempt.find({ quizId: { $in: quizzes.map((q) => q._id) }, studentId: { $in: studentIds } }).select('quizId studentId score total').lean(),
   ]);
 
   // ── Lookup tables ──
   const userById = new Map(users.map((u) => [u._id.toString(), u]));
   const submitted = new Set(submissions.map((s) => `${s.assignmentId}:${s.studentId}`));
   const batchOfQuiz = new Map(quizzes.map((q) => [q._id.toString(), q.batchId.toString()]));
-
-  const lessonTotals = new Map(programs.map((p) => [
-    p._id.toString(),
-    (p.modules || []).reduce((n, m) => n + (m.chapters || []).reduce((k, c) => k + (c.topics || []).length, 0), 0),
-  ]));
 
   const attemptsByKey = new Map();
   for (const a of attempts) {

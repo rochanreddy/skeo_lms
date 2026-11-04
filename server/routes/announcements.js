@@ -20,7 +20,8 @@ router.get('/', requireAuth, async (req, res) => {
   const items = await Announcement.find(filter)
     .populate('authorId', 'fullName email role')
     .populate('batchId', 'name')
-    .sort({ createdAt: -1 }).limit(50);
+    .sort({ createdAt: -1 }).limit(50)
+    .lean();
   res.json({ announcements: items });
 });
 
@@ -30,7 +31,7 @@ router.post('/', requireAuth, async (req, res) => {
   if (!batchId || !title) return res.status(400).json({ error: 'batchId and title are required.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Only an admin can post here.' });
   const ann = await Announcement.create({ batchId, authorId: req.user._id, title, body: body || '' });
-  const batch = await Batch.findById(batchId).select('studentIds');
+  const batch = await Batch.findById(batchId).select('studentIds').lean();
   notifyMany(batch?.studentIds || [], { type: 'announcement', text: `📢 ${title}`, link: '/app' });
   res.status(201).json({ announcement: ann });
 });

@@ -34,6 +34,17 @@ const quizSchema = new mongoose.Schema(
 quizSchema.index({ batchId: 1, createdAt: -1 });
 quizSchema.index({ programId: 1, moduleId: 1 });
 
+/* The exact field list of the student-facing shape, as a projection.
+ *
+ * A route that is only ever going to send a student their quiz selects THIS,
+ * so the correct answers and the author's explanations are never read out of
+ * the database at all -- rather than fetched, hydrated, and then dropped on
+ * the way out. Faster, and answers cannot leak from a shape that never held
+ * them. _id comes along free at both levels.
+ *
+ * Keep it in step with forStudent() below; they describe the same shape. */
+export const QUIZ_STUDENT_FIELDS = 'batchId programId moduleId title type questions._id questions.text questions.options';
+
 // Student-facing shape: never leaks the correct answers.
 quizSchema.methods.forStudent = function forStudent() {
   return {
