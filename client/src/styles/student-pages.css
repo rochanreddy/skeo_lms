@@ -142,3 +142,15 @@
   .cert-name { font-size: 23px; }
   .cert-foot { flex-wrap: wrap; gap: 8px 14px; }
 }
+
+/* ── Support ────────────────────────────────────────────────────────────────
+   The ticket head already stacks at 700px. Send fills the form's foot on a
+   phone; in a thread, Send reply and Mark resolved share the row as two
+   equal 44px buttons. */
+@media (max-width: 640px) {
+  .support-page .support-actions .btn { min-height: 44px; }
+  .support-page form.panel > .support-actions > .btn { width: 100%; justify-content: center; }
+  .support-page .support-reply .support-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .support-page .support-ticket-head { min-height: 44px; }
+  .support-page .support-msg-head { flex-wrap: wrap; }
+}
