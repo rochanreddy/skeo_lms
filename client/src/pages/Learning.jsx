@@ -666,6 +666,11 @@ function Content() {
   const done = Math.min(completed.size, total);
   const pct = total ? Math.round((done / total) * 100) : 0;
   const isDone = topic && completed.has(topic._id);
+  // What follows this lesson — the next one in order, unless it sits behind
+  // this module's gate, in which case the gate is what's next.
+  const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
+  const nextLocked = !!next && isLocked(modIndexOf(next.modId));
+  const curGate = current ? gateFor(current.modId) : null;
   // A DRM lesson wins over every plain URL on the topic: if the admin put the
   // recording in VdoCipher, that is where it is watched.
   const vdoId = topic?.contentType === 'video' && topic?.videoSource === 'vdocipher' ? (topic.vdoVideoId || '') : '';
@@ -872,6 +877,41 @@ function Content() {
                   )}
                   <button className="btn ghost sm" disabled={idx >= flat.length - 1} onClick={() => flat[idx + 1] && selectTopic(flat[idx + 1])}>Next →</button>
                 </div>
+
+                {/* Up next — so finishing a lesson never means hunting the
+                    syllabus for the one after it. Lit once this one is done. */}
+                {next && !nextLocked ? (
+                  <div className={`lesson-next ${isDone ? 'lit' : ''}`}>
+                    <span className="lesson-next-icon"><LessonIcon type={next.topic.contentType} size={16} /></span>
+                    <div className="lesson-next-text">
+                      <div className="lesson-next-eyebrow">Up next</div>
+                      <div className="lesson-next-title">{next.topic.title}</div>
+                      {String(next.modId) !== String(current.modId) && <div className="lesson-next-crumb">{next.mod}</div>}
+                    </div>
+                    <button className={`btn sm ${isDone ? 'on-stage' : 'ghost'}`} onClick={() => selectTopic(next)}>Continue →</button>
+                  </div>
+                ) : next && nextLocked ? (
+                  <div className={`lesson-next ${isDone ? 'lit' : ''}`}>
+                    <span className="lesson-next-icon"><LineIcon name="key" size={16} /></span>
+                    <div className="lesson-next-text">
+                      <div className="lesson-next-eyebrow">Up next</div>
+                      <div className="lesson-next-title">{curGate && !curGate.myAttempt ? `Module ${modIndexOf(current.modId) + 1} quiz` : 'Module quiz'}</div>
+                      <div className="lesson-next-crumb">Attempt it to unlock {next.mod}</div>
+                    </div>
+                    <button className={`btn sm ${isDone ? 'on-stage' : 'ghost'}`} onClick={() => setParams({ tab: 'quizzes' })}>Take quiz →</button>
+                  </div>
+                ) : isDone && isStudent ? (
+                  <div className="lesson-next lit">
+                    <span className="lesson-next-icon"><LineIcon name="check" size={16} /></span>
+                    <div className="lesson-next-text">
+                      <div className="lesson-next-eyebrow">That was the last lesson</div>
+                      <div className="lesson-next-title">{pct === 100 ? 'Course complete — well done.' : `${total - done} lesson${total - done === 1 ? '' : 's'} still to finish.`}</div>
+                    </div>
+                    {pct === 100
+                      ? <button className="btn sm on-stage" onClick={viewCertificate}>🎓 Certificate</button>
+                      : <button className="btn sm ghost" onClick={() => resume && selectTopic(resume.f)}>Go there →</button>}
+                  </div>
+                ) : null}
               </>
             ) : page ? (
               /* A page: a lesson's exact furniture, minus the parts a page
