@@ -12,11 +12,18 @@ export default function StudentGrades() {
     api('/grades/me').then((d) => { setRows(d.rows || []); setSummary(d.summary || {}); }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const scoreCell = (r) => {
-    if (r.status !== 'graded' || r.score == null) return <span className="muted">{r.status === 'submitted' ? 'Awaiting grade' : '—'}</span>;
-    if (r.max) return <strong>{r.score}/{r.max} · {Math.round((r.score / r.max) * 100)}%</strong>;
-    return <strong>{r.score}</strong>;
+  // The right-hand column: a score once graded, a waiting pill once handed
+  // in, and nothing at all before that — a dash is not information.
+  const score = (r) => {
+    if (r.status === 'graded' && r.score != null) {
+      return r.max
+        ? <><strong>{r.score}/{r.max}</strong><small>{Math.round((r.score / r.max) * 100)}%</small></>
+        : <strong>{r.score}</strong>;
+    }
+    if (r.status === 'submitted') return <span className="gr-wait">Awaiting grade</span>;
+    return null;
   };
+  const statusLabel = (r) => (r.status === 'graded' ? 'Graded' : r.status === 'submitted' ? 'Submitted' : 'Pending');
 
   return (
     <div className="grades-page">
@@ -28,31 +35,36 @@ export default function StudentGrades() {
         </div>
       </div>
 
-      <div className="tiles" style={{ marginBottom: 22 }}>
-        <div className="tile"><div className="tile-value">{summary.avgPct != null ? `${summary.avgPct}%` : '—'}</div><div className="tile-label">Average score</div></div>
-        <div className="tile"><div className="tile-value">{summary.graded}/{summary.total}</div><div className="tile-label">Graded</div></div>
+      <div className="tiles gr-tiles">
+        <div className="tile">
+          <div className={`tile-value ${summary.avgPct == null ? 'is-empty' : ''}`}>{summary.avgPct != null ? `${summary.avgPct}%` : 'No grades yet'}</div>
+          <div className="tile-label">Average score</div>
+        </div>
+        <div className="tile">
+          <div className="tile-value">{summary.graded}<span className="tile-of">/{summary.total}</span></div>
+          <div className="tile-label">Graded</div>
+        </div>
       </div>
 
-      <div className="panel">
-        {loading ? <p className="muted">Loading…</p> : rows.length === 0 ? (
-          <p className="muted">No assessments yet — assignments and quizzes appear here once they're posted.</p>
+      <div className="panel gr-panel">
+        {loading ? <p className="muted gr-note">Loading…</p> : rows.length === 0 ? (
+          <p className="muted gr-note">No assessments yet — assignments and quizzes appear here once they're posted.</p>
         ) : (
-          <div className="table-wrap">
-            <table className="grade-table gt-cards">
-              <thead><tr><th>Assessment</th><th>Type</th><th>Status</th><th>Score</th><th>Feedback</th></tr></thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={`${r.kind}-${r.id}`}>
-                    <td>{r.title}</td>
-                    <td data-label="Type"><span className={`gt-kind gt-${r.kind.toLowerCase()}`}>{r.kind}</span></td>
-                    <td data-label="Status"><span className={`gt-status gt-${r.status}`}>{r.status}</span></td>
-                    <td data-label="Score">{scoreCell(r)}</td>
-                    <td data-label="Feedback" className={r.feedback ? 'muted' : 'muted gt-none'}>{r.feedback || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="gr-list">
+            {rows.map((r) => (
+              <li key={`${r.kind}-${r.id}`} className={`gr-row is-${r.status}`}>
+                <div className="gr-main">
+                  <div className="gr-title">{r.title}</div>
+                  <div className="gr-meta">
+                    <span className={`gr-kind gt-${String(r.kind).toLowerCase()}`}>{r.kind}</span>
+                    <span className={`gr-status gt-${r.status}`}>{statusLabel(r)}</span>
+                  </div>
+                  {r.feedback && <p className="gr-feedback">“{r.feedback}”</p>}
+                </div>
+                <div className="gr-score">{score(r)}</div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
