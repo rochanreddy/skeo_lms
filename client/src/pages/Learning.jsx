@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import FileViewer from '../components/FileViewer.jsx';
@@ -8,7 +8,7 @@ import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
-import { mediaOf, mediaFrom, stripParentContext, moduleShortTitle, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
+import { mediaOf, mediaFrom, stripParentContext, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
 import CertificateModal from '../components/CertificateModal.jsx';
 
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
@@ -319,42 +319,28 @@ function QuizReview({ questions }) {
   );
 }
 
-// ── Reader furniture shared by lessons and pages ──────────────────────────
-// A page and a lesson must be indistinguishable in structure, so the chip row
-// below is written once and called from both heads.
-
-// One chip row, rendered from the lesson head and the page head alike.
-// Empty fields render disabled rather than disappearing: a missing button
-// reads as "there is no video", whereas "No class video yet" tells a student
-// to come back.
+// ── Resources ─────────────────────────────────────────────────────────────
+// The files attached to a lesson (or gathered from a page's lessons), as a row
+// of chips under the title. Only what exists is shown: an empty slot is not
+// something a student can act on, so it has no business taking a chip.
 function ChipRow({ media, subtitle, onOpen }) {
   const chips = [
-    { key: 'reading', type: 'pdf', label: 'Reading material', empty: 'No reading yet', url: media.reading },
-    { key: 'notes', type: 'text', label: 'Notes', empty: 'No notes yet', url: media.notes },
-    { key: 'klass', type: 'video', label: 'Class video', empty: 'No class video yet', url: media.klass, external: true },
-  ];
+    { key: 'reading', type: 'pdf', label: 'Reading material', url: media.reading },
+    { key: 'notes', type: 'text', label: 'Notes', url: media.notes },
+    { key: 'klass', type: 'video', label: 'Class link', url: media.klass, external: true },
+  ].filter((c) => c.url);
+  if (chips.length === 0) return null;
   return (
-    <div className="lesson-actions">
-      {chips.map((c) => {
-        if (!c.url) {
-          return (
-            <button key={c.key} className="btn sm lesson-action" disabled title={`${c.empty} — check back later`}>
-              <LessonIcon type={c.type} size={15} /> {c.empty}
-            </button>
-          );
-        }
-        // A class link is a meeting or a recording elsewhere; the two file
-        // slots open in the in-page viewer as they always have.
-        return c.external ? (
-          <a key={c.key} className="btn sm lesson-action" href={c.url} target="_blank" rel="noreferrer">
-            <LessonIcon type={c.type} size={15} /> {c.label}
-          </a>
-        ) : (
-          <button key={c.key} className="btn sm lesson-action" onClick={() => onOpen({ label: c.label, subtitle, url: c.url })}>
-            <LessonIcon type={c.type} size={15} /> {c.label}
-          </button>
-        );
-      })}
+    <div className="cp-res">
+      {chips.map((c) => (c.external ? (
+        <a key={c.key} className="cp-chip" href={c.url} target="_blank" rel="noreferrer">
+          <LessonIcon type={c.type} size={15} /> {c.label}
+        </a>
+      ) : (
+        <button key={c.key} type="button" className="cp-chip" onClick={() => onOpen({ label: c.label, subtitle, url: c.url })}>
+          <LessonIcon type={c.type} size={15} /> {c.label}
+        </button>
+      )))}
     </div>
   );
 }
@@ -378,9 +364,14 @@ function Content() {
   const [openChap, setOpenChap] = useState(null);
   const [completed, setCompleted] = useState(new Set());
   const [total, setTotal] = useState(0);
-  // On a phone the syllabus folds behind a toggle bar once something is open
-  // on the reader, so the player keeps the screen. Desktop ignores this.
-  const [sylOpen, setSylOpen] = useState(false);
+  // Phones: under the player, "About" (the lesson text) and "Lessons" (the
+  // list) share one spot, switched by a segmented control. Desktop ignores it.
+  const [mobileTab, setMobileTab] = useState('lessons');
+  // Progress and gates arrive after the tree. The first lesson is chosen only
+  // once both are in, or it could pick one that is finished or locked.
+  const [progressReady, setProgressReady] = useState(false);
+  const [gatesReady, setGatesReady] = useState(false);
+  const autoPicked = useRef(null); // programme id already auto-opened
   const [cert, setCert] = useState(null);
   const [viewer, setViewer] = useState(null); // { label, subtitle, url }
   // Gate quizzes, one per module. Attempting a module's quiz unlocks the next.
@@ -388,7 +379,8 @@ function Content() {
 
   const loadGates = (programId) => api(`/quizzes?programId=${programId}`)
     .then((d) => setGates(d.quizzes || []))
-    .catch(() => setGates([]));
+    .catch(() => setGates([]))
+    .finally(() => setGatesReady(true));
 
   const gateFor = (modId) => gates.find((q) => String(q.moduleId) === String(modId)) || null;
 
@@ -486,25 +478,11 @@ function Content() {
     return { f: flat[back], idx: back, kind: 'revisit' };
   }, [program, flat, completed, unlockedCount, topicId]);
 
-  // The week the strip lights up: the one holding the open lesson or page,
-  // else the one "Continue learning" points at.
+  // The module holding whatever is open, for the list's "current" mark.
   const currentModId = topic ? current.modId
     : pageRef?.kind === 'module' ? pageRef.id
     : pageRef?.kind === 'chapter' ? ((program?.modules || []).find((m) => (m.chapters || []).some((c) => String(c._id) === String(pageRef.id)))?._id ?? null)
-    : resume?.f.modId ?? null;
-
-  // Keep the lit week card in the strip's view as the student moves through
-  // the course. Scrolled by hand along the strip only — scrollIntoView would
-  // also move the page, and on a phone fight the scroll to the reader.
-  useEffect(() => {
-    const strip = document.querySelector('.learn-weeks');
-    const card = strip?.querySelector('.learn-week.current');
-    if (!strip || !card) return;
-    const left = card.offsetLeft; // the strip is positioned, so this is strip-relative
-    const right = left + card.offsetWidth;
-    if (left < strip.scrollLeft) strip.scrollTo({ left: left - 12, behavior: 'smooth' });
-    else if (right > strip.scrollLeft + strip.clientWidth) strip.scrollTo({ left: right - strip.clientWidth + 12, behavior: 'smooth' });
-  }, [currentModId]);
+    : null;
 
   // The next gate a student still has to sit: the newest open module's quiz,
   // when it hasn't been attempted. (A gate behind a lock isn't "pending" yet.)
@@ -514,8 +492,11 @@ function Content() {
   }, [gates, unlockedCount, program, isStudent]);
 
   const loadProgress = (programId) => {
-    if (!isStudent || !programId) return;
-    api(`/progress/me?programId=${programId}`).then((d) => { setCompleted(new Set(d.completedTopics)); setTotal(d.total); }).catch(() => {});
+    if (!isStudent || !programId) { setProgressReady(true); return; }
+    api(`/progress/me?programId=${programId}`)
+      .then((d) => { setCompleted(new Set(d.completedTopics)); setTotal(d.total); })
+      .catch(() => {})
+      .finally(() => setProgressReady(true));
   };
   // Locate a topic anywhere in a program's tree, so a deep link can open the
   // right module + chapter as well as the right lesson.
@@ -532,6 +513,7 @@ function Content() {
     // Progress and the gate quizzes are keyed on the programme id alone, which
     // we already hold — starting them here rather than after the tree arrives
     // takes a round trip off the critical path for the whole screen.
+    setProgressReady(false); setGatesReady(false);
     loadProgress(id);
     loadGates(id);
     const { program: p } = await api(`/programs/${id}`);
@@ -543,12 +525,21 @@ function Content() {
       setOpenChap(String(target.chapId));
       setTopicId(target.topic._id);
     } else {
-      // Nothing is selected on arrival. The reader shows its landing panel and
-      // the student chooses a week — auto-selecting lesson 1 used to bury the
-      // syllabus under content nobody had asked for.
+      // Nothing chosen yet: the effect below opens the lesson to continue from
+      // as soon as progress and the gates are known.
       setOpen({}); setOpenChap(null); setTopicId(null);
     }
   }
+
+  // Arriving at Learning should land on the lesson you'd continue from, with
+  // the player ready — not on an empty reader and a list to hunt through.
+  // Once per programme: closing a page afterwards must not re-open a lesson.
+  useEffect(() => {
+    if (!program || !progressReady || !gatesReady || topicId || pageRef) return;
+    if (autoPicked.current === program._id) return;
+    autoPicked.current = program._id;
+    if (resume) selectTopic(resume.f, { quiet: true });
+  }, [program, progressReady, gatesReady, resume]);
 
   // Showing a page clears the lesson, and takes ?topic= with it: a page is not
   // addressable, so leaving a stale lesson id in the URL would make Back and a
@@ -556,6 +547,7 @@ function Content() {
   function showPage(ref) {
     setPageRef(ref);
     setTopicId(null);
+    setMobileTab('about');
     if (program) setParams({ program: program._id }, { replace: true });
   }
 
@@ -587,10 +579,7 @@ function Content() {
     setOpen((o) => ({ ...o, [id]: true }));
     setOpenChap(null);
     if (m.description) showPage({ kind: 'module', id });
-    if (window.matchMedia('(max-width: 820px)').matches) {
-      setSylOpen(true);
-      requestAnimationFrame(() => document.getElementById('learn-syllabus')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    }
+    setMobileTab('lessons');
   }
 
   // Unfolding a chapter must NOT touch the reader. You open a week to read its
@@ -599,7 +588,7 @@ function Content() {
   const pressChapter = (c) =>
     setOpenChap((cur) => (String(cur) === String(c._id) ? null : String(c._id)));
 
-  function selectTopic(f) {
+  function selectTopic(f, { quiet = false } = {}) {
     setTopicId(f.topic._id);
     setPageRef(null);
     setOpen((o) => ({ ...o, [f.modId]: true }));
@@ -608,14 +597,19 @@ function Content() {
     if (program) setParams({ program: program._id, topic: String(f.topic._id) }, { replace: true });
     // Remembered per programme, so the landing card can offer to pick up here.
     if (program) writeLastLesson(program._id, f.topic._id);
-    // On a phone the reader renders above the syllabus; fold the syllabus
-    // away so the player has the screen, and bring the reader into view once
-    // it has rendered.
-    if (window.matchMedia('(max-width: 820px)').matches) {
-      setSylOpen(false);
-      requestAnimationFrame(() => document.querySelector('.lesson')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    // Phones: a lesson with text opens on About; a video-only one keeps the
+    // list under the player. Either way the player comes to the top — except
+    // on arrival, when the page is already at the top and must stay there.
+    setMobileTab(f.topic.body ? 'about' : 'lessons');
+    if (!quiet && window.matchMedia('(max-width: 900px)').matches) {
+      requestAnimationFrame(() => document.querySelector('.cp-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
   }
+
+  // Keep the open lesson in view in the list as Previous/Next move through it.
+  useEffect(() => {
+    document.querySelector('.cp-list .cur-topic.active')?.scrollIntoView({ block: 'nearest' });
+  }, [topicId]);
 
   useEffect(() => {
     // Students only see the program(s) of the batches they're enrolled in.
@@ -676,101 +670,182 @@ function Content() {
   const vdoId = topic?.contentType === 'video' && topic?.videoSource === 'vdocipher' ? (topic.vdoVideoId || '') : '';
   const videoUrl = vdoId ? '' : (topic?.contentType === 'video' ? topic?.contentUrl : '') || topic?.classLink || '';
 
+  const reading = !!(topic || page);
+  const hasVideo = !!(vdoId || videoUrl);
+  const bodyText = topic ? (topic.body || '') : page ? (page.body || '') : '';
+  const hasAbout = !!bodyText;
+  const crumb = topic
+    ? `${current.mod}${current.chap && current.chap !== 'Lessons' ? ` · ${stripParentContext(current.chap, current.mod)}` : ''}`
+    : page?.crumb || '';
+  const position = topic ? `Lesson ${idx + 1} of ${flat.length}` : page?.position || '';
+  const weeks = (program?.modules || []).length;
+
   return (
-    <div className="learn">
-      {/* Header: program picker + progress ring */}
-      <div className="learn-top">
-        <div className="learn-prog-pick">
-          <span className="learn-eyebrow" id="learn-prog-label">Program</span>
-          <Select value={program?._id || undefined} onValueChange={(v) => { if (v) { setParams({ program: v }, { replace: true }); pick(v); } }}>
-            <SelectTrigger aria-labelledby="learn-prog-label"><SelectValue placeholder="Select a program…" /></SelectTrigger>
-            <SelectContent>
-              {programs.map((p) => <SelectItem key={p._id} value={p._id}>{p.title}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        {program && isStudent && total > 0 && (
-          <div className="learn-progress">
-            <Ring pct={pct} />
-            <div>
-              <div className="learn-progress-pct">{pct}% complete</div>
-              <div className="muted">{done} of {total} lessons</div>
-            </div>
-            {pct === 100 && <button className="btn sm" onClick={viewCertificate}>🎓 Certificate</button>}
+    <div className="learn cp">
+      {/* One programme is the usual case, and then its name is just a label.
+          The picker only appears when there is actually something to pick. */}
+      <div className="cp-top">
+        {programs.length > 1 ? (
+          <div className="learn-prog-pick">
+            <span className="learn-eyebrow" id="learn-prog-label">Program</span>
+            <Select value={program?._id || undefined} onValueChange={(v) => { if (v) { setParams({ program: v }, { replace: true }); pick(v); } }}>
+              <SelectTrigger aria-labelledby="learn-prog-label"><SelectValue placeholder="Select a program…" /></SelectTrigger>
+              <SelectContent>
+                {programs.map((p) => <SelectItem key={p._id} value={p._id}>{p.title}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
-        )}
+        ) : program ? (
+          <div className="cp-program">{program.title}</div>
+        ) : null}
       </div>
 
       {!program ? (
-        <div className="panel empty-state"><p className="muted">Choose a program above to start learning.</p></div>
+        <div className="panel empty-state"><p className="muted">{programs.length ? 'Choose a program above to start learning.' : 'No programme yet — it appears here once you are enrolled.'}</p></div>
       ) : flat.length === 0 ? (
         <div className="panel empty-state"><p className="muted">No lessons published yet.{!isStudent ? ' Add curriculum in Programs → Manage curriculum.' : ' Check back soon.'}</p></div>
       ) : (
-        <>
-        {/* Week strip: one card per module, scrolling sideways. The week you're
-            in is lit; a locked one shows its key. Tapping opens that week in
-            the syllabus below. */}
-        <div className="learn-weeks" aria-label="Weeks">
-          {(program.modules || []).map((m, mi) => {
-            const mTopics = (m.chapters || []).flatMap((c) => c.topics || []);
-            const mDone = mTopics.filter((t) => completed.has(t._id)).length;
-            const locked = isLocked(mi);
-            const isCurrent = String(m._id) === String(currentModId);
-            return (
-              <button
-                key={m._id}
-                type="button"
-                className={`learn-week ${locked ? 'locked' : ''} ${isCurrent ? 'current' : ''} ${!locked && isStudent && mTopics.length > 0 && mDone === mTopics.length ? 'done' : ''}`}
-                onClick={() => openModule(m, mi)}
-                disabled={locked}
-                aria-current={isCurrent ? 'true' : undefined}
-                title={locked ? 'Attempt the previous module’s quiz to unlock this one' : m.title}
-              >
-                <span className="learn-week-num">{locked ? <LineIcon name="key" size={13} /> : `Week ${mi + 1}`}</span>
-                <span className="learn-week-title">{moduleShortTitle(m.title)}</span>
-                <span className="learn-week-count">
-                  {locked ? 'Locked' : isStudent ? `${mDone}/${mTopics.length} lessons` : `${mTopics.length} lesson${mTopics.length === 1 ? '' : 's'}`}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <div className="cp-layout">
+          {/* ── The player column ── */}
+          <main className="cp-main">
+            {topic && hasVideo && (
+              <div className="cp-player">
+                {vdoId
+                  ? <VdoPlayer key={topic._id} videoId={vdoId} title={topic.title} />
+                  : <LessonVideo key={topic._id} url={videoUrl} />}
+              </div>
+            )}
 
-        <div className={`learn-grid ${topic || page ? 'reading' : ''} ${sylOpen ? 'syl-open' : 'syl-closed'}`}>
-          {/* Phone only, and only while something is open on the reader: the
-              syllabus folds behind this bar so the player keeps the screen.
-              Hidden on desktop, where the syllabus is a column of its own. */}
-          {(topic || page) && (() => {
-            const mi = modIndexOf(currentModId);
-            const m = (program.modules || [])[mi];
-            const mTopics = m ? (m.chapters || []).flatMap((c) => c.topics || []) : [];
-            const mDone = mTopics.filter((t) => completed.has(t._id)).length;
-            return (
-              <button
-                type="button"
-                className="learn-syl-toggle"
-                onClick={() => setSylOpen((v) => !v)}
-                aria-expanded={sylOpen}
-                aria-controls="learn-syllabus"
-              >
-                <span className="learn-syl-toggle-label">
-                  <strong>{m ? `Week ${mi + 1}` : 'Lessons'}</strong>
-                  {m && <span className="learn-syl-toggle-sub">{isStudent ? `${mDone} of ${mTopics.length} done` : `${mTopics.length} lesson${mTopics.length === 1 ? '' : 's'}`}</span>}
-                </span>
-                <span className={`cur-caret ${sylOpen ? 'up' : ''}`}>⌄</span>
-              </button>
-            );
-          })()}
+            {reading ? (
+              <>
+                <div className="cp-info">
+                  <div className="cp-crumb"><span>{crumb}</span><span className="cp-pos">{position}</span></div>
+                  <h1 className="cp-title">{topic ? topic.title : page.title}</h1>
 
-          {/* Curriculum sidebar */}
-          <aside className="curriculum" id="learn-syllabus">
+                  <div className="cp-actions">
+                    {topic && isStudent && (
+                      <button className={`btn cp-complete ${isDone ? 'is-done' : ''}`} onClick={() => toggleComplete(topic._id)} aria-pressed={isDone}>
+                        {isDone ? <><LineIcon name="check" size={16} /> Completed</> : 'Mark as complete'}
+                      </button>
+                    )}
+                    {page && (
+                      <button className="btn cp-complete" disabled={pageStart < 0} onClick={() => flat[pageStart] && selectTopic(flat[pageStart])}>{page.startLabel} →</button>
+                    )}
+                    <div className="cp-nav">
+                      {topic ? (
+                        <>
+                          <button className="btn ghost sm" disabled={idx <= 0} onClick={() => flat[idx - 1] && selectTopic(flat[idx - 1])}>← Previous</button>
+                          <button className="btn ghost sm" disabled={!next || nextLocked} onClick={() => next && selectTopic(next)}>Next →</button>
+                        </>
+                      ) : (
+                        <button className="btn ghost sm" disabled={pageStart <= 0} onClick={() => flat[pageStart - 1] && selectTopic(flat[pageStart - 1])}>← Previous</button>
+                      )}
+                    </div>
+                  </div>
+
+                  <ChipRow media={topic ? mediaOf(topic) : page.media} subtitle={topic ? topic.title : page.crumb} onOpen={setViewer} />
+
+                  {/* Up next — so finishing a lesson never means hunting the
+                      list for the one after it. Lit once this one is done. */}
+                  {topic && (next && !nextLocked ? (
+                    <div className={`cp-next ${isDone ? 'lit' : ''}`}>
+                      <span className="cp-next-icon"><LessonIcon type={next.topic.contentType} size={16} /></span>
+                      <div className="cp-next-text">
+                        <div className="cp-next-eyebrow">Up next</div>
+                        <div className="cp-next-title">{next.topic.title}</div>
+                        {String(next.modId) !== String(current.modId) && <div className="cp-next-crumb">{next.mod}</div>}
+                      </div>
+                      <button className={`btn sm ${isDone ? '' : 'ghost'}`} onClick={() => selectTopic(next)}>Continue →</button>
+                    </div>
+                  ) : next && nextLocked ? (
+                    <div className={`cp-next ${isDone ? 'lit' : ''}`}>
+                      <span className="cp-next-icon"><LineIcon name="key" size={16} /></span>
+                      <div className="cp-next-text">
+                        <div className="cp-next-eyebrow">Up next</div>
+                        <div className="cp-next-title">{curGate && !curGate.myAttempt ? `Module ${modIndexOf(current.modId) + 1} quiz` : 'Module quiz'}</div>
+                        <div className="cp-next-crumb">Attempt it to unlock {next.mod}</div>
+                      </div>
+                      <button className={`btn sm ${isDone ? '' : 'ghost'}`} onClick={() => setParams({ tab: 'quizzes' })}>Take quiz →</button>
+                    </div>
+                  ) : isDone && isStudent ? (
+                    <div className="cp-next lit">
+                      <span className="cp-next-icon"><LineIcon name="check" size={16} /></span>
+                      <div className="cp-next-text">
+                        <div className="cp-next-eyebrow">That was the last lesson</div>
+                        <div className="cp-next-title">{pct === 100 ? 'Course complete — well done.' : `${total - done} lesson${total - done === 1 ? '' : 's'} still to finish.`}</div>
+                      </div>
+                      {pct === 100
+                        ? <button className="btn sm" onClick={viewCertificate}>🎓 Certificate</button>
+                        : <button className="btn sm ghost" onClick={() => resume && selectTopic(resume.f)}>Go there →</button>}
+                    </div>
+                  ) : null)}
+                </div>
+
+                {/* Phones only: About and the list share the space under the
+                    player. Without any text there is nothing to switch to. */}
+                {hasAbout && (
+                  <div className="cp-seg" role="tablist" aria-label="Lesson view">
+                    <button type="button" role="tab" aria-selected={mobileTab === 'about'} onClick={() => setMobileTab('about')}>About</button>
+                    <button type="button" role="tab" aria-selected={mobileTab === 'lessons'} onClick={() => setMobileTab('lessons')}>Lessons <span className="cp-seg-n">{flat.length}</span></button>
+                  </div>
+                )}
+
+                {hasAbout ? (
+                  <div className={`cp-body ${mobileTab !== 'about' ? 'phone-hide' : ''}`}><Markdown text={bodyText} /></div>
+                ) : topic && !hasVideo ? (
+                  <p className="cp-empty">Nothing has been added to this lesson yet. Check back soon.</p>
+                ) : null}
+              </>
+            ) : (
+              /* Nothing open — only reachable by folding a page away, since
+                 arrival opens a lesson by itself. */
+              resume && (
+                <div className="cp-resume">
+                  <div className="cp-resume-eyebrow">
+                    {resume.kind === 'resume' ? 'Continue learning' : resume.kind === 'revisit' ? 'All done — revisit' : resume.kind === 'continue' ? 'Up next' : 'Start here'}
+                  </div>
+                  <div className="cp-resume-row">
+                    <span className="cp-resume-icon"><LessonIcon type={resume.f.topic.contentType} size={22} /></span>
+                    <div className="cp-resume-text">
+                      <div className="cp-resume-crumb">{resume.f.mod}</div>
+                      <div className="cp-resume-title">{resume.f.topic.title}</div>
+                      <div className="cp-resume-pos">Lesson {resume.idx + 1} of {flat.length}</div>
+                    </div>
+                  </div>
+                  <button className="btn cp-resume-btn" onClick={() => selectTopic(resume.f)}>
+                    {resume.kind === 'resume' ? 'Resume' : resume.kind === 'revisit' ? 'Open again' : resume.kind === 'continue' ? 'Continue' : 'Start'} →
+                  </button>
+                </div>
+              )
+            )}
+          </main>
+
+          {/* ── The list ── */}
+          <aside className={`cp-side ${reading && hasAbout && mobileTab !== 'lessons' ? 'phone-hide' : ''}`} id="learn-syllabus">
+            <div className="cp-side-head">
+              <div className="cp-side-title">Course content</div>
+              <div className="cp-side-prog">
+                <span>{isStudent && total > 0 ? `${done} of ${total} lessons done` : `${flat.length} lesson${flat.length === 1 ? '' : 's'} · ${weeks} week${weeks === 1 ? '' : 's'}`}</span>
+                {isStudent && total > 0 && <strong>{pct}%</strong>}
+              </div>
+              {isStudent && total > 0 && (
+                <div className="cp-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label="Lessons completed"><span style={{ width: `${pct}%` }} /></div>
+              )}
+              {isStudent && pct === 100 && <button className="btn sm cp-cert" onClick={viewCertificate}>🎓 View certificate</button>}
+              {pendingGate && (
+                <button type="button" className="cp-pending" onClick={() => setParams({ tab: 'quizzes' })}>
+                  <LineIcon name="key" size={14} /> Module {modIndexOf(pendingGate.moduleId) + 1} quiz is waiting — take it to unlock the next week
+                </button>
+              )}
+            </div>
+            <div className="cp-list">
             {(program.modules || []).map((m, mi) => {
               const mTopics = (m.chapters || []).flatMap((c) => c.topics || []);
               const mDone = mTopics.filter((t) => completed.has(t._id)).length;
               const locked = isLocked(mi);
               const gate = gateFor(m._id);
               return (
-                <div key={m._id} className={`cur-mod ${locked ? 'locked' : ''}`}>
+                <div key={m._id} className={`cur-mod ${locked ? 'locked' : ''} ${String(m._id) === String(currentModId) ? 'current' : ''}`}>
                   <button
                     className={`cur-mod-head ${pageRef?.kind === 'module' && String(pageRef.id) === String(m._id) ? 'showing' : ''}`}
                     onClick={() => !locked && pressModule(m)}
@@ -779,14 +854,10 @@ function Content() {
                     title={locked ? 'Attempt the previous module’s quiz to unlock this one' : undefined}
                   >
                     <span className="cur-mod-idx">{locked ? <LineIcon name="key" size={13} /> : String(mi + 1).padStart(2, '0')}</span>
-                    <span className="cur-mod-title">{m.title}</span>
-                    {!locked && isStudent && mTopics.length > 0 && <span className="cur-mod-count">{mDone}/{mTopics.length}</span>}
-                    {locked ? <span className="cur-mod-count">Locked</span> : <span className={`cur-caret ${open[m._id] ? 'up' : ''}`}>⌄</span>}
+                    <span className="cur-mod-title">{m.title}<span className="cur-mod-sub">{locked ? 'Locked' : isStudent ? `${mDone} / ${mTopics.length} done` : `${mTopics.length} lesson${mTopics.length === 1 ? '' : 's'}`}</span></span>
+                    <span className={`cur-caret ${open[m._id] ? 'up' : ''}`}>⌄</span>
                   </button>
                   {!locked && open[m._id] && (m.chapters || []).map((c) => {
-                    // Only a chapter that has a page becomes a dropdown of its
-                    // own. One without stays exactly as it was — a plain label
-                    // with its lessons always visible.
                     const hasPage = !!c.description;
                     const unfolded = !hasPage || String(openChap) === String(c._id);
                     const shortTitle = stripParentContext(c.title, m.title);
@@ -803,8 +874,6 @@ function Content() {
                         )}
                         {unfolded && hasPage && (
                           <button className={`cur-topic cur-page ${showingPage ? 'active' : ''}`} onClick={() => showPage({ kind: 'chapter', id: String(c._id) })}>
-                            {/* An icon, not a tick: a page can't be completed,
-                                so it must not offer an empty checkbox. */}
                             <span className="cur-page-icon"><LineIcon name="book" size={12} /></span>
                             <span className="cur-topic-title">{c.pageLabel || 'Overview'}</span>
                           </button>
@@ -813,190 +882,30 @@ function Content() {
                           const active = t._id === topicId;
                           const tdone = completed.has(t._id);
                           return (
-                            <button key={t._id} className={`cur-topic ${active ? 'active' : ''} ${tdone ? 'done' : ''}`} onClick={() => selectTopic({ topic: t, modId: m._id, chapId: c._id })}>
-                              {/* The dot carries state here exactly as it does on the Path;
-                                  the icon says what kind of lesson it is. */}
-                              <span className="cur-tick" />
+                            <button key={t._id} className={`cur-topic ${active ? 'active' : ''} ${tdone ? 'done' : ''}`} onClick={() => selectTopic({ topic: t, modId: m._id, chapId: c._id })} aria-current={active ? 'true' : undefined}>
+                              <span className="cur-tick">{tdone && <LineIcon name="check" size={9} />}</span>
                               <span className="cur-topic-kind" aria-hidden="true"><LessonIcon type={t.contentType} size={13} /></span>
                               <span className="cur-topic-title">{t.title}</span>
+                              {active && <span className="cur-topic-now">{hasVideo ? 'Playing' : 'Open'}</span>}
                             </button>
                           );
                         })}
                       </div>
                     );
                   })}
-                  {/* The gate sits at the foot of its module — the last thing
-                      you reach, and the thing that opens the next one. */}
                   {!locked && open[m._id] && gate && (
-                    <button
-                      className={`cur-topic cur-gate ${gate.myAttempt ? 'done' : ''}`}
-                      // The gate lives on the Quizzes tab — that's where every
-                      // quiz is, so sitting one never happens in two places.
-                      onClick={() => setParams({ tab: 'quizzes' })}
-                    >
-                      <span className="cur-tick" />
-                      <span className="cur-topic-title">
-                        Module {mi + 1} quiz{gate.myAttempt ? '' : ' — unlocks the next module'}
-                      </span>
+                    <button className={`cur-topic cur-gate ${gate.myAttempt ? 'done' : ''}`} onClick={() => setParams({ tab: 'quizzes' })}>
+                      <span className="cur-tick">{gate.myAttempt && <LineIcon name="check" size={9} />}</span>
+                      <span className="cur-topic-kind" aria-hidden="true"><LineIcon name="key" size={13} /></span>
+                      <span className="cur-topic-title">Module {mi + 1} quiz{gate.myAttempt ? '' : ' — unlocks the next module'}</span>
                     </button>
                   )}
                 </div>
               );
             })}
+            </div>
           </aside>
-
-          {/* Lesson viewer */}
-          <section className="lesson">
-            {topic ? (
-              <>
-                <div className="lesson-head">
-                  <div className="lesson-head-top">
-                    <div className="lesson-crumb">{current.mod}{current.chap && current.chap !== 'Lessons' ? ` · ${current.chap}` : ''}</div>
-                    {/* Same numbers the old line read from — position in the
-                        flattened lesson list, so it tracks as you move around. */}
-                    <div className="lesson-position">Lesson {idx + 1} of {flat.length}</div>
-                  </div>
-                  <h2 className="lesson-title">{topic.title}</h2>
-                  <ChipRow media={mediaOf(topic)} subtitle={topic.title} onOpen={setViewer} />
-                </div>
-
-                <div className="lesson-body">
-                  {vdoId
-                    ? <VdoPlayer key={topic._id} videoId={vdoId} title={topic.title} />
-                    : videoUrl
-                      ? <LessonVideo key={topic._id} url={videoUrl} />
-                      : <div className="panel empty-state"><p className="muted">No video for this lesson yet.</p></div>}
-                  {topic.body && <Markdown text={topic.body} />}
-                </div>
-
-                <div className="lesson-foot">
-                  <button className="btn ghost sm" disabled={idx <= 0} onClick={() => flat[idx - 1] && selectTopic(flat[idx - 1])}>← Previous</button>
-                  {isStudent && (
-                    <button className={`btn lesson-complete ${isDone ? 'ghost' : 'on-stage'}`} onClick={() => toggleComplete(topic._id)}>
-                      {isDone ? 'Completed' : 'Mark complete'}
-                    </button>
-                  )}
-                  <button className="btn ghost sm" disabled={idx >= flat.length - 1} onClick={() => flat[idx + 1] && selectTopic(flat[idx + 1])}>Next →</button>
-                </div>
-
-                {/* Up next — so finishing a lesson never means hunting the
-                    syllabus for the one after it. Lit once this one is done. */}
-                {next && !nextLocked ? (
-                  <div className={`lesson-next ${isDone ? 'lit' : ''}`}>
-                    <span className="lesson-next-icon"><LessonIcon type={next.topic.contentType} size={16} /></span>
-                    <div className="lesson-next-text">
-                      <div className="lesson-next-eyebrow">Up next</div>
-                      <div className="lesson-next-title">{next.topic.title}</div>
-                      {String(next.modId) !== String(current.modId) && <div className="lesson-next-crumb">{next.mod}</div>}
-                    </div>
-                    <button className={`btn sm ${isDone ? 'on-stage' : 'ghost'}`} onClick={() => selectTopic(next)}>Continue →</button>
-                  </div>
-                ) : next && nextLocked ? (
-                  <div className={`lesson-next ${isDone ? 'lit' : ''}`}>
-                    <span className="lesson-next-icon"><LineIcon name="key" size={16} /></span>
-                    <div className="lesson-next-text">
-                      <div className="lesson-next-eyebrow">Up next</div>
-                      <div className="lesson-next-title">{curGate && !curGate.myAttempt ? `Module ${modIndexOf(current.modId) + 1} quiz` : 'Module quiz'}</div>
-                      <div className="lesson-next-crumb">Attempt it to unlock {next.mod}</div>
-                    </div>
-                    <button className={`btn sm ${isDone ? 'on-stage' : 'ghost'}`} onClick={() => setParams({ tab: 'quizzes' })}>Take quiz →</button>
-                  </div>
-                ) : isDone && isStudent ? (
-                  <div className="lesson-next lit">
-                    <span className="lesson-next-icon"><LineIcon name="check" size={16} /></span>
-                    <div className="lesson-next-text">
-                      <div className="lesson-next-eyebrow">That was the last lesson</div>
-                      <div className="lesson-next-title">{pct === 100 ? 'Course complete — well done.' : `${total - done} lesson${total - done === 1 ? '' : 's'} still to finish.`}</div>
-                    </div>
-                    {pct === 100
-                      ? <button className="btn sm on-stage" onClick={viewCertificate}>🎓 Certificate</button>
-                      : <button className="btn sm ghost" onClick={() => resume && selectTopic(resume.f)}>Go there →</button>}
-                  </div>
-                ) : null}
-              </>
-            ) : page ? (
-              /* A page: a lesson's exact furniture, minus the parts a page
-                 can't have — no video, and nothing to mark complete. */
-              <>
-                <div className="lesson-head">
-                  <div className="lesson-head-top">
-                    <div className="lesson-crumb">{page.crumb}</div>
-                    <div className="lesson-position">{page.position}</div>
-                  </div>
-                  <h2 className="lesson-title">{page.title}</h2>
-                  <ChipRow media={page.media} subtitle={page.crumb} onOpen={setViewer} />
-                </div>
-
-                <div className="lesson-body"><Markdown text={page.body} /></div>
-
-                <div className="lesson-foot">
-                  <button className="btn ghost sm" disabled={pageStart <= 0} onClick={() => flat[pageStart - 1] && selectTopic(flat[pageStart - 1])}>← Previous</button>
-                  <button className="btn on-stage" disabled={pageStart < 0} onClick={() => flat[pageStart] && selectTopic(flat[pageStart])}>{page.startLabel} →</button>
-                </div>
-              </>
-            ) : (
-              /* Nothing open. Arriving at Learning selects nothing, so this is
-                 the first thing a student sees. No chips — nothing is open for
-                 them to point at. */
-              <div className="lesson-landing">
-                <div className="lesson-landing-name">{program.title}</div>
-                <div className="lesson-landing-count">
-                  {flat.length} lesson{flat.length === 1 ? '' : 's'}, {(program.modules || []).length} week{(program.modules || []).length === 1 ? '' : 's'}
-                </div>
-
-                {/* Continue learning — the one tap that matters on arrival.
-                    The lesson last opened here, or the first one still to do. */}
-                {resume && (
-                  <div className="learn-resume">
-                    <div className="learn-resume-eyebrow">
-                      {resume.kind === 'resume' ? 'Continue learning' : resume.kind === 'revisit' ? 'All done — revisit' : resume.kind === 'continue' ? 'Up next' : 'Start here'}
-                    </div>
-                    <div className="learn-resume-row">
-                      <span className="learn-resume-icon"><LessonIcon type={resume.f.topic.contentType} size={20} /></span>
-                      <div className="learn-resume-text">
-                        <div className="learn-resume-crumb">{resume.f.mod}{resume.f.chap && resume.f.chap !== 'Lessons' ? ` · ${stripParentContext(resume.f.chap, resume.f.mod)}` : ''}</div>
-                        <div className="learn-resume-title">{resume.f.topic.title}</div>
-                        <div className="learn-resume-pos">Lesson {resume.idx + 1} of {flat.length}</div>
-                      </div>
-                    </div>
-                    {isStudent && (
-                      <div className="learn-resume-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total || flat.length} aria-valuenow={done} aria-label="Lessons completed">
-                        <span style={{ width: `${total ? pct : 0}%` }} />
-                      </div>
-                    )}
-                    <button className="btn on-stage learn-resume-btn" onClick={() => selectTopic(resume.f)}>
-                      {resume.kind === 'resume' ? 'Resume' : resume.kind === 'revisit' ? 'Open again' : resume.kind === 'continue' ? 'Continue' : 'Start'} →
-                    </button>
-                    {isStudent && (
-                      <div className="learn-stats">
-                        <div className="learn-stat">
-                          <span className="learn-stat-n">{done}<small>/{total || flat.length}</small></span>
-                          <span className="learn-stat-l">lessons done</span>
-                        </div>
-                        <div className="learn-stat">
-                          <span className="learn-stat-n">{unlockedCount}<small>/{(program.modules || []).length}</small></span>
-                          <span className="learn-stat-l">weeks unlocked</span>
-                        </div>
-                        <button type="button" className={`learn-stat ${pendingGate ? 'is-pending' : ''}`} onClick={() => setParams({ tab: 'quizzes' })} disabled={!pendingGate}>
-                          <span className="learn-stat-n">{pendingGate ? 'Yes' : 'No'}</span>
-                          <span className="learn-stat-l">{pendingGate ? `Module ${modIndexOf(pendingGate.moduleId) + 1} quiz pending` : 'module quiz pending'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <button
-                  className="btn sm lesson-landing-btn"
-                  onClick={() => document.getElementById('learn-syllabus')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                >
-                  Browse the syllabus
-                </button>
-              </div>
-            )}
-          </section>
         </div>
-        </>
       )}
 
       {cert && <CertificateModal cert={cert} onClose={() => setCert(null)} />}
@@ -1026,20 +935,6 @@ function LessonVideo({ url }) {
   // nobody had asked to play. The box is sized by CSS, so holding off costs
   // no layout — .lesson-video carries the same 16:9 the DRM frame does.
   return <video key={attempt} src={url} controls preload="none" className="lesson-video" onError={() => setFailed(true)} />;
-}
-
-// Circular progress indicator.
-function Ring({ pct }) {
-  const r = 20, c = 2 * Math.PI * r;
-  return (
-    // Not className="ring": that is also Tailwind's ring utility, which drew a
-    // 1px box in the text colour around the whole SVG.
-    <svg className="progress-ring" width="52" height="52" viewBox="0 0 52 52">
-      <circle cx="26" cy="26" r={r} className="ring-bg" />
-      <circle cx="26" cy="26" r={r} className="ring-fg" strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} transform="rotate(-90 26 26)" />
-      <text x="26" y="30" textAnchor="middle" className="ring-text">{pct}%</text>
-    </svg>
-  );
 }
 
 function Assignments() {
