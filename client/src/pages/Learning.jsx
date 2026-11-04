@@ -985,6 +985,10 @@ function AssignmentCard({ a, onChange }) {
   const [driveLink, setDriveLink] = useState(sub?.driveLink || '');
   const [pdf, setPdf] = useState(null); // { label, subtitle, url }
   const [editing, setEditing] = useState(false);
+  // A long brief starts folded to a few lines; the student opens it when
+  // they sit down to do the work, not every time they scroll past the card.
+  const longBrief = (a.description || '').length > 420;
+  const [briefOpen, setBriefOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -1087,9 +1091,16 @@ function AssignmentCard({ a, onChange }) {
         <div className="assign-work">
           <section className="assign-content">
             <h4 className="assign-pane-head">The brief</h4>
-            {a.description
-              ? <div className="assign-brief"><Markdown text={a.description} /></div>
-              : <p className="assign-note">No brief posted for this {noun} yet.</p>}
+            {a.description ? (
+              <>
+                <div className={`assign-brief ${longBrief && !briefOpen ? 'is-folded' : ''}`}><Markdown text={a.description} /></div>
+                {longBrief && (
+                  <button type="button" className="assign-brief-more" onClick={() => setBriefOpen((v) => !v)} aria-expanded={briefOpen}>
+                    {briefOpen ? 'Show less ↑' : 'Read the full brief ↓'}
+                  </button>
+                )}
+              </>
+            ) : <p className="assign-note">No brief posted for this {noun} yet.</p>}
           </section>
 
           <aside className="assign-submitpane">

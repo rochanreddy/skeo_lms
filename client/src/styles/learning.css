@@ -172,3 +172,20 @@
   .quiz-take-nav .btn { flex: 1; justify-content: center; white-space: nowrap; padding-left: 12px; padding-right: 12px; }
   .quiz-take-hint { text-align: center; }
 }
+
+/* ── Assignment brief ──
+   Smaller type, tighter list, and a long brief folds to a few lines behind
+   "Read the full brief" so the card is the task, not a wall of text. */
+.assign-brief .md { font-size: 14.5px; line-height: 1.6; }
+.assign-brief .md-p { margin-bottom: 10px; }
+.assign-brief .md-list { margin-bottom: 10px; padding-left: 20px; }
+.assign-brief .md-list li { margin-bottom: 5px; }
+.assign-brief .md-list li strong { font-weight: 600; }
+.assign-brief.is-folded { position: relative; max-height: 190px; overflow: hidden; }
+.assign-brief.is-folded::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: linear-gradient(to bottom, transparent, var(--card)); pointer-events: none; }
+.assign-brief-more { display: inline-flex; align-items: center; min-height: 36px; margin-top: 4px; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--purple); cursor: pointer; }
+.assign-brief-more:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  .assign-brief .md { font-size: 14px; }
+  .assign-brief.is-folded { max-height: 160px; }
+}
