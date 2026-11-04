@@ -378,6 +378,9 @@ function Content() {
   const [openChap, setOpenChap] = useState(null);
   const [completed, setCompleted] = useState(new Set());
   const [total, setTotal] = useState(0);
+  // On a phone the syllabus folds behind a toggle bar once something is open
+  // on the reader, so the player keeps the screen. Desktop ignores this.
+  const [sylOpen, setSylOpen] = useState(false);
   const [cert, setCert] = useState(null);
   const [viewer, setViewer] = useState(null); // { label, subtitle, url }
   // Gate quizzes, one per module. Attempting a module's quiz unlocks the next.
@@ -483,6 +486,26 @@ function Content() {
     return { f: flat[back], idx: back, kind: 'revisit' };
   }, [program, flat, completed, unlockedCount, topicId]);
 
+  // The week the strip lights up: the one holding the open lesson or page,
+  // else the one "Continue learning" points at.
+  const currentModId = topic ? current.modId
+    : pageRef?.kind === 'module' ? pageRef.id
+    : pageRef?.kind === 'chapter' ? ((program?.modules || []).find((m) => (m.chapters || []).some((c) => String(c._id) === String(pageRef.id)))?._id ?? null)
+    : resume?.f.modId ?? null;
+
+  // Keep the lit week card in the strip's view as the student moves through
+  // the course. Scrolled by hand along the strip only — scrollIntoView would
+  // also move the page, and on a phone fight the scroll to the reader.
+  useEffect(() => {
+    const strip = document.querySelector('.learn-weeks');
+    const card = strip?.querySelector('.learn-week.current');
+    if (!strip || !card) return;
+    const left = card.offsetLeft; // the strip is positioned, so this is strip-relative
+    const right = left + card.offsetWidth;
+    if (left < strip.scrollLeft) strip.scrollTo({ left: left - 12, behavior: 'smooth' });
+    else if (right > strip.scrollLeft + strip.clientWidth) strip.scrollTo({ left: right - strip.clientWidth + 12, behavior: 'smooth' });
+  }, [currentModId]);
+
   // The next gate a student still has to sit: the newest open module's quiz,
   // when it hasn't been attempted. (A gate behind a lock isn't "pending" yet.)
   const pendingGate = useMemo(() => {
@@ -554,6 +577,20 @@ function Content() {
     setOpen((o) => ({ ...o, [id]: true }));
     setOpenChap(null); // opening a module folds any chapter unfolded inside it
     if (m.description) showPage({ kind: 'module', id });
+  }
+
+  // The week strip always *opens* — a card isn't a toggle — and on a phone,
+  // where the syllabus sits below the reader, brings the module into view.
+  function openModule(m, mi) {
+    if (isLocked(mi)) return;
+    const id = String(m._id);
+    setOpen((o) => ({ ...o, [id]: true }));
+    setOpenChap(null);
+    if (m.description) showPage({ kind: 'module', id });
+    if (window.matchMedia('(max-width: 820px)').matches) {
+      setSylOpen(true);
+      requestAnimationFrame(() => document.getElementById('learn-syllabus')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
   }
 
   // Unfolding a chapter must NOT touch the reader. You open a week to read its
@@ -662,6 +699,37 @@ function Content() {
       ) : flat.length === 0 ? (
         <div className="panel empty-state"><p className="muted">No lessons published yet.{!isStudent ? ' Add curriculum in Programs → Manage curriculum.' : ' Check back soon.'}</p></div>
       ) : (
+        <>
+        {/* Week strip: one card per module, scrolling sideways. The week you're
+            in is lit; a locked one shows its key. Tapping opens that week in
+            the syllabus below. */}
+        <div className="learn-weeks" role="list" aria-label="Weeks">
+          {(program.modules || []).map((m, mi) => {
+            const mTopics = (m.chapters || []).flatMap((c) => c.topics || []);
+            const mDone = mTopics.filter((t) => completed.has(t._id)).length;
+            const locked = isLocked(mi);
+            const isCurrent = String(m._id) === String(currentModId);
+            return (
+              <button
+                key={m._id}
+                type="button"
+                role="listitem"
+                className={`learn-week ${locked ? 'locked' : ''} ${isCurrent ? 'current' : ''} ${!locked && isStudent && mTopics.length > 0 && mDone === mTopics.length ? 'done' : ''}`}
+                onClick={() => openModule(m, mi)}
+                disabled={locked}
+                aria-current={isCurrent ? 'true' : undefined}
+                title={locked ? 'Attempt the previous module’s quiz to unlock this one' : m.title}
+              >
+                <span className="learn-week-num">{locked ? <LineIcon name="key" size={13} /> : `Week ${mi + 1}`}</span>
+                <span className="learn-week-title">{moduleShortTitle(m.title)}</span>
+                <span className="learn-week-count">
+                  {locked ? 'Locked' : isStudent ? `${mDone}/${mTopics.length} lessons` : `${mTopics.length} lesson${mTopics.length === 1 ? '' : 's'}`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="learn-grid">
           {/* Curriculum sidebar */}
           <aside className="curriculum" id="learn-syllabus">
@@ -860,6 +928,7 @@ function Content() {
             )}
           </section>
         </div>
+        </>
       )}
 
       {cert && <CertificateModal cert={cert} onClose={() => setCert(null)} />}
