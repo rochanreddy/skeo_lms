@@ -608,9 +608,11 @@ function Content() {
     if (program) setParams({ program: program._id, topic: String(f.topic._id) }, { replace: true });
     // Remembered per programme, so the landing card can offer to pick up here.
     if (program) writeLastLesson(program._id, f.topic._id);
-    // On a phone the reader sits under the syllabus, so a tapped lesson would
-    // open off-screen. Bring it into view once it has rendered.
+    // On a phone the reader renders above the syllabus; fold the syllabus
+    // away so the player has the screen, and bring the reader into view once
+    // it has rendered.
     if (window.matchMedia('(max-width: 820px)').matches) {
+      setSylOpen(false);
       requestAnimationFrame(() => document.querySelector('.lesson')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
   }
@@ -730,7 +732,32 @@ function Content() {
           })}
         </div>
 
-        <div className="learn-grid">
+        <div className={`learn-grid ${topic || page ? 'reading' : ''} ${sylOpen ? 'syl-open' : 'syl-closed'}`}>
+          {/* Phone only, and only while something is open on the reader: the
+              syllabus folds behind this bar so the player keeps the screen.
+              Hidden on desktop, where the syllabus is a column of its own. */}
+          {(topic || page) && (() => {
+            const mi = modIndexOf(currentModId);
+            const m = (program.modules || [])[mi];
+            const mTopics = m ? (m.chapters || []).flatMap((c) => c.topics || []) : [];
+            const mDone = mTopics.filter((t) => completed.has(t._id)).length;
+            return (
+              <button
+                type="button"
+                className="learn-syl-toggle"
+                onClick={() => setSylOpen((v) => !v)}
+                aria-expanded={sylOpen}
+                aria-controls="learn-syllabus"
+              >
+                <span className="learn-syl-toggle-label">
+                  <strong>{m ? `Week ${mi + 1}` : 'Lessons'}</strong>
+                  {m && <span className="learn-syl-toggle-sub">{isStudent ? `${mDone} of ${mTopics.length} done` : `${mTopics.length} lesson${mTopics.length === 1 ? '' : 's'}`}</span>}
+                </span>
+                <span className={`cur-caret ${sylOpen ? 'up' : ''}`}>⌄</span>
+              </button>
+            );
+          })()}
+
           {/* Curriculum sidebar */}
           <aside className="curriculum" id="learn-syllabus">
             {(program.modules || []).map((m, mi) => {
@@ -839,7 +866,7 @@ function Content() {
                 <div className="lesson-foot">
                   <button className="btn ghost sm" disabled={idx <= 0} onClick={() => flat[idx - 1] && selectTopic(flat[idx - 1])}>← Previous</button>
                   {isStudent && (
-                    <button className={`btn ${isDone ? 'ghost' : 'on-stage'}`} onClick={() => toggleComplete(topic._id)}>
+                    <button className={`btn lesson-complete ${isDone ? 'ghost' : 'on-stage'}`} onClick={() => toggleComplete(topic._id)}>
                       {isDone ? 'Completed' : 'Mark complete'}
                     </button>
                   )}
