@@ -163,6 +163,17 @@ credential; the bytes never pass through this API.
   `SKEO_APP_URL` is what the CORS allowlist trusts in production — there is no
   hard-coded fallback domain, so the frontend cannot call the API until it is set.
 - **Frontend** → Vercel (root `client/`). Env: `VITE_API_URL=https://<render-app>/api/skeo`.
+  `VITE_API_URL` is read twice at build time: by the app, and by `vite.config.js`
+  to put a `<link rel="preconnect">` to that origin in the HTML, so the TLS
+  handshake to the API is already done by the time the app asks it `/me`.
+
+  **One thing to remember when replacing a font or an icon.** `vercel.json`
+  serves everything under `/fonts/`, `/icons/`, plus `favicon.svg` and
+  `apple-touch-icon.png`, as immutable for a year. Those names are fixed, not
+  content-hashed like `/assets/` — so a browser that has the old file will keep
+  it for a year. If you change one of those files, change its name too (and the
+  reference in `src/fonts.css`, `index.html` or the manifest). Everything under
+  `/assets/` is hashed by the build and needs no such care.
 
 ## Data isolation rule
 This service must only ever read/write `skeo_*` collections in the `skeo`

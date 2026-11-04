@@ -7,12 +7,54 @@ const API = (import.meta.env.VITE_API_URL || 'http://localhost:4200/api/skeo').r
 
 const TOKEN_KEY = 'skeo_token';
 const REFRESH_KEY = 'skeo_refresh';
+const USER_KEY = 'skeo_user';
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
 }
 export function getRefreshToken() {
   return localStorage.getItem(REFRESH_KEY) || '';
+}
+
+/* ── Who we were last time ────────────────────────────────────────────────
+ *
+ * The app's first act is to ask /me, because the answer decides which
+ * dashboard to render. That is one cross-origin round trip to Singapore
+ * before a single pixel of the real app can appear — and if the API instance
+ * happens to be asleep, considerably more than one round trip's worth.
+ * Everything behind it waits on it.
+ *
+ * So the answer is remembered. On the next launch the app renders the right
+ * dashboard immediately from this, and asks /me in the background to confirm
+ * it. That is the difference between a skeleton for the length of a round
+ * trip and the real screen at once.
+ *
+ * What it is NOT is an authority. It picks which chrome to draw, nothing
+ * more: every piece of data on the page is still fetched with the token and
+ * still authorised by the server, so a remembered record that is out of date
+ * costs a wrong-looking dock for one round trip and can never show data the
+ * account is not entitled to. App.jsx honours a remembered block immediately
+ * and waits for the server before trusting the absence of one, so the
+ * staleness only ever errs towards less access, not more.
+ *
+ * Cleared by setToken('') below, which is the single door out of a session.
+ */
+export function getCachedUser() {
+  // No token means no session to describe, whatever is left in storage.
+  if (!getToken()) return null;
+  try {
+    const u = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+    return u && u.id && u.role ? u : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedUser(user) {
+  try {
+    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_KEY);
+  } catch { /* private mode, or the quota is full: the app works without it */ }
 }
 
 /**
@@ -27,6 +69,9 @@ export function setToken(t, refreshToken) {
   } else {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    // The remembered identity goes with the session, so the next person to
+    // open this app on a shared phone is not greeted by the last one's name.
+    setCachedUser(null);
     // pwa.js drops this device's push subscription, so a shared phone stops
     // receiving the last person's notifications.
     window.dispatchEvent(new Event('skeo:signed-out'));

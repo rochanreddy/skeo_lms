@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { api, getToken, setToken } from './api.js';
+import { api, getCachedUser, getToken, setCachedUser, setToken } from './api.js';
 import { navFor, extraRoutesFor } from './nav.jsx';
 import PwaPrompts from './components/PwaPrompts.jsx';
 import SkeoWordmark from './components/SkeoWordmark.jsx';
@@ -63,18 +63,43 @@ function AppSkeleton() {
 }
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [blocked, setBlocked] = useState(null); // message when the admin blocked this account
+  // Start from the session this device remembers, so a returning student gets
+  // their dashboard on the first paint instead of a skeleton held up by a
+  // round trip to Singapore. /me still runs below and still has the last word
+  // — see the note on getCachedUser() in api.js for why this is safe.
+  const remembered = getCachedUser();
+  const [user, setUser] = useState(remembered);
+  // Nothing to show yet only when there is a session we know nothing about:
+  // a token but no remembered record, i.e. the first launch on this device.
+  const [loading, setLoading] = useState(Boolean(getToken()) && !remembered);
+  // Message when the admin blocked this account. A remembered block counts
+  // straight away; its absence is not trusted until the server confirms it,
+  // so a stale record can only ever err towards less access.
+  const [blocked, setBlocked] = useState(
+    remembered?.blocked?.lms ? (remembered.blocked.reason
+      ? `Your account has been blocked: ${remembered.blocked.reason}`
+      : 'Your account has been blocked by the administrator.') : null,
+  );
 
-  // On load, resolve the current user from a stored token (picks the dashboard).
+  // Confirm (or correct) all of the above against the server.
   useEffect(() => {
     if (!getToken()) { setLoading(false); return; }
     api('/me')
-      .then((d) => setUser(d.user))
-      .catch((e) => { if (e.code === 'blocked') setBlocked(e.message); else setToken(''); })
+      .then((d) => { setUser(d.user); setBlocked(null); })
+      .catch((e) => {
+        if (e.code === 'blocked') { setBlocked(e.message); return; }
+        // Only the server saying no ends a session. err.http marks a reply we
+        // actually received; without it the request never arrived, and being
+        // offline is not evidence that the account is gone — which matters for
+        // an installed app whose whole promise is that it opens without a
+        // connection. The next call that does reach the server will decide.
+        if (e.http) { setToken(''); setUser(null); }
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  // Remember whoever we end up as, for the next launch.
+  useEffect(() => { setCachedUser(user); }, [user]);
 
   // An admin block takes effect on the next API call — api() broadcasts it so
   // the whole app swaps to the stop page immediately.
