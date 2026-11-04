@@ -710,7 +710,7 @@ function Content() {
         {/* Week strip: one card per module, scrolling sideways. The week you're
             in is lit; a locked one shows its key. Tapping opens that week in
             the syllabus below. */}
-        <div className="learn-weeks" role="list" aria-label="Weeks">
+        <div className="learn-weeks" aria-label="Weeks">
           {(program.modules || []).map((m, mi) => {
             const mTopics = (m.chapters || []).flatMap((c) => c.topics || []);
             const mDone = mTopics.filter((t) => completed.has(t._id)).length;
@@ -720,7 +720,6 @@ function Content() {
               <button
                 key={m._id}
                 type="button"
-                role="listitem"
                 className={`learn-week ${locked ? 'locked' : ''} ${isCurrent ? 'current' : ''} ${!locked && isStudent && mTopics.length > 0 && mDone === mTopics.length ? 'done' : ''}`}
                 onClick={() => openModule(m, mi)}
                 disabled={locked}
