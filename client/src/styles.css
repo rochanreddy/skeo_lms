@@ -172,7 +172,7 @@
    Custom properties inherit as computed values, so the aliases are restated
    here too — otherwise --parchment and --lavender would arrive already
    resolved to day-mode ink. */
-.auth-hero, .path-hero, .lesson, .md-pre, .vdo-frame, .stage-scope {
+.auth-hero, .sp, .lesson, .md-pre, .vdo-frame, .stage-scope {
   --ink: #f2f3f5;
   --ink-2: #c3c6cd;
   --muted: #9a9ea8;
@@ -777,106 +777,6 @@ h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 12px; }
 .list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .list-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
-/* ── THE PATH ───────────────────────────────────────────────────────────────
-   The student home. Modules are stations along the violet rule; the dot states
-   say where you are. Indicative, not gating — every station stays clickable,
-   because adult learners revisit material and locking that is hostile. */
-.path-wrap { margin: 0 0 44px; }
-
-/* The hero is a dark slab — the same "stage" studying happens on. Instant
-   contrast against the paper background, and it gives the Path somewhere to
-   live that isn't another white card. Texture, not illustration. */
-.path-hero {
-  position: relative; overflow: hidden;
-  background: var(--stage); color: var(--parchment);
-  border-radius: var(--radius-lg);
-  padding: 44px 48px 58px;
-  box-shadow: var(--shadow-lg);
-}
-.path-hero::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image: linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
-  background-size: 38px 38px;
-  mask-image: radial-gradient(72% 74% at 78% 18%, #000, transparent);
-}
-/* A blue bloom behind the top-right, so the slab isn't flat black. */
-.path-hero::after {
-  content: ''; position: absolute; top: -160px; right: -120px; width: 460px; height: 460px;
-  border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--blue) 55%, transparent) 0%, color-mix(in srgb, var(--blue) 0%, transparent) 68%);
-}
-.path-hero > * { position: relative; z-index: 1; }
-
-.path-lead { display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; flex-wrap: wrap; margin-bottom: 20px; }
-.path-where { font-size: 11.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--lavender); margin-bottom: 14px; }
-.path-title { font-family: var(--display); font-size: 52px; font-weight: 700; letter-spacing: -0.04em; line-height: 1.01; margin: 0; max-width: 14ch; color: var(--parchment); }
-
-/* The percentage as a graphic, not a label. */
-.path-figure { text-align: right; line-height: 1; }
-.path-figure-num { font-family: var(--display); font-weight: 700; font-size: 78px; letter-spacing: -0.05em; color: var(--parchment); display: block; }
-.path-figure-num span { font-size: 30px; color: var(--lavender); margin-left: 2px; letter-spacing: 0; }
-.path-figure-sub { font-size: 12.5px; color: var(--lavender); margin-top: 8px; letter-spacing: .02em; }
-
-/* Stations stretch to a common height so a module title that wraps to two
-   lines doesn't drop its state caption below the others' (see .path-state).
-
-   A grid, not flex: every module has to be visible at once, because the whole
-   point of the path is seeing the shape of the programme. Under flex each
-   station claimed a 150px minimum, so eight of them wanted 1200px, overflowed
-   the slab and pushed the last module into a scroller nobody thinks to drag.
-   Equal fractional columns divide whatever width there is instead, so the
-   count no longer decides whether you can see the end of your own course.
-   The 96px floor is the point below which a label stops being readable at all
-   -- past that (a very long programme on a phone) it scrolls, deliberately. */
-.path { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(96px, 1fr); align-items: stretch; padding: 30px 0 0; overflow-x: auto; scrollbar-width: none; }
-.path::-webkit-scrollbar { display: none; }
-.path-station { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 9px; background: none; border: 0; padding: 0 6px; font-family: var(--font); cursor: pointer; }
-/* The rule between stations. Travelled sections glow; the road ahead is faint. */
-.path-station::before { content: ''; position: absolute; top: 6px; right: 50%; width: 100%; height: 2px; background: rgba(255,255,255,.13); }
-.path-station:first-child::before { display: none; }
-.path-station.done::before { background: var(--green); }
-.path-station.now::before { background: linear-gradient(90deg, var(--green), var(--lime)); }
-.path-dot { position: relative; z-index: 1; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.24); background: var(--stage); box-sizing: border-box; transition: all .22s; }
-.path-station.done .path-dot { background: var(--green); border-color: var(--green); box-shadow: 0 0 0 4px rgba(46,204,138,.22); }
-.path-station.now .path-dot { border-color: var(--parchment); background: var(--parchment); transform: scale(1.2);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--stage-accent-ink) 26%, transparent), 0 0 24px color-mix(in srgb, var(--stage-accent-ink) 60%, transparent); }
-.path-code { font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.3); margin-top: 6px; transition: color .2s; }
-.path-station.done .path-code { color: var(--green-ink); }
-.path-station.now .path-code { color: var(--lavender); }
-/* Module names run long — clamp to three lines so stations stay level. The
-   size is fluid because the column width now depends on how many modules the
-   programme has: 13.5px when there is room, easing down to 11.5px when eight
-   of them are sharing a laptop's width. overflow-wrap keeps an unbroken title
-   from widening its own column. */
-.path-label { font-size: clamp(11.5px, 1.02vw, 13.5px); font-weight: 600; color: rgba(245,247,251,.52); text-align: center; line-height: 1.35; max-width: 100%; overflow-wrap: anywhere; transition: color .2s;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.path-station.done .path-label { color: rgba(245,247,251,.78); }
-.path-station.now .path-label { color: var(--parchment); }
-.path-station:hover .path-label { color: var(--parchment); }
-/* margin-top:auto pins the caption to the bottom of the stretched station, so
-   every station's caption sits on one line however long its title ran. */
-.path-state { margin-top: auto; font-size: clamp(9.5px, .8vw, 10.5px); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-align: center; color: color-mix(in srgb, var(--stage-accent-ink) 45%, transparent); }
-.path-station.done .path-state { color: var(--green-ink); }
-.path-station.now .path-state { color: var(--lavender); }
-
-/* The next-lesson card rides UP over the dark slab. That overlap is what makes
-   the page feel layered rather than like stacked rectangles. */
-.path-next { position: relative; z-index: 2; margin: -34px 40px 0; background: var(--card); border-radius: var(--radius-lg); padding: 30px 36px; box-shadow: var(--shadow-lg); display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
-.path-next-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--purple); margin-bottom: 10px; }
-.path-next-title { font-family: var(--display); font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.12; margin: 0 0 10px; }
-.path-next-meta { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); flex-wrap: wrap; }
-.path-next .btn { padding: 15px 30px; font-size: 15.5px; }
-
-/* Live-session strip — only rendered when something is actually imminent. */
-.path-live { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 40px 0; padding: 15px 22px; border-radius: var(--radius); background: var(--green); color: #fff; }
-.path-live .path-live-time { color: rgba(255,255,255,.85); }
-.path-live .btn.on-stage { background: #fff; color: var(--green-deep); }
-.path-live-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green-ink); flex: none; animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46,204,138,.5); } 50% { opacity: .85; box-shadow: 0 0 0 6px rgba(46,204,138,0); } }
-.path-live-title { font-weight: 600; font-size: 15px; }
-.path-live-time { font-size: 13.5px; color: var(--lavender); }
-.path-live .btn { margin-left: auto; }
 
 /* Join Live Class — first thing on the page, above the dark slab. The two
    states are deliberately different colours, not just different words: green
@@ -2169,7 +2069,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
    The numbers are the point: the home reads as an ordered sequence, not a
    scatter of tiles, so a student always knows where they are in it.
    ═══════════════════════════════════════════════════════════════════════════ */
-.sh-sec { margin-top: 52px; }
+.sh-sec { margin-top: 40px; }
 .sh-sec:first-child { margin-top: 0; }
 
 .sh-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px; }

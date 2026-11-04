@@ -6,6 +6,7 @@ import App from './App.jsx';
 import './fonts.css';
 import './tailwind.css';
 import './styles.css';
+import './styles/home.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

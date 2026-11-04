@@ -10,10 +10,11 @@ import LineIcon from '../components/LineIcon.jsx';
 //   03 Updates    what changed while you were away
 //   04 Ad-ons     the extras, once the work is done
 //
-// Progress stays spatial — the curriculum is drawn as a route with modules as
-// stations, so you SEE how far along you are instead of reading a percentage.
-// The path is indicative, never gating: every station stays clickable, because
-// adult learners revisit material and locking that is hostile.
+// Progress is one compact card: a segmented bar (one segment per module, each
+// filling as its lessons are done) with the next lesson directly beneath it,
+// so the first thing on screen is the thing to do next, not a diagram. The
+// module list sits folded under a toggle. Indicative, never gating: every
+// module stays clickable, because adult learners revisit material.
 export default function StudentHome() {
   const { user } = useOutletContext();
   const navigate = useNavigate();
@@ -23,6 +24,9 @@ export default function StudentHome() {
   const [announcements, setAnnouncements] = useState([]);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  // The module list is folded by default: the bar above it already says
+  // where you are, and the list is only wanted when you go looking.
+  const [showModules, setShowModules] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -116,7 +120,6 @@ export default function StudentHome() {
   if (loading) {
     return (
       <div>
-        <div className="path-where">Loading your path…</div>
         <div className="skeleton sk-title" />
         <div className="skeleton sk-path" />
       </div>
@@ -138,72 +141,92 @@ export default function StudentHome() {
               : "Once an admin enrols you, your path shows up here."}
           </div>
         ) : (
-          <>
-            <div className="path-hero">
-              <div className="path-lead">
-                <div>
-                  <div className="path-where">
-                    {pct === 100 ? 'Programme complete' : `Module ${nowIndex + 1} of ${stations.length}`}
-                  </div>
-                  <h1 className="path-title">{program?.title || 'Your programme'}</h1>
+          <div className="sp">
+            <div className="sp-top">
+              <div className="sp-lead">
+                <div className="sp-where">
+                  {pct === 100 ? 'Programme complete' : `Module ${nowIndex + 1} of ${stations.length}`}
                 </div>
-                <div className="path-figure">
-                  <span className="path-figure-num">{pct}<span>%</span></span>
-                  <div className="path-figure-sub">{doneTopics} of {totalTopics} lessons</div>
-                </div>
+                <h1 className="sp-title">{program?.title || 'Your programme'}</h1>
               </div>
+              <div className="sp-figure">
+                <span className="sp-pct">{pct}<span>%</span></span>
+                <span className="sp-sub">{doneTopics} of {totalTopics} lessons</span>
+              </div>
+            </div>
 
-              {/* The route */}
-              <div className="path" role="list">
-                {stations.map((s, i) => {
-                  const state = s.complete ? 'done' : i === nowIndex ? 'now' : 'ahead';
-                  return (
-                    <button
-                      key={s.id}
-                      role="listitem"
-                      className={`path-station ${state}`}
-                      onClick={() => navigate('/app/learning')}
-                      title={`${s.done} of ${s.total} lessons complete`}
-                    >
-                      <span className="path-dot" />
-                      <span className="path-code">{s.code}</span>
-                      <span className="path-label">{s.title}</span>
-                      <span className="path-state">
-                        {s.complete ? 'done' : i === nowIndex ? `${s.done}/${s.total} · you are here` : `${s.total} lesson${s.total === 1 ? '' : 's'}`}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* The route, as a bar: one segment per module. Done segments are
+                solid, the current one fills as its lessons are ticked off. */}
+            <div className="sp-bar" role="list" aria-label="Modules">
+              {stations.map((s, i) => {
+                const state = s.complete ? 'done' : i === nowIndex ? 'now' : 'ahead';
+                const fill = s.total ? s.done / s.total : 0;
+                return (
+                  <button
+                    key={s.id}
+                    role="listitem"
+                    className={`sp-seg ${state}`}
+                    style={{ '--fill': fill }}
+                    onClick={() => navigate('/app/learning')}
+                    title={`${s.code} · ${s.title} — ${s.done} of ${s.total} lessons`}
+                    aria-label={`${s.title}, ${s.done} of ${s.total} lessons`}
+                  >
+                    <span className="sp-seg-fill" />
+                  </button>
+                );
+              })}
             </div>
 
             {/* The one next thing */}
             {nextLesson ? (
-              <div className="path-next">
-                <div style={{ minWidth: 0 }}>
-                  <div className="path-next-eyebrow">Next for you</div>
-                  <h2 className="path-next-title">{nextLesson.topic.title}</h2>
-                  <div className="path-next-meta">
-                    <span>{nextLesson.station.title}</span>
-                    <span className="dot ahead" />
-                    <span>{nextLesson.topic.contentType || 'text'}</span>
-                    <span className="dot ahead" />
-                    <span>lesson {doneTopics + 1} of {totalTopics}</span>
+              <div className="sp-next">
+                <div className="sp-next-body">
+                  <div className="sp-next-eyebrow">Next for you</div>
+                  <h2 className="sp-next-title">{nextLesson.topic.title}</h2>
+                  <div className="sp-next-meta">
+                    {nextLesson.station.title} · {nextLesson.topic.contentType || 'text'} · lesson {doneTopics + 1} of {totalTopics}
                   </div>
                 </div>
-                <button className="btn" onClick={() => navigate('/app/learning')}>Continue →</button>
+                <button className="btn on-stage" onClick={() => navigate('/app/learning')}>Continue →</button>
               </div>
             ) : (
-              <div className="path-next">
-                <div>
-                  <div className="path-next-eyebrow">Every lesson done</div>
-                  <h2 className="path-next-title">You've finished {program?.title}.</h2>
-                  <p className="path-next-meta">Claim your certificate from the Learning page.</p>
+              <div className="sp-next">
+                <div className="sp-next-body">
+                  <div className="sp-next-eyebrow">Every lesson done</div>
+                  <h2 className="sp-next-title">You've finished {program?.title}.</h2>
+                  <div className="sp-next-meta">Claim your certificate from the Learning page.</div>
                 </div>
-                <button className="btn" onClick={() => navigate('/app/learning')}>View certificate</button>
+                <button className="btn on-stage" onClick={() => navigate('/app/learning')}>View certificate</button>
               </div>
             )}
-          </>
+
+            <button
+              type="button"
+              className="sp-toggle"
+              aria-expanded={showModules}
+              aria-controls="sp-modules"
+              onClick={() => setShowModules((v) => !v)}
+            >
+              {showModules ? 'Hide modules' : `All ${stations.length} modules`}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+
+            {showModules && (
+              <div className="sp-list" id="sp-modules">
+                {stations.map((s, i) => {
+                  const state = s.complete ? 'done' : i === nowIndex ? 'now' : 'ahead';
+                  return (
+                    <button key={s.id} className={`sp-mod ${state}`} onClick={() => navigate('/app/learning')}>
+                      <span className="sp-dot" />
+                      <span className="sp-mod-code">{s.code}</span>
+                      <span className="sp-mod-title">{s.title}</span>
+                      <span className="sp-mod-count">{s.complete ? 'done' : `${s.done}/${s.total}`}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </section>
 

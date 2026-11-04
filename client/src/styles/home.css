@@ -1,0 +1,67 @@
+/* ── HOME · PROGRESS ────────────────────────────────────────────────────────
+   One compact card on the dark stage. The curriculum is a segmented bar (one
+   segment per module), the next lesson sits right under it, and the module
+   list is folded behind a toggle. It replaced a hero that drew every module as
+   a station along a route: that took most of the first screen on a laptop and
+   the whole of it on a phone, for something a student reads in a glance. */
+.sp { position: relative; overflow: hidden; background: var(--stage); color: var(--parchment); border-radius: var(--radius-lg); padding: 22px 24px 16px; box-shadow: var(--shadow-lg); }
+.sp::after { content: ''; position: absolute; top: -140px; right: -100px; width: 320px; height: 320px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--blue) 45%, transparent) 0%, color-mix(in srgb, var(--blue) 0%, transparent) 68%); }
+.sp > * { position: relative; z-index: 1; }
+
+.sp-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.sp-lead { min-width: 0; }
+.sp-where { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--lavender); margin-bottom: 6px; }
+.sp-title { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin: 0; color: var(--parchment); overflow-wrap: anywhere; }
+.sp-figure { flex: none; text-align: right; line-height: 1; }
+.sp-pct { display: block; font-family: var(--display); font-weight: 700; font-size: 34px; letter-spacing: -0.04em; color: var(--parchment); }
+.sp-pct span { font-size: 16px; color: var(--lavender); margin-left: 1px; letter-spacing: 0; }
+.sp-sub { display: block; font-size: 12px; color: var(--lavender); margin-top: 5px; white-space: nowrap; }
+
+/* The bar. Equal segments share the width whatever the module count, so the
+   whole programme is always in view. The current segment fills as its own
+   lessons are done; a thin ring marks it as "you are here". */
+.sp-bar { display: flex; gap: 4px; margin-top: 16px; }
+.sp-seg { position: relative; flex: 1 1 0; min-width: 0; height: 8px; border: 0; padding: 0; border-radius: 4px; background: rgba(255,255,255,.14); overflow: hidden; cursor: pointer; transition: background .15s; }
+.sp-seg:hover { background: rgba(255,255,255,.26); }
+.sp-seg:focus-visible { outline: 2px solid var(--parchment); outline-offset: 2px; }
+.sp-seg-fill { position: absolute; inset: 0; width: calc(var(--fill, 0) * 100%); border-radius: 4px; background: var(--green); }
+.sp-seg.now .sp-seg-fill { background: linear-gradient(90deg, var(--green), var(--lime)); }
+.sp-seg.now { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.6); }
+.sp-seg.ahead .sp-seg-fill { display: none; }
+
+/* The one next thing, inset on the same card. */
+.sp-next { display: flex; align-items: center; gap: 16px; margin-top: 16px; padding: 14px 16px; border-radius: var(--radius); background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); }
+.sp-next-body { flex: 1; min-width: 0; }
+.sp-next-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--lavender); margin-bottom: 4px; }
+.sp-next-title { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin: 0; color: var(--parchment); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sp-next-meta { font-size: 12.5px; color: var(--lavender); margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-next .btn { flex: none; }
+
+.sp-toggle { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 0; background: none; border: 0; color: var(--lavender); font-family: var(--font); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.sp-toggle:hover { color: var(--parchment); }
+.sp-toggle svg { transition: transform .2s; }
+.sp-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+
+/* The folded list: a tight grid of module rows, each with the same dot
+   states the curriculum sidebar uses. */
+.sp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2px 14px; margin-top: 4px; }
+.sp-mod { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 40px; padding: 6px 8px; background: none; border: 0; border-radius: var(--radius-sm); color: rgba(245,247,251,.72); font-family: var(--font); text-align: left; cursor: pointer; }
+.sp-mod:hover { background: rgba(255,255,255,.07); color: var(--parchment); }
+.sp-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); box-sizing: border-box; }
+.sp-mod.done .sp-dot { background: var(--green); border-color: var(--green); }
+.sp-mod.now .sp-dot { background: var(--parchment); border-color: var(--parchment); box-shadow: 0 0 0 3px color-mix(in srgb, var(--stage-accent-ink) 30%, transparent); }
+.sp-mod-code { flex: none; font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .08em; color: rgba(255,255,255,.4); }
+.sp-mod.now .sp-mod-code { color: var(--lavender); }
+.sp-mod-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-mod.now .sp-mod-title { color: var(--parchment); }
+.sp-mod-count { flex: none; font-size: 11px; font-variant-numeric: tabular-nums; color: rgba(255,255,255,.45); }
+.sp-mod.done .sp-mod-count { color: var(--green-ink); }
+
+@media (max-width: 640px) {
+  .sp { padding: 18px 16px 12px; }
+  .sp-title { font-size: 20px; }
+  .sp-pct { font-size: 28px; }
+  .sp-next { flex-wrap: wrap; gap: 12px; padding: 12px 14px; }
+  .sp-next .btn { width: 100%; justify-content: center; }
+  .sp-list { grid-template-columns: minmax(0, 1fr); }
+}
