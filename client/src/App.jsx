@@ -35,6 +35,7 @@ function AppSkeleton() {
       <main className="main">
         <div className="route-loading">
           <div className="skeleton">
+            <div className="skeleton-row title" />
             <div className="skeleton-row tall" />
             <div className="skeleton-row" />
             <div className="skeleton-row" />

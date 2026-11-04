@@ -149,3 +149,16 @@
   .pdfr-input { max-width: none; padding: 9px 12px; font-size: 16px; }
   .pdfr-stage { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
 }
+
+/* ── While a page chunk arrives ─────────────────────────────────────────────
+   The fallback is shaped like a page — a title, a hero-sized card, two rows —
+   with the title taking the room a page head takes, so the real page lands
+   over it without the content jumping down. (.page-enter already stands
+   still under prefers-reduced-motion; see styles.css.) */
+.route-loading { padding-top: 0; }
+.route-loading .skeleton { margin-top: 0; gap: 14px; }
+.skeleton-row.title { height: 42px; width: min(360px, 60%); border-radius: 10px; margin-bottom: 24px; }
+@media (max-width: 640px) {
+  .skeleton-row.title { height: 32px; margin-bottom: 18px; }
+  .skeleton-row.tall { height: 120px; }
+}
