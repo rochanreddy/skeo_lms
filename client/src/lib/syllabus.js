@@ -46,3 +46,26 @@ export function stripParentContext(chapterTitle, moduleTitle) {
   // module keeps its name rather than becoming a blank row.
   return out || chapterTitle;
 }
+
+// The week strip has room for a number and a few words, so a module title
+// that opens with its own label ("Week 3: How Claude Thinks", "M02 · Prompts")
+// drops the label — the card already shows the number. A title with no
+// numbered label is returned untouched.
+export function moduleShortTitle(title) {
+  if (!title) return '';
+  const m = title.match(/^\s*([^:·—–-]*\d[^:·—–-]*)\s*[:·—–-]\s*(.+)$/);
+  return m && m[2].trim() ? m[2].trim() : title.trim();
+}
+
+// The last lesson a student opened in a programme, kept in the browser so
+// "Continue learning" survives a reload. Storage can be missing or full
+// (private tabs, quota), and neither is worth an error on the Learning page.
+const lastKey = (programId) => `skeo:lastLesson:${programId}`;
+export function readLastLesson(programId) {
+  if (!programId) return null;
+  try { return window.localStorage.getItem(lastKey(programId)) || null; } catch { return null; }
+}
+export function writeLastLesson(programId, topicId) {
+  if (!programId || !topicId) return;
+  try { window.localStorage.setItem(lastKey(programId), String(topicId)); } catch { /* ignore */ }
+}

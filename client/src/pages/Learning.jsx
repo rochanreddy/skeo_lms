@@ -8,7 +8,7 @@ import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
-import { mediaOf, mediaFrom, stripParentContext } from '../lib/syllabus.js';
+import { mediaOf, mediaFrom, stripParentContext, moduleShortTitle, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
 import CertificateModal from '../components/CertificateModal.jsx';
 
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
@@ -462,6 +462,34 @@ function Content() {
     ? flat.findIndex((f) => String(f.topic._id) === String(page.firstTopicId))
     : -1;
 
+  // Which module (by index) a flattened lesson belongs to — for lock checks.
+  const modIndexOf = (modId) => (program?.modules || []).findIndex((m) => String(m._id) === String(modId));
+
+  // What "Continue learning" offers when nothing is open: the lesson last
+  // opened here, unless it has since been completed — then the first unfinished
+  // lesson after it. Never a lesson behind a gate. When everything is done, the
+  // last lesson opened (or the first) is offered again to revisit.
+  const resume = useMemo(() => {
+    if (!program || flat.length === 0) return null;
+    const reachable = (f) => !isLocked(modIndexOf(f.modId));
+    const lastId = readLastLesson(program._id);
+    const lastIdx = lastId ? flat.findIndex((f) => String(f.topic._id) === String(lastId)) : -1;
+    const last = lastIdx >= 0 ? flat[lastIdx] : null;
+    if (last && reachable(last) && !completed.has(last.topic._id)) return { f: last, idx: lastIdx, kind: 'resume' };
+    const after = flat.slice(lastIdx + 1).findIndex((f) => !completed.has(f.topic._id) && reachable(f));
+    const firstIdx = after >= 0 ? lastIdx + 1 + after : flat.findIndex((f) => !completed.has(f.topic._id) && reachable(f));
+    if (firstIdx >= 0) return { f: flat[firstIdx], idx: firstIdx, kind: completed.size || last ? 'continue' : 'start' };
+    const back = last && reachable(last) ? lastIdx : 0;
+    return { f: flat[back], idx: back, kind: 'revisit' };
+  }, [program, flat, completed, unlockedCount, topicId]);
+
+  // The next gate a student still has to sit: the newest open module's quiz,
+  // when it hasn't been attempted. (A gate behind a lock isn't "pending" yet.)
+  const pendingGate = useMemo(() => {
+    if (!isStudent) return null;
+    return gates.find((g) => !g.myAttempt && modIndexOf(g.moduleId) >= 0 && modIndexOf(g.moduleId) < unlockedCount) || null;
+  }, [gates, unlockedCount, program, isStudent]);
+
   const loadProgress = (programId) => {
     if (!isStudent || !programId) return;
     api(`/progress/me?programId=${programId}`).then((d) => { setCompleted(new Set(d.completedTopics)); setTotal(d.total); }).catch(() => {});
@@ -541,6 +569,8 @@ function Content() {
     setOpenChap(String(f.chapId));
     // replace, not push — Prev/Next shouldn't fill the back button with lessons.
     if (program) setParams({ program: program._id, topic: String(f.topic._id) }, { replace: true });
+    // Remembered per programme, so the landing card can offer to pick up here.
+    if (program) writeLastLesson(program._id, f.topic._id);
     // On a phone the reader sits under the syllabus, so a tapped lesson would
     // open off-screen. Bring it into view once it has rendered.
     if (window.matchMedia('(max-width: 820px)').matches) {
@@ -777,12 +807,54 @@ function Content() {
                 <div className="lesson-landing-count">
                   {flat.length} lesson{flat.length === 1 ? '' : 's'}, {(program.modules || []).length} week{(program.modules || []).length === 1 ? '' : 's'}
                 </div>
-                <p className="lesson-landing-hint">Open a week in the syllabus to choose what to read.</p>
+
+                {/* Continue learning — the one tap that matters on arrival.
+                    The lesson last opened here, or the first one still to do. */}
+                {resume && (
+                  <div className="learn-resume">
+                    <div className="learn-resume-eyebrow">
+                      {resume.kind === 'resume' ? 'Continue learning' : resume.kind === 'revisit' ? 'All done — revisit' : resume.kind === 'continue' ? 'Up next' : 'Start here'}
+                    </div>
+                    <div className="learn-resume-row">
+                      <span className="learn-resume-icon"><LessonIcon type={resume.f.topic.contentType} size={20} /></span>
+                      <div className="learn-resume-text">
+                        <div className="learn-resume-crumb">{resume.f.mod}{resume.f.chap && resume.f.chap !== 'Lessons' ? ` · ${stripParentContext(resume.f.chap, resume.f.mod)}` : ''}</div>
+                        <div className="learn-resume-title">{resume.f.topic.title}</div>
+                        <div className="learn-resume-pos">Lesson {resume.idx + 1} of {flat.length}</div>
+                      </div>
+                    </div>
+                    {isStudent && (
+                      <div className="learn-resume-bar" role="progressbar" aria-valuemin={0} aria-valuemax={total || flat.length} aria-valuenow={done} aria-label="Lessons completed">
+                        <span style={{ width: `${total ? pct : 0}%` }} />
+                      </div>
+                    )}
+                    <button className="btn on-stage learn-resume-btn" onClick={() => selectTopic(resume.f)}>
+                      {resume.kind === 'resume' ? 'Resume' : resume.kind === 'revisit' ? 'Open again' : resume.kind === 'continue' ? 'Continue' : 'Start'} →
+                    </button>
+                    {isStudent && (
+                      <div className="learn-stats">
+                        <div className="learn-stat">
+                          <span className="learn-stat-n">{done}<small>/{total || flat.length}</small></span>
+                          <span className="learn-stat-l">lessons done</span>
+                        </div>
+                        <div className="learn-stat">
+                          <span className="learn-stat-n">{unlockedCount}<small>/{(program.modules || []).length}</small></span>
+                          <span className="learn-stat-l">weeks unlocked</span>
+                        </div>
+                        <button type="button" className={`learn-stat ${pendingGate ? 'is-pending' : ''}`} onClick={() => setParams({ tab: 'quizzes' })} disabled={!pendingGate}>
+                          <span className="learn-stat-n">{pendingGate ? 'Yes' : 'No'}</span>
+                          <span className="learn-stat-l">{pendingGate ? `Module ${modIndexOf(pendingGate.moduleId) + 1} quiz pending` : 'module quiz pending'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <button
                   className="btn sm lesson-landing-btn"
                   onClick={() => document.getElementById('learn-syllabus')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                 >
-                  Open the syllabus
+                  Browse the syllabus
                 </button>
               </div>
             )}

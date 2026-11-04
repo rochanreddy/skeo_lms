@@ -8,6 +8,7 @@ import './tailwind.css';
 import './styles.css';
 import './styles/home.css';
 import './styles/student-pages.css';
+import './styles/learning.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
