@@ -142,10 +142,16 @@ async function renewAccessToken() {
   return refreshing;
 }
 
+// What the hosting proxy answers while the API behind it restarts or redeploys.
+// These are about the instance, not the request, and they pass in seconds.
+const GATEWAY_ERRORS = new Set([502, 503, 504]);
+const backoff = (attempt) => new Promise((r) => { setTimeout(r, 250 * (attempt + 1)); });
+
 async function request(path, { method = 'GET', body, retriedAuth = false } = {}) {
   let lastErr;
-  // Retry transient NETWORK failures (connection reset before the request lands —
-  // common on localhost). HTTP error responses are NOT retried.
+  // Retry transient failures: a network error (connection reset before the
+  // request lands, common on localhost) or a gateway error. Anything else the
+  // API itself said is an answer, and is NOT retried.
   //
   // GETs only. A write that never came back may still have been applied, and
   // the create endpoints (/batches, /programs, /announcements, /jobs, /library)
@@ -161,6 +167,10 @@ async function request(path, { method = 'GET', body, retriedAuth = false } = {})
         },
         body: body ? JSON.stringify(body) : undefined,
       });
+      if (method === 'GET' && GATEWAY_ERRORS.has(res.status) && attempt < attempts - 1) {
+        await backoff(attempt);
+        continue;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         // An expired access token → renew once and replay. Skipped for /auth/*,
@@ -177,6 +187,7 @@ async function request(path, { method = 'GET', body, retriedAuth = false } = {})
         }
         const err = new Error(data.error || `Request failed (${res.status})`);
         err.code = data.code;
+        err.status = res.status;
         err.http = true; // marks it as "the server answered", see the catch
         throw err;
       }
@@ -188,7 +199,7 @@ async function request(path, { method = 'GET', body, retriedAuth = false } = {})
       // failure and was retried three times with backoff.
       if (e.http) throw e;
       lastErr = e; // network error → retry
-      if (attempt < attempts - 1) await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+      if (attempt < attempts - 1) await backoff(attempt);
     }
   }
   throw lastErr;

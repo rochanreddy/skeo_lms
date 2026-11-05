@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { api, getCachedUser, getToken, setCachedUser, setToken } from './api.js';
+import { api, getCachedUser, getRefreshToken, getToken, setCachedUser, setToken } from './api.js';
 import { navFor, extraRoutesFor } from './nav.jsx';
 import PwaPrompts from './components/PwaPrompts.jsx';
 import SkeoWordmark from './components/SkeoWordmark.jsx';
@@ -88,12 +88,16 @@ export default function App() {
       .then((d) => { setUser(d.user); setBlocked(null); })
       .catch((e) => {
         if (e.code === 'blocked') { setBlocked(e.message); return; }
-        // Only the server saying no ends a session. err.http marks a reply we
-        // actually received; without it the request never arrived, and being
-        // offline is not evidence that the account is gone — which matters for
-        // an installed app whose whole promise is that it opens without a
-        // connection. The next call that does reach the server will decide.
-        if (e.http) { setToken(''); setUser(null); }
+        // Only a 401 with nothing left to renew it ends a session. Everything
+        // else says something about the moment, not about the account: no
+        // connection, a deploy (502/503/504), a bug (500), the rate limiter
+        // (429). A refresh token still here means the renewal could not get
+        // through, which is the same thing again; one the server refused has
+        // already been cleared by api.js. Signing a student out over any of
+        // these would turn a few seconds of trouble into a password prompt,
+        // and the installed app promises to open without a connection at all.
+        // The next call that reaches the server will decide.
+        if (e.status === 401 && !getRefreshToken()) { setToken(''); setUser(null); }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -107,6 +111,15 @@ export default function App() {
     const onBlocked = (e) => setBlocked(e.detail?.message || '');
     window.addEventListener('skeo:blocked', onBlocked);
     return () => window.removeEventListener('skeo:blocked', onBlocked);
+  }, []);
+
+  // api.js ended the session on some screen's behalf: the refresh token was
+  // refused partway through a visit. Without this the dashboard stays up, empty,
+  // with every request failing, until somebody thinks to reload.
+  useEffect(() => {
+    const onSignedOut = () => setUser(null);
+    window.addEventListener('skeo:signed-out', onSignedOut);
+    return () => window.removeEventListener('skeo:signed-out', onSignedOut);
   }, []);
 
   // The device leaves the account first (push notifications), while there is
