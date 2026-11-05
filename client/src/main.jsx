@@ -10,6 +10,7 @@ import './styles/home.css';
 import './styles/student-pages.css';
 import './styles/learning.css';
 import './styles/shell.css';
+import './styles/usage.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

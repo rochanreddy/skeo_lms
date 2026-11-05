@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADMIN USAGE — the hosting calculator and the numbers behind it
+   Scoped to .us-*. Builds on .panel, .stats, .grade-table and the chart cards
+   from styles.css, and follows the theme through their tokens.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.us-page { display: flex; flex-direction: column; gap: 18px; }
+.us-page > .page-head { margin-bottom: 4px; }
+.us-range { display: flex; gap: 6px; flex: none; }
+.us-stats { margin-bottom: 0; }
+.us-charts { margin-top: 0; }
+
+/* ── The answer ─────────────────────────────────────────────────────────── */
+.us-plan h2 { font-family: var(--display); font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; margin: 0 0 8px; color: var(--ink); text-wrap: balance; }
+.us-lede { margin: 0; font-size: 15.5px; color: var(--ink-2); line-height: 1.5; max-width: 68ch; }
+.us-basis { margin: 10px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; max-width: 72ch; }
+
+.us-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 20px 0 18px; }
+.panel .us-field { margin: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.3; }
+.us-field small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.us-input { position: relative; display: block; margin-top: auto; }
+.panel .us-input input { margin: 0; font-variant-numeric: tabular-nums; }
+.us-input input[type='number'] { appearance: textfield; -moz-appearance: textfield; }
+.us-input input::-webkit-outer-spin-button,
+.us-input input::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.us-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12.5px; color: var(--muted); pointer-events: none; }
+
+.us-table { font-variant-numeric: tabular-nums; }
+.us-table th[scope='row'] { text-transform: none; letter-spacing: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); white-space: normal; min-width: 170px; }
+.us-table th[scope='row'] small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+.us-caption { caption-side: top; text-align: left; font-size: 13px; color: var(--ink-2); padding-bottom: 6px; }
+.us-best { background: var(--blue-soft); }
+.us-table tbody tr.us-best:hover { background: var(--blue-soft); }
+.us-out td { color: var(--muted); }
+.us-out th[scope='row'] { color: var(--ink-2); }
+.us-pick { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--card); border: 1px solid var(--blue-line); font-size: 11px; font-weight: 700; color: var(--brand); vertical-align: 1px; }
+.us-area { text-transform: capitalize !important; }
+.us-share { min-width: 150px; }
+
+.us-note { margin: 10px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); max-width: 88ch; }
+.us-callout { margin: 12px 0 0; padding: 2px 0 2px 12px; border-left: 2px solid var(--blue-line); font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.us-foot { padding: 0 2px 6px; }
+.us-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── The evidence ───────────────────────────────────────────────────────── */
+.us-gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; }
+.us-gauge { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.us-gauge-head { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--ink-2); }
+.us-gauge-value { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.us-gauge-word { font-size: 12px; color: var(--muted); }
+.us-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 28px; margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.us-facts dt { font-size: 12px; color: var(--muted); }
+.us-facts dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.us-facts small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.hourbars { width: 100%; height: auto; display: block; }
+
+@media (max-width: 820px) {
+  .us-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .us-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .us-gauges { grid-template-columns: minmax(0, 1fr); }
+  /* 16px so iOS does not zoom the page when a field takes focus. */
+  .panel .us-input input { font-size: 16px; min-height: 44px; }
+}
+@media (max-width: 480px) {
+  .us-fields, .us-facts { grid-template-columns: minmax(0, 1fr); }
+}

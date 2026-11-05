@@ -112,6 +112,49 @@ export function MiniLine({ points, height = 120, color = SEQ.main }) {
   );
 }
 
+// The 24 hours of a day as bars. hours: [{ hour, online }]. The tallest carries
+// its figure and every bar answers on hover, so the shape reads at a glance and
+// the numbers are still there when wanted.
+export function HourBars({ hours, height = 120, color = SEQ.main }) {
+  const w = 320;
+  const padTop = 16;
+  const padBottom = 22;
+  const gap = 2;
+  const slot = w / hours.length;
+  const plot = height - padTop - padBottom;
+  const max = Math.max(1, ...hours.map((h) => h.online));
+  const clock = (hour) => `${hour % 12 || 12}${hour < 12 ? 'am' : 'pm'}`;
+  const top = hours.reduce((a, b) => (b.online > a.online ? b : a), hours[0]);
+
+  return (
+    <svg className="hourbars" viewBox={`0 0 ${w} ${height}`} role="img" aria-label={`Busiest around ${clock(top.hour)}, ${top.online} online`}>
+      <line x1="0" x2={w} y1={height - padBottom} y2={height - padBottom} style={{ stroke: 'var(--line)' }} strokeWidth="1" />
+      {hours.map((h, i) => {
+        const bar = h.online ? Math.max(2, (h.online / max) * plot) : 0;
+        return (
+          <g key={h.hour}>
+            <rect x={i * slot + gap / 2} y={height - padBottom - bar} width={slot - gap} height={bar} rx="2" style={{ fill: color }} opacity={h === top ? 1 : 0.55} />
+            <rect x={i * slot} y={0} width={slot} height={height} fill="transparent"><title>{`${clock(h.hour)}: ${h.online} online`}</title></rect>
+          </g>
+        );
+      })}
+      {top.online > 0 && (
+        <text
+          x={hours.indexOf(top) * slot + slot / 2}
+          y={height - padBottom - (top.online / max) * plot - 5}
+          textAnchor={hours.indexOf(top) > 17 ? 'end' : hours.indexOf(top) < 6 ? 'start' : 'middle'}
+          className="miniline-val"
+        >
+          {`${top.online} at ${clock(top.hour)}`}
+        </text>
+      )}
+      {[0, 6, 12, 18].map((hour) => (
+        <text key={hour} x={hour * slot + 1} y={height - 7} className="miniline-tick">{clock(hour)}</text>
+      ))}
+    </svg>
+  );
+}
+
 // Slim progress meter — fill + lighter track of the same hue.
 export function Meter({ pct, color = SEQ.main, track = SEQ.light }) {
   const v = Math.max(0, Math.min(100, pct ?? 0));
