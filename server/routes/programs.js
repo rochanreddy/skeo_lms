@@ -47,9 +47,24 @@ const listCache = new Map(); // blocked-module signature -> { at, body }
 
 const dropListCache = () => listCache.clear();
 
+/* Which cached body may be served to this user.
+ *
+ * Exported, and tested in tests/programsCacheKey.test.js, because getting it
+ * wrong is the one way this cache could do real harm: two users must share an
+ * entry only when withoutBlockedModules() would build them the same
+ * curriculum, or one student's trimmed view gets served to another.
+ *
+ * Sorted, so the same block set written in a different order is the same key.
+ * Admins are pinned to the empty key because withoutBlockedModules() returns
+ * the whole programme for them whatever their blocked list says.
+ */
+export function listCacheKey(user) {
+  if (user?.role === 'admin') return '';
+  return [...new Set((user?.blocked?.moduleIds || []).map(String))].sort().join(',');
+}
+
 router.get('/', requireAuth, async (req, res) => {
-  const blocked = (req.user.role === 'admin' ? [] : (req.user.blocked?.moduleIds || []).map(String)).sort();
-  const key = blocked.join(',');
+  const key = listCacheKey(req.user);
 
   const hit = listCache.get(key);
   let body = hit && Date.now() - hit.at < LIST_TTL_MS ? hit.body : null;

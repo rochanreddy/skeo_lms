@@ -13,6 +13,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import http from 'node:http';
 
 const BASE = (process.env.TEST_API_URL || 'http://localhost:4200').replace(/\/+$/, '');
 const API = `${BASE}/api/skeo`;
@@ -40,6 +41,29 @@ async function login(creds) {
 
 const get = (path, token) =>
   fetch(`${API}${path}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+
+/* A GET with exactly the headers given, and nothing added.
+ *
+ * fetch() is the right tool almost everywhere here, but it is not a neutral
+ * client: it follows the Fetch spec, which adds and rewrites headers on your
+ * behalf. For anything testing cache behaviour that matters — see the
+ * /programs revalidation test — this sends the bytes asked for and no others. */
+function rawGet(path, headers = {}) {
+  const { request } = http;
+  return new Promise((resolve, reject) => {
+    const url = new URL(`${API}${path}`);
+    const r = request(
+      { host: url.hostname, port: url.port || 80, path: url.pathname + url.search, method: 'GET', headers },
+      (res) => {
+        let body = '';
+        res.on('data', (c) => { body += c; });
+        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+      },
+    );
+    r.on('error', reject);
+    r.end();
+  });
+}
 
 // Logging in once and sharing the tokens keeps the suite from rate-limiting
 // itself: /login now counts failed attempts per account (8 a minute), and the
@@ -268,4 +292,126 @@ test('a push endpoint that is not a real push service is refused', async () => {
   });
   // 503 when this server has no push keys, 400 when it does -- never stored.
   assert.equal(r.status, enabled ? 400 : 503);
+});
+
+/* ── What the performance pass changed ──────────────────────────────────────
+ *
+ * These cover behaviour introduced when /programs, /quizzes and /progress/me
+ * were made cheaper. Two of them are really correctness tests wearing a
+ * performance hat: the quiz projection is now the thing that keeps answers
+ * away from students, so if it is ever loosened, a test should fail rather
+ * than a student seeing the answer key. Read-only, like the rest of the file.
+ */
+
+test('a student never receives quiz answers, in the list or the detail', async () => {
+  const { quizzes } = await (await get('/quizzes?scope=mine', studentToken)).json();
+  assert.ok(Array.isArray(quizzes), 'no quizzes array came back');
+  assert.ok(quizzes.length > 0, 'the demo seed should give the student at least one quiz');
+
+  const leaks = (q) => (q.questions || []).some(
+    (qq) => 'correctIndex' in qq || 'explanation' in qq,
+  );
+
+  for (const q of quizzes) {
+    assert.ok(!leaks(q), `the list leaked answers for quiz ${q._id}`);
+    // Each question still has to carry what a student needs to sit it.
+    for (const qq of q.questions || []) {
+      assert.ok(qq._id, 'a question lost its id');
+      assert.equal(typeof qq.text, 'string', 'a question lost its text');
+      assert.ok(Array.isArray(qq.options), 'a question lost its options');
+    }
+  }
+
+  const { quiz } = await (await get(`/quizzes/${quizzes[0]._id}`, studentToken)).json();
+  assert.ok(!leaks(quiz), 'the detail route leaked answers');
+  assert.ok((quiz.questions || []).length > 0, 'the detail route returned no questions');
+});
+
+test('an admin still receives quiz answers — the projection did not break grading', async () => {
+  const { quizzes } = await (await get('/quizzes', adminToken)).json();
+  assert.ok(quizzes.length > 0, 'the admin should see the seeded quizzes');
+  const withQuestions = quizzes.find((q) => (q.questions || []).length);
+  assert.ok(withQuestions, 'no admin-visible quiz had questions');
+  assert.ok(
+    withQuestions.questions.every((qq) => typeof qq.correctIndex === 'number'),
+    'the admin view lost correctIndex, so nothing can be marked',
+  );
+});
+
+test('progress/me with no programId answers for the student\'s own programme', async () => {
+  const bare = await (await get('/progress/me', studentToken)).json();
+  assert.ok(bare.programId, 'no programId came back, so the client cannot check the answer');
+  assert.equal(typeof bare.total, 'number');
+  assert.ok(bare.total > 0, 'the seeded curriculum should have lessons to count');
+
+  // Asking explicitly for the same programme must give the same answer: the
+  // student home relies on these two agreeing to avoid a second round trip.
+  const explicit = await (await get(`/progress/me?programId=${bare.programId}`, studentToken)).json();
+  assert.deepEqual(explicit, bare, 'the no-argument and explicit forms disagreed');
+});
+
+test('a malformed programId is a 404, not a 500 or an empty report', async () => {
+  for (const path of ['/progress/me?programId=notanid', '/progress/certificate?programId=notanid']) {
+    const r = await get(path, studentToken);
+    assert.equal(r.status, 404, `${path} answered ${r.status}`);
+    const text = await r.text();
+    assert.doesNotMatch(text, /CastError|ObjectId|node_modules/, `${path} leaked internals`);
+  }
+});
+
+test('the preflight is cacheable, so every request does not pay for one', async () => {
+  // Without this header the browser re-asks every few seconds, which doubled
+  // the round trips for every call the app makes.
+  const r = await fetch(`${API}/me`, {
+    method: 'OPTIONS',
+    headers: {
+      Origin: 'http://localhost:5175',
+      'Access-Control-Request-Method': 'GET',
+      'Access-Control-Request-Headers': 'authorization,content-type',
+    },
+  });
+  assert.ok(r.status === 204 || r.status === 200, `preflight answered ${r.status}`);
+  const maxAge = Number(r.headers.get('access-control-max-age'));
+  assert.ok(maxAge >= 600, `Access-Control-Max-Age was ${r.headers.get('access-control-max-age')}`);
+});
+
+test('/programs is byte-identical on a repeat read, and revalidatable', async () => {
+  // The route keeps its finished JSON briefly. Two reads by the same caller
+  // must agree exactly, and must carry an ETag so a browser that already has
+  // the curriculum can be answered 304 instead of re-sent all of it.
+  const first = await get('/programs', studentToken);
+  const firstBody = await first.text();
+  const etag = first.headers.get('etag');
+  assert.ok(etag, 'no ETag, so a repeat visit re-downloads the whole curriculum');
+  assert.match(first.headers.get('cache-control') || '', /private/, 'the curriculum must not be shared-cacheable');
+
+  const second = await get('/programs', studentToken);
+  assert.equal(await second.text(), firstBody, 'two reads of /programs disagreed');
+
+  /* The conditional request goes out over node:http rather than fetch(), and
+   * that is not fussiness. Per the Fetch spec, setting If-None-Match by hand
+   * flips the request's cache mode to "no-store", which makes fetch() add
+   * `Cache-Control: no-cache` — and a request that says no-cache is asking to
+   * be given the body, so Express rightly answers 200. The revalidation this
+   * is checking is the one a BROWSER performs on its own from its HTTP cache,
+   * where no such header is added, and only a raw client can imitate that. */
+  const conditional = await rawGet('/programs', {
+    authorization: `Bearer ${studentToken}`,
+    'if-none-match': etag,
+  });
+  assert.equal(conditional.status, 304, 'a matching ETag was not answered 304');
+  assert.equal(conditional.body, '', 'a 304 still sent a body');
+});
+
+test('a student and an admin are served the same curriculum, not each other\'s cache', async () => {
+  // The cached body is keyed on which modules the caller cannot see. Nobody in
+  // the seed has a module blocked, so both roles belong in the same entry and
+  // must get the same programmes back -- the unit tests in
+  // programsCacheKey.test.js cover the keying rules themselves.
+  const asStudent = await (await get('/programs', studentToken)).json();
+  const asAdmin = await (await get('/programs', adminToken)).json();
+  assert.deepEqual(
+    asStudent.programs.map((p) => p._id),
+    asAdmin.programs.map((p) => p._id),
+  );
 });
