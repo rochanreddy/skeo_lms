@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Skeo LMS API — standalone backend, shares the Atlas cluster (skeo_* collections only).",
+  "description": "Skeo LMS API \u2014 standalone backend, shares the Atlas cluster (skeo_* collections only).",
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
@@ -14,7 +14,8 @@
     "build:curriculum-pdf": "node scripts/buildCurriculumPdf.js",
     "vdo:check": "node scripts/vdoCheck.js",
     "test": "node --test \"tests/**/*.test.js\"",
-    "push:keys": "web-push generate-vapid-keys"
+    "push:keys": "web-push generate-vapid-keys",
+    "db:indexes": "node scripts/checkIndexes.js"
   },
   "dependencies": {
     "@node-rs/bcrypt": "^1.10.8",
