@@ -7,8 +7,8 @@ const router = Router();
 // GET /api/skeo/notifications — the user's recent notifications + unread count.
 router.get('/', requireAuth, async (req, res) => {
   // Two independent questions, so they travel together rather than one behind
-  // the other. The bell asks for this every 20 seconds while the tab is open,
-  // so the saved round trip is paid back often.
+  // the other. The bell keeps asking for as long as a tab is open, so the saved
+  // round trip is paid back often.
   const [items, unread] = await Promise.all([
     Notification.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(30).lean(),
     Notification.countDocuments({ userId: req.user._id, read: false }),

@@ -50,8 +50,12 @@ with attempts, so the dashboards have something to show. It needs the admin from
 `cd server && npm test` runs two different kinds of test together, and the
 second kind needs a world to run against:
 
-- `tests/curriculumMerge.test.js` and `tests/provision.test.js` are pure unit
-  tests. They need nothing and run anywhere.
+- `tests/curriculumMerge.test.js`, `tests/provision.test.js`,
+  `tests/programsCacheKey.test.js`, `tests/authCache.test.js`,
+  `tests/token.test.js` and `tests/classCache.test.js` are unit tests. They need
+  nothing and run anywhere, though two tests in `classCache.test.js` that prove
+  every kind of write clears the cache only run when `TEST_MONGODB_URI` points
+  at a local database.
 - `tests/api.test.js` talks to a **running server over HTTP**, on purpose: what
   it protects is the whole chain — the auth middleware, the role guard and the
   error handler together, so that forgetting `requireRole` on a new admin route
@@ -69,6 +73,14 @@ npm run dev                      # leave this running, then npm test elsewhere
 
 It only reads — nothing in `api.test.js` creates, edits or deletes a document —
 but point `MONGODB_URI` at a scratch database rather than anything real.
+
+`cd client && npm test` runs the client's tests. They need nothing: the API is
+faked, route by route. They cover the session rules (what signs a student out,
+and what must not), the request cache and retries, the bell's polling, and the
+requests behind the student home.
+
+Capacity lives in [`server/loadtest/`](server/loadtest/README.md): how to measure
+it, what it found, and where the limits are.
 
 Driving the built frontend by hand? Use port **5175**. The CORS allowlist is
 `SKEO_APP_URL` plus exactly `http://localhost:5175`, so a `vite preview` on any

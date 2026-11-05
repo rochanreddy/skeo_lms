@@ -57,6 +57,13 @@ services:
       - key: NODE_ENV
         value: production
 
+      # The heap the load test ran with, stated rather than left to V8's guess
+      # from the container. 256MB of heap peaked at about 290MB of process on a
+      # class of 2000 (server/loadtest/README.md), which leaves the 512MB instance
+      # room to spare. Going higher trades that margin for a kill by the platform.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=256
+
       # Read twice over: index.js splits it into the CORS allowlist, and the
       # mailer puts it in login and password-reset links. Get it wrong and every
       # browser call from the app is refused by CORS, which looks like the API
