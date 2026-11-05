@@ -10,6 +10,7 @@ import { connectDb } from './db.js';
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errors.js';
 import { rateLimit } from './middleware/rateLimit.js';
+import { startUsageMeter, usageMeter } from './utils/usageMeter.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4200); // 4200 is Skeo's own port -- 4100 belongs to menler-lms, 4000 to the marketing API.
@@ -17,6 +18,9 @@ const port = Number(process.env.PORT || 4200); // 4200 is Skeo's own port -- 410
 // The API runs behind a TLS-terminating proxy in production, so req.protocol and
 // req.ip are only truthful once the forwarding headers are trusted.
 app.set('trust proxy', 1);
+
+// Ahead of everything, so preflights and throttled requests are counted too.
+app.use(usageMeter);
 
 // CORS allowlist — the frontend calls this API cross-origin. The production
 // origin comes from SKEO_APP_URL: this fork has no domain of its own yet, so
@@ -106,6 +110,7 @@ async function start() {
   try {
     await connectDb();
     const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
+    startUsageMeter(server);
 
     /* Keep connections open longer than the proxy in front of us does.
      *

@@ -12,6 +12,7 @@ import {
   listVideos,
   watermarkFor,
 } from '../utils/vdocipher.js';
+import { videoPlayed } from '../utils/usageMeter.js';
 
 // VdoCipher playback and library management.
 //
@@ -79,6 +80,7 @@ router.post(
         ttl: OTP_TTL_SECONDS,
         annotate: watermarkFor(req.user),
       });
+      videoPlayed();
       return res.json({ otp, playbackInfo, ttl: OTP_TTL_SECONDS });
     } catch (e) {
       return fail(res, e) || res.status(502).json({ error: 'Could not start playback.' });
