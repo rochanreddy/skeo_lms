@@ -85,6 +85,13 @@ the whole class shares is now fetched once (`utils/classCache.js`).
 - **Everything here is one process.** The class cache, the auth cache and the
   rate limiter all live in memory. A second instance would need Redis first.
 
+## Production numbers
+
+The load test says what the code can take. What real students do is measured by
+the running app and shown in the admin panel under **Usage**. Between them they
+answer the capacity question: the rates there replace the assumptions here as
+soon as there is enough real traffic to trust.
+
 ## Don't run it against production
 
 `LOAD_HOST` / `LOAD_PORT` point these at another environment, and `run.mjs` has

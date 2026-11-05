@@ -179,6 +179,25 @@ side can resolve or reopen it.
 Admins work the queue from the **Support** tab, which opens on what still needs
 a reply.
 
+## Usage and hosting
+The **Usage** tab in the admin panel answers one question: which plan does this
+app need, going by what students actually do?
+
+The API meters itself (`server/utils/usageMeter.js`): requests, CPU, memory,
+bandwidth, database operations, students online, video starts. Counters reach the
+database once a minute as two small writes to `skeo_usage` (five-minute rows, kept
+120 days) and `skeo_usage_days` (one row a day, kept 400 days). A day row holds
+the ids of who was active, because that is the only way to count them across a
+day, and the report only ever reads how many.
+
+The calculator on that screen (`client/src/lib/capacityPlan.js`) carries those
+rates to any headcount and judges each plan on the busiest minutes, a long busy
+stretch, a class rush and memory. Until there are 3 days of use, 20 students
+online together and 5,000 requests, it uses the load test and says so.
+
+**Prices live in `capacityPlan.js`.** When one changes, update it and
+`PRICES_CHECKED`.
+
 ## Video (VdoCipher)
 Lesson videos can either be a plain URL (played by the browser's own `<video>`)
 or a DRM-protected VdoCipher video. Set `VDOCIPHER_API_SECRET` in the server
