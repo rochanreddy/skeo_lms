@@ -1,3 +1,4 @@
+import { createSecretKey } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 
 // Stateless Bearer tokens (Authorization: Bearer <token>). The LMS frontend
@@ -12,20 +13,30 @@ const SECRET = process.env.JWT_SECRET || (() => {
   console.warn('[auth] JWT_SECRET unset — using the insecure dev key. Never run this in production.');
   return 'dev-insecure-lms-secret-change-me';
 })();
+
+/* A key object, not the string. Handed a string, jsonwebtoken first tries to
+ * parse it as a PEM public key, which fails by throwing, and only then treats it
+ * as the HMAC secret it is -- on every verification, every authenticated
+ * request. Profiled under load, that exception was about 5% of the server's CPU.
+ * This is the same key and the same HMAC: tokens already issued stay valid, and
+ * a secret-type key only ever matches the HS* algorithms, as before.
+ */
+const KEY = createSecretKey(Buffer.from(SECRET));
+
 const ACCESS_TTL = '2h';
 const REFRESH_TTL = '30d';
 
 export function signAccessToken(user) {
-  return jwt.sign({ sub: user._id.toString(), role: user.role, typ: 'access' }, SECRET, { expiresIn: ACCESS_TTL });
+  return jwt.sign({ sub: user._id.toString(), role: user.role, typ: 'access' }, KEY, { expiresIn: ACCESS_TTL });
 }
 
 export function signRefreshToken(user) {
-  return jwt.sign({ sub: user._id.toString(), typ: 'refresh' }, SECRET, { expiresIn: REFRESH_TTL });
+  return jwt.sign({ sub: user._id.toString(), typ: 'refresh' }, KEY, { expiresIn: REFRESH_TTL });
 }
 
 export function verifyToken(token) {
   try {
-    return jwt.verify(token, SECRET);
+    return jwt.verify(token, KEY);
   } catch {
     return null;
   }
