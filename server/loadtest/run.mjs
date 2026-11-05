@@ -11,7 +11,7 @@ const PORT = Number(process.env.LOAD_PORT || 4300);
 const USERS = Number(process.env.LOAD_USERS || 100);
 const PASSWORD = process.env.LOAD_PASSWORD || 'LoadTest123!';
 
-const agent = new http.Agent({ keepAlive: true, maxSockets: 512 });
+const agent = new http.Agent({ keepAlive: true, maxSockets: 512, maxFreeSockets: 512 });
 
 function req(method, path, { body, token, ip } = {}) {
   const payload = body ? JSON.stringify(body) : null;
