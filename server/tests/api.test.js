@@ -133,6 +133,7 @@ const ADMIN_ONLY = [
   '/stats/admin-dashboard',
   '/stats/at-risk',
   '/reports/platform',
+  '/usage',
 ];
 
 test('every endpoint refuses an anonymous caller', async () => {
@@ -154,6 +155,18 @@ test('admin endpoints are closed to students', async () => {
     assert.equal((await get(path, adminToken)).status, 200, `admin could not read ${path}`);
     assert.equal((await get(path, studentToken)).status, 403, `student was not forbidden from ${path}`);
   }
+});
+
+test('the usage report names nobody', async () => {
+  const r = await get('/usage?days=7', adminToken);
+  assert.equal(r.status, 200);
+  const body = await r.text();
+  const { evidence, live, hours } = JSON.parse(body);
+  assert.equal(hours.length, 24);
+  assert.equal(typeof evidence.measured, 'boolean');
+  assert.equal(typeof live.limits.heapLimitMb, 'number');
+  assert.doesNotMatch(body, /[0-9a-f]{24}/, 'an account id reached the report');
+  assert.doesNotMatch(body, /@/, 'an email reached the report');
 });
 
 test('a student reaches their own scoped resources', async () => {
