@@ -25,13 +25,23 @@ const TTL_MS = 5_000;
 const MAX_ENTRIES = 5_000;
 const cache = new Map();
 
+// Lookups under way. A cold cache is exactly when a home screen fires its seven
+// requests at once, and a TTL alone does nothing for those: all seven miss, and
+// each goes to the database for the same row.
+const inflight = new Map();
+
 /**
  * Drop a user's cached record. Call this from anywhere that changes what the
  * user is allowed to do, so the change takes effect on the next request rather
  * than at the end of the TTL.
+ *
+ * Takes any lookup under way with it. That one may have read the row before the
+ * change, so the next request must not join it, and it must not store its answer.
  */
 export function forget(userId) {
-  if (userId) cache.delete(String(userId));
+  if (!userId) return;
+  cache.delete(String(userId));
+  inflight.delete(String(userId));
 }
 
 /** Cached lean user record, or null. Refreshes on miss or expiry. */
@@ -40,16 +50,26 @@ async function loadUser(id) {
   const hit = cache.get(key);
   if (hit && Date.now() < hit.expires) return hit.doc;
 
-  const doc = await User.findById(id).lean();
-  if (!doc) {
-    cache.delete(key);
-    return null;
-  }
-  // A crude bound. The map only ever holds users active in the last few
-  // seconds, so this is a backstop against pathological traffic, not a policy.
-  if (cache.size >= MAX_ENTRIES) cache.clear();
-  cache.set(key, { doc, expires: Date.now() + TTL_MS });
-  return doc;
+  const pending = inflight.get(key);
+  if (pending) return pending;
+
+  const lookup = User.findById(id).lean().then((doc) => {
+    // forget() ran while this was reading, so this answer may predate it.
+    if (inflight.get(key) !== lookup) return doc;
+    if (!doc) {
+      cache.delete(key);
+      return null;
+    }
+    // A crude bound. The map only ever holds users active in the last few
+    // seconds, so this is a backstop against pathological traffic, not a policy.
+    if (cache.size >= MAX_ENTRIES) cache.clear();
+    cache.set(key, { doc, expires: Date.now() + TTL_MS });
+    return doc;
+  }).finally(() => {
+    if (inflight.get(key) === lookup) inflight.delete(key);
+  });
+  inflight.set(key, lookup);
+  return lookup;
 }
 
 /** Reads the Bearer token, loads the user, or null. */
