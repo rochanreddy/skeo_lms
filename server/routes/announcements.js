@@ -4,6 +4,7 @@ import { Announcement } from '../models/Announcement.js';
 import { Batch } from '../models/Batch.js';
 import { canAccessBatch, canManageBatch, myBatchIds } from '../utils/access.js';
 import { notifyMany } from '../utils/notify.js';
+import { sendShared } from '../utils/sharedBody.js';
 
 const router = Router();
 
@@ -17,12 +18,13 @@ router.get('/', requireAuth, async (req, res) => {
   } else {
     filter = { batchId: { $in: await myBatchIds(req.user) } };
   }
-  const items = await Announcement.find(filter)
-    .populate('authorId', 'fullName email role')
-    .populate('batchId', 'name')
-    .sort({ createdAt: -1 }).limit(50)
-    .lean();
-  res.json({ announcements: items });
+  await sendShared(req, res, `announcements:${batchId || filter.batchId.$in.join()}`, async () => ({
+    announcements: await Announcement.find(filter)
+      .populate('authorId', 'fullName email role')
+      .populate('batchId', 'name')
+      .sort({ createdAt: -1 }).limit(50)
+      .lean(),
+  }));
 });
 
 // POST /api/skeo/announcements { batchId, title, body } — admin broadcast.

@@ -6,12 +6,17 @@ import { Batch } from '../models/Batch.js';
 import { User } from '../models/User.js';
 import { Program } from '../models/Program.js';
 import { canAccessBatch, myBatchIds } from '../utils/access.js';
+import { sendShared } from '../utils/sharedBody.js';
 
 const router = Router();
 
 // GET /api/skeo/batches — role-scoped: admin=all, student=their own batches.
 router.get('/', requireAuth, async (req, res) => {
   const ids = await myBatchIds(req.user);
+  await sendShared(req, res, `batches:${ids.join()}`, async () => ({ batches: await listBatches(ids) }));
+});
+
+async function listBatches(ids) {
   // Projected and lean. Only the roster's LENGTH is wanted, so $size it in the
   // database: this used to ship every batch's full studentIds array to the
   // server process -- the single biggest field on the document -- hydrate it
@@ -36,15 +41,13 @@ router.get('/', requireAuth, async (req, res) => {
       .select('title')
       .lean()).map((p) => [String(p._id), p.title]),
   );
-  res.json({
-    batches: batches.map((b) => ({
-      id: b._id, name: b.name, status: b.status,
-      program: titles.get(String(b.programId)) || '', programId: b.programId,
-      startDate: b.startDate, endDate: b.endDate,
-      studentCount: b.studentCount,
-    })),
-  });
-});
+  return batches.map((b) => ({
+    id: b._id, name: b.name, status: b.status,
+    program: titles.get(String(b.programId)) || '', programId: b.programId,
+    startDate: b.startDate, endDate: b.endDate,
+    studentCount: b.studentCount,
+  }));
+}
 
 // GET /api/skeo/batches/:id — full batch with roster (members + admin only).
 router.get('/:id', requireAuth, async (req, res) => {

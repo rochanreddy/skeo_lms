@@ -14,6 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { gunzipSync } from 'node:zlib';
 
 const BASE = (process.env.TEST_API_URL || 'http://localhost:4200').replace(/\/+$/, '');
 const API = `${BASE}/api/skeo`;
@@ -55,9 +56,12 @@ function rawGet(path, headers = {}) {
     const r = request(
       { host: url.hostname, port: url.port || 80, path: url.pathname + url.search, method: 'GET', headers },
       (res) => {
-        let body = '';
-        res.on('data', (c) => { body += c; });
-        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+        const chunks = [];
+        res.on('data', (c) => { chunks.push(c); });
+        res.on('end', () => {
+          const raw = Buffer.concat(chunks);
+          resolve({ status: res.statusCode, headers: res.headers, raw, body: raw.toString() });
+        });
       },
     );
     r.on('error', reject);
@@ -414,4 +418,63 @@ test('a student and an admin are served the same curriculum, not each other\'s c
     asStudent.programs.map((p) => p._id),
     asAdmin.programs.map((p) => p._id),
   );
+});
+
+/* ── Shared responses ─────────────────────────────────────────────────────
+ *
+ * Whole-class responses are serialised and gzipped once and sent to everyone,
+ * and the class's answers are held for a few seconds. The writes that have to
+ * clear all that are exercised by loadtest/freshness.mjs, because this file
+ * only reads. These cover what a read can get wrong.
+ */
+
+const sharedRoutes = ['/programs', '/announcements', '/batches'];
+
+test('a shared response is the same content whether or not it is gzipped', async () => {
+  for (const path of sharedRoutes) {
+    const auth = { authorization: `Bearer ${studentToken}` };
+    const plain = await rawGet(path, auth);
+    const packed = await rawGet(path, { ...auth, 'accept-encoding': 'gzip' });
+    assert.equal(plain.status, 200, path);
+    assert.equal(plain.headers['content-encoding'], undefined, `${path} sent gzip to a client that never asked`);
+    assert.match(plain.headers['content-type'], /application\/json/, path);
+    assert.match(plain.headers.vary || '', /Accept-Encoding/i, `${path} would poison a cache in between`);
+    JSON.parse(plain.body);
+    const unpacked = packed.headers['content-encoding'] === 'gzip' ? gunzipSync(packed.raw).toString() : packed.body;
+    assert.equal(unpacked, plain.body, `${path} differs once decompressed`);
+  }
+});
+
+test('a client that refuses gzip is not sent it', async () => {
+  const r = await rawGet('/programs', {
+    authorization: `Bearer ${studentToken}`,
+    'accept-encoding': 'gzip;q=0, identity',
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers['content-encoding'], undefined);
+  JSON.parse(r.body);
+});
+
+test('a shared response has one ETag, and it revalidates across encodings', async () => {
+  for (const path of sharedRoutes) {
+    const auth = { authorization: `Bearer ${studentToken}` };
+    const plain = await rawGet(path, auth);
+    const packed = await rawGet(path, { ...auth, 'accept-encoding': 'gzip' });
+    assert.ok(plain.headers.etag, `${path} carries no ETag`);
+    assert.equal(packed.headers.etag, plain.headers.etag, `${path} has a different ETag per encoding`);
+    const revisit = await rawGet(path, { ...auth, 'accept-encoding': 'gzip', 'if-none-match': plain.headers.etag });
+    assert.equal(revisit.status, 304, `${path} re-sent content the client already had`);
+  }
+});
+
+test('a student and an admin do not share a quiz list, in either order', async () => {
+  const { programs } = await (await get('/programs', studentToken)).json();
+  const path = `/quizzes?programId=${programs[0]._id}`;
+  const answers = (list) => list.some((q) => (q.questions || []).some((x) => 'correctIndex' in x));
+  // The answers are the only thing separating the two shapes, and this is the
+  // sharpest case: the same URL, moments apart, with the admin's copy cached.
+  for (const token of [adminToken, studentToken, adminToken, studentToken]) {
+    const { quizzes } = await (await get(path, token)).json();
+    if (token === studentToken) assert.ok(!answers(quizzes), 'a student was served the cached answer key');
+  }
 });

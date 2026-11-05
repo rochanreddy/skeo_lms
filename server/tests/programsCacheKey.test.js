@@ -1,7 +1,7 @@
 // The cache key behind GET /programs.
 //
-// /programs keeps its finished JSON for half a minute because it is the
-// largest and most-requested response in the app. The body is not the same for
+// /programs shares its finished body because it is the largest and
+// most-requested response in the app. The body is not the same for
 // everybody, though: a student with blocked curriculum modules gets a trimmed
 // copy. So the key has to be a faithful answer to "would withoutBlockedModules
 // build these two users the same thing?" -- if it is ever looser than that, one
