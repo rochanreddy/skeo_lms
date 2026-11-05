@@ -1,5 +1,6 @@
 import { Batch } from '../models/Batch.js';
 import { ProvisionedOrder } from '../models/ProvisionedOrder.js';
+import { classCache } from './classCache.js';
 
 /**
  * Has this person paid for anything the LMS holds?
@@ -52,14 +53,30 @@ export async function canAccessBatch(user, batchId) {
   return Boolean(await Batch.exists({ _id: batchId, studentIds: user._id }));
 }
 
+/* The batches a student is enrolled in, newest first.
+ *
+ * A home screen asks this from three of its requests at once, so it goes
+ * through the class cache: they share one query, and enrolling or removing a
+ * student is a write to Batch, which clears it. Blocks are not part of the
+ * cached answer -- they live on the user and are applied by myBatchIds below,
+ * so a block never waits on this.
+ */
+const enrolments = (user) => classCache.get(`enrolments:${user._id}`, () => (
+  Batch.find({ studentIds: user._id }).sort({ createdAt: -1 }).select('programId').lean()
+));
+
+/** The programme a student is on: the one their newest cohort teaches. */
+export async function primaryProgramId(user) {
+  const [newest] = await enrolments(user);
+  return newest?.programId ? String(newest.programId) : null;
+}
+
 /** Batch ids the user belongs to. Admin -> all; student -> those enrolled in. */
 export async function myBatchIds(user) {
   // distinct() returns the ids themselves, straight off the _id index: no
   // documents to fetch, no Mongoose documents to hydrate, no .map() after.
-  if (user.role === 'admin') return Batch.distinct('_id');
-  // lean(), and covered by the studentIds index -- studentIds and _id are both
-  // in it, so this is answered without reading a single document.
-  const batches = await Batch.find({ studentIds: user._id }).select('_id').lean();
+  if (user.role === 'admin') return classCache.get('all-batches', () => Batch.distinct('_id'));
+  const batches = await enrolments(user);
   // Admin-blocked batches simply disappear from the user's world.
   const blocked = new Set((user.blocked?.batchIds || []).map(String));
   return batches.map((b) => b._id).filter((id) => !blocked.has(id.toString()));

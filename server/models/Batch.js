@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { keepsClassCacheFresh } from '../utils/classCache.js';
 
 // A cohort of one program (e.g. "Claude"). Admins run it,
 // students are enrolled. Assignments and quizzes reference batchId.
@@ -29,5 +30,7 @@ const batchSchema = new mongoose.Schema(
 batchSchema.index({ studentIds: 1 });
 // The admin batch list, newest first.
 batchSchema.index({ createdAt: -1 });
+
+keepsClassCacheFresh(batchSchema);
 
 export const Batch = mongoose.model('Batch', batchSchema, 'skeo_batches');

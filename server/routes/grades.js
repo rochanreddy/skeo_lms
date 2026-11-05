@@ -7,6 +7,7 @@ import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Batch } from '../models/Batch.js';
 import { canManageBatch, myBatchIds } from '../utils/access.js';
+import { classCache } from '../utils/classCache.js';
 
 const router = Router();
 
@@ -31,8 +32,10 @@ router.get('/me', requireAuth, async (req, res) => {
   // Every query here is projected to the handful of fields the rows below read,
   // and lean, because none of it is anything but JSON on the way out.
   const [assignments, quizzes] = await Promise.all([
-    Assignment.find({ batchId: { $in: batchIds } }).select('title createdAt').sort({ createdAt: -1 }).lean(),
-    quizColumns({ batchId: { $in: batchIds } }, -1),
+    classCache.get(`grade-assignments:${batchIds.join()}`, () => (
+      Assignment.find({ batchId: { $in: batchIds } }).select('title createdAt').sort({ createdAt: -1 }).lean()
+    )),
+    classCache.get(`grade-quizzes:${batchIds.join()}`, () => quizColumns({ batchId: { $in: batchIds } }, -1)),
   ]);
   const [subs, attempts] = await Promise.all([
     Submission.find({ studentId: req.user._id, assignmentId: { $in: assignments.map((a) => a._id) } })

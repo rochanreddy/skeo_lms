@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { keepsClassCacheFresh } from '../utils/classCache.js';
 
 // Curriculum hierarchy from the canvas: Program → Module → Chapter → Topic.
 // Edited together as one tree, so embedded as sub-documents.
@@ -77,6 +78,8 @@ const programSchema = new mongoose.Schema(
 
 // /programs is the most-requested endpoint in the app, and always newest-first.
 programSchema.index({ createdAt: -1 });
+
+keepsClassCacheFresh(programSchema);
 
 /* How many lessons a programme has, as an aggregation expression.
  *

@@ -6,6 +6,7 @@ import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Batch } from '../models/Batch.js';
 import { canAccessBatch, canManageBatch, myBatchIds } from '../utils/access.js';
 import { notifyMany } from '../utils/notify.js';
+import { classCache } from '../utils/classCache.js';
 
 const router = Router();
 
@@ -29,11 +30,13 @@ router.get('/', requireAuth, async (req, res) => {
   // answers never travel; an admin's is the whole thing. Either way lean --
   // both go straight out as JSON.
   const studentShape = req.user.role === 'student' || scope === 'mine';
-  const quizzes = await Quiz.find(filter)
+  // The shape is part of the key, and has to be: the two differ by the answers.
+  const scoped = programId ? `program:${programId}` : `batch:${batchId || filter.batchId.$in.join()}`;
+  const quizzes = await classCache.get(`quizzes:${studentShape ? 'student' : 'full'}:${scoped}`, () => Quiz.find(filter)
     .select(studentShape ? QUIZ_STUDENT_FIELDS : '')
     .populate('batchId', 'name')
     .sort({ createdAt: -1 })
-    .lean();
+    .lean());
 
   if (studentShape) {
     const attempts = await QuizAttempt.find({ studentId: req.user._id, quizId: { $in: quizzes.map((q) => q._id) } }).lean();

@@ -5,6 +5,7 @@ import { Submission } from '../models/Submission.js';
 import { Batch } from '../models/Batch.js';
 import { canAccessBatch, canManageBatch, myBatchIds, isBlockedFromAssignment } from '../utils/access.js';
 import { notifyMany } from '../utils/notify.js';
+import { classCache } from '../utils/classCache.js';
 
 const router = Router();
 
@@ -21,10 +22,14 @@ router.get('/', requireAuth, async (req, res) => {
     filter = { batchId: { $in: await myBatchIds(req.user) } };
   }
   // lean(): these are serialised straight back out as JSON, so there is nothing
-  // for a Mongoose document to do but cost CPU and garbage on the way.
-  let assignments = await Assignment.find(filter).populate('batchId', 'name').sort({ createdAt: -1 }).lean();
+  // for a Mongoose document to do but cost CPU and garbage on the way. Shared
+  // across the class, so the filter below makes this student's own copy.
+  const everyone = await classCache.get(
+    `assignments:${batchId || filter.batchId.$in.join()}`,
+    () => Assignment.find(filter).populate('batchId', 'name').sort({ createdAt: -1 }).lean(),
+  );
   // Admin-blocked assignments/projects simply don't exist for this user.
-  assignments = assignments.filter((a) => !isBlockedFromAssignment(req.user, a._id));
+  const assignments = everyone.filter((a) => !isBlockedFromAssignment(req.user, a._id));
 
   if (scope === 'mine') {
     // A student reads their list as a schedule: soonest deadline first, which

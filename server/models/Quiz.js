@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { keepsClassCacheFresh } from '../utils/classCache.js';
 
 // A quiz or exam set for a batch. Admins author it; students attempt it once.
 const questionSchema = new mongoose.Schema(
@@ -33,6 +34,8 @@ const quizSchema = new mongoose.Schema(
 // quizzes are ever listed.
 quizSchema.index({ batchId: 1, createdAt: -1 });
 quizSchema.index({ programId: 1, moduleId: 1 });
+
+keepsClassCacheFresh(quizSchema);
 
 /* The exact field list of the student-facing shape, as a projection.
  *

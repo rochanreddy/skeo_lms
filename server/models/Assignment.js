@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { keepsClassCacheFresh } from '../utils/classCache.js';
 
 // An assignment or project set for a batch. Students submit; admins grade.
 const assignmentSchema = new mongoose.Schema(
@@ -34,5 +35,7 @@ const assignmentSchema = new mongoose.Schema(
 // plain `find({ batchId })` and `find({ batchId: { $in } })` filters.
 assignmentSchema.index({ batchId: 1, createdAt: -1 });
 assignmentSchema.index({ batchId: 1, dueDate: 1 });
+
+keepsClassCacheFresh(assignmentSchema);
 
 export const Assignment = mongoose.model('Assignment', assignmentSchema, 'skeo_assignments');

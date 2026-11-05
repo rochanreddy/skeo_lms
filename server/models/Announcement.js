@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { keepsClassCacheFresh } from '../utils/classCache.js';
 
 // A broadcast an admin posts to a batch. Students see it on their
 // dashboard and get a notification.
@@ -16,5 +17,7 @@ const announcementSchema = new mongoose.Schema(
 // the $in set of every batch the caller belongs to. Sorting from the index
 // keeps that off the in-memory sort path as the archive grows.
 announcementSchema.index({ batchId: 1, createdAt: -1 });
+
+keepsClassCacheFresh(announcementSchema);
 
 export const Announcement = mongoose.model('Announcement', announcementSchema, 'skeo_announcements');
