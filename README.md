@@ -210,6 +210,23 @@ only for a video attached to a lesson in a module they are allowed to see —
 an id alone buys nothing. Playback is watermarked with the viewer's own name
 and email (`VDOCIPHER_WATERMARK=off` turns that off).
 
+### Changing the VdoCipher key
+1. Put the new key in `VDOCIPHER_API_SECRET`: on Render (skeo-lms → Environment;
+   saving redeploys), and in `server/.env` for local work. Nothing else holds
+   it: the web app and the mobile app only ever receive playback tickets.
+2. `cd server && npm run vdo:check -- --cleanup` proves the key can do what the
+   LMS needs: list the library, mint a watermarked ticket, start an upload,
+   delete. `--cleanup` removes the empty test video the upload check creates.
+3. **Re-link the lessons.** A lesson stores a video id, and ids belong to one
+   account, so a new account's key plays none of the old ones. Open
+   **Programs → Manage curriculum** for each programme: when lessons point at
+   videos the account does not have, a check at the top lists them, matches
+   each to a library video by lesson number (`1.1 · …` with `1.1 ….mp4`), and
+   links them in one click. Press **Save** to publish.
+
+A trial account uploads at most 4 videos and streams 5GB in total before it
+stops, so it is for setting up, not for a cohort.
+
 Admins upload from **Programs → Manage curriculum → a video lesson → Library**.
 The file goes straight from the browser to VdoCipher on a signed, single-video
 credential; the bytes never pass through this API.
