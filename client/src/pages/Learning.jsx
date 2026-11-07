@@ -331,7 +331,7 @@ function QuizReview({ questions }) {
 // something a student can act on, so it has no business taking a chip.
 function ChipRow({ media, subtitle, onOpen }) {
   const chips = [
-    { key: 'reading', type: 'pdf', label: 'Reading material', url: media.reading },
+    { key: 'pdf', type: 'pdf', label: 'Open the PDF', url: media.pdf },
     { key: 'notes', type: 'text', label: 'Notes', url: media.notes },
     { key: 'klass', type: 'video', label: 'Class link', url: media.klass, external: true },
   ].filter((c) => c.url);

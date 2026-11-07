@@ -47,7 +47,7 @@ export default function CurriculumEditor({ programId, onClose }) {
   // ── Tree mutators ──
   const addModule = () => touch((m) => m.push({ title: 'New module', order: m.length, chapters: [] }));
   const addChapter = (mi) => touch((m) => m[mi].chapters.push({ title: 'New chapter', order: m[mi].chapters.length, topics: [] }));
-  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'text', contentUrl: '', body: '', classLink: '', readingUrl: '', order: m[mi].chapters[ci].topics.length }));
+  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'text', contentUrl: '', body: '', classLink: '', order: m[mi].chapters[ci].topics.length }));
   const delModule = (mi) => { touch((m) => m.splice(mi, 1)); setSel(null); };
   const delChapter = (mi, ci) => { touch((m) => m[mi].chapters.splice(ci, 1)); setSel(null); };
   const delTopic = (mi, ci, ti) => { touch((m) => m[mi].chapters[ci].topics.splice(ti, 1)); setSel(null); };
@@ -219,14 +219,6 @@ export default function CurriculumEditor({ programId, onClose }) {
                 placeholder="https://meet.google.com/… or https://youtube.com/watch?v=…"
                 value={selTopic.classLink || ''}
                 onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { classLink: e.target.value })}
-              />
-
-              <label className="ce-label">Reading material <span className="muted">(PDF — opens in the in-page viewer)</span></label>
-              <input
-                className="ce-field"
-                placeholder="https://… .pdf"
-                value={selTopic.readingUrl || ''}
-                onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { readingUrl: e.target.value })}
               />
 
               <label className="ce-label">Content <span className="muted">(Markdown — # headings, **bold**, - lists, `code`)</span></label>

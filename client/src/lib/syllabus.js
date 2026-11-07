@@ -1,11 +1,13 @@
 // Pure helpers behind the Learning syllabus and reader. Kept out of the JSX so
 // they can be reasoned about (and run) on their own.
 
-// The three admin-attached media a lesson can carry, in chip order.
+// The admin-attached media a lesson can carry, in chip order. A PDF lesson's
+// own file counts: the chip is the only way to open it. (Reading material as
+// a separate attachment is no longer offered; an old readingUrl is ignored.)
 export function mediaOf(topic) {
-  if (!topic) return { reading: '', notes: '', klass: '' };
+  if (!topic) return { pdf: '', notes: '', klass: '' };
   return {
-    reading: topic.readingUrl || (topic.contentType === 'pdf' ? topic.contentUrl : '') || '',
+    pdf: topic.contentType === 'pdf' ? (topic.contentUrl || '') : '',
     notes: topic.notesUrl || '',
     klass: topic.classLink || '',
   };
@@ -15,7 +17,7 @@ export function mediaOf(topic) {
 // non-empty value of each field among the lessons beneath it — a week's page
 // still offers the reading its sessions carry.
 export function mediaFrom(topics) {
-  const out = { reading: '', notes: '', klass: '' };
+  const out = { pdf: '', notes: '', klass: '' };
   for (const t of topics || []) {
     const m = mediaOf(t);
     for (const key of Object.keys(out)) if (!out[key]) out[key] = m[key];
