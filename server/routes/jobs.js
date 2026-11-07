@@ -15,6 +15,7 @@ import {
   isExperienceLevel,
   normalizeWorkType,
 } from '../lib/jobTaxonomy.js';
+import { pickTop, TOP_SIZE, TOP_DAYS, TOP_MIN_RANK } from '../lib/jobTopPicks.js';
 
 const router = Router();
 
@@ -43,20 +44,12 @@ const router = Router();
  * Applied when the board reads rather than written into a flag overnight, so
  * it is exact to the second and changing it takes effect immediately.
  *
- * Forty-five days, where the pipeline's own window (db/readJobs.js) and
- * Menler's are ten. Skeo is the broad board and is meant to hold between
- * 1 and 2 lakh openings. Measured on 26 Oct 2026: ten days held ~36,600,
- * thirty ~1,23,600 and forty-five ~1,55,000. Forty-five sits in the middle
- * of the band, so a slow week of scraping does not drop it under 1 lakh.
- * The pipeline keeps sixty days, so the rows are there.
+ * Fifteen days: nothing older reaches the board. It was forty-five, to hold
+ * over a lakh of openings, and that put month-old postings in front of
+ * students - an opening that old has usually had its applicants. Fifteen
+ * days held ~64,000 on 7 Nov 2026.
  */
-export const FRESH_DAYS = 45;
-
-/**
- * The top of the band: the board never lists more than this many,
- * best-ranked first, however busy the feed gets.
- */
-export const MAX_JOBS = 200000;
+export const FRESH_DAYS = 15;
 
 const PAGE_SIZE = 25;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -111,7 +104,9 @@ export function scrapedFilter(f) {
   const and = [
     {
       $or: [
-        { postedAt: { $gte: freshSince() } },
+        // A day of grace above now for time zones; past that, a posting date
+        // in the future is a source's bad data, and it would sort to the top.
+        { postedAt: { $gte: freshSince(), $lte: new Date(Date.now() + DAY_MS) } },
         // The handful of listings whose source gave no date fall back to
         // when we first saw them. It is ~0.1% of rows, not the usual path.
         { postedAt: null, fetchedAt: { $gte: freshSince() } },
@@ -121,7 +116,13 @@ export function scrapedFilter(f) {
 
   // isActive false means the employer withdrew it, which is the pipeline's
   // one judgement. Age is this window's business, not that flag's.
-  const filter = { isActive: { $ne: false }, $and: and };
+  //
+  // `true`, not `{ $ne: false }`: the pipeline writes the flag on every row
+  // (0 of 1,58,000 lack it, measured 7 Nov 2026), so the two match the same
+  // rows - but only equality lets Mongo walk the { isActive, rankScore,
+  // postedAt } index in board order. With $ne it read all ~2 lakh rows and
+  // sorted them for every page: ~4 s a page, against ~45 ms now.
+  const filter = { isActive: true, $and: and };
 
   if (f.categories.length) filter.roleCategory = { $in: f.categories };
   // Every scraped row carries a domain - the pipeline files new jobs as it
@@ -231,6 +232,10 @@ const shapeScraped = (job) => ({
   postedAt: job.postedAt,
   description: '',
   origin: 'feed',
+  // 'top' for the curated first 1,000 (lib/jobTopPicks.js), with `day` its
+  // age in calendar days, which the board groups by; 'rest' after them.
+  tier: job.day === undefined ? 'rest' : 'top',
+  day: job.day ?? null,
 });
 
 const shapeManual = (job) => ({
@@ -257,6 +262,47 @@ const shapeManual = (job) => ({
   description: job.description || '',
   origin: 'manual',
 });
+
+/**
+ * The curated head of the board for one set of filters: the best openings
+ * from the last few days, newest day first (lib/jobTopPicks.js).
+ *
+ * One indexed read per filter combination - the window's top-ranked recent
+ * rows, a few times more than are kept so the dedupe and the employer cap
+ * have room - then cached for ten minutes. The feed changes once a day, and
+ * a student paging through forty pages of it should see one consistent list.
+ */
+/** Only what a card reads, so thousands of rows stay small in the cache. */
+const CARD_FIELDS =
+  'title company location country isRemote url source companyLogo roleCategory domain ' +
+  'workType experienceLevel matchedSkills rankReasons postedAt fetchedAt rankScore';
+
+const TOP_CACHE_MS = 10 * 60 * 1000;
+const TOP_CACHE_MAX = 200;
+const topCache = new Map();
+
+export async function topPicksFor(Scraped, filters) {
+  const key = JSON.stringify({ ...filters, page: 0 });
+  const hit = topCache.get(key);
+  if (hit && Date.now() - hit.at < TOP_CACHE_MS) return hit.jobs;
+
+  const base = scrapedFilter(filters);
+  const since = new Date(Date.now() - (TOP_DAYS + 1) * DAY_MS);
+  const query = {
+    ...base,
+    rankScore: { $gte: TOP_MIN_RANK },
+    $and: [
+      ...base.$and,
+      { $or: [{ postedAt: { $gte: since } }, { postedAt: null, fetchedAt: { $gte: since } }] },
+    ],
+  };
+  const rows = await Scraped.find(query, CARD_FIELDS).sort({ rankScore: -1 }).limit(TOP_SIZE * 5).lean();
+  const jobs = pickTop(rows);
+
+  if (topCache.size >= TOP_CACHE_MAX) topCache.delete(topCache.keys().next().value);
+  topCache.set(key, { at: Date.now(), jobs });
+  return jobs;
+}
 
 // GET /api/skeo/jobs — the board. Same list for every role.
 router.get('/', requireAuth, async (req, res) => {
@@ -313,23 +359,34 @@ router.get('/', requireAuth, async (req, res) => {
 
   // Page one is shortened by however many manual postings sit above it, so
   // every page holds the same number of cards.
-  //
-  // Nothing past the MAX_JOBS-th listing is ever read: a page beyond the cap
-  // comes back empty rather than reaching into the rest of the window.
   const skip = Math.max(filters.page === 1 ? 0 : (filters.page - 1) * PAGE_SIZE - manual.length, 0);
-  const take = Math.min(Math.max(PAGE_SIZE - manual.length, 5), Math.max(MAX_JOBS - skip, 0));
+  const take = Math.max(PAGE_SIZE - manual.length, 5);
 
   let scraped = [];
   let total = 0;
+  let topCount = 0;
   let feedAvailable = true;
 
   try {
-    let count;
-    [scraped, count] = await Promise.all([
-      take > 0 ? Scraped.find(filter, projection).sort(sort).skip(skip).limit(take).lean() : [],
+    // The board is one list in two parts: the curated head (the best of the
+    // last few days, newest first), then the rest of the window by rank with
+    // the head's rows left out. A search skips the head - the reader's own
+    // query is the order then.
+    const top = filters.search ? [] : await topPicksFor(Scraped, filters);
+    topCount = top.length;
+
+    const fromTop = top.slice(skip, skip + take);
+    const need = take - fromTop.length;
+    const restQuery = top.length ? { ...filter, _id: { $nin: top.map((j) => j._id) } } : filter;
+
+    let rest;
+    [rest, total] = await Promise.all([
+      need > 0
+        ? Scraped.find(restQuery, projection).sort(sort).skip(Math.max(skip - top.length, 0)).limit(need).lean()
+        : [],
       Scraped.countDocuments(filter),
     ]);
-    total = Math.min(count, MAX_JOBS);
+    scraped = [...fromTop, ...rest];
   } catch (err) {
     // The feed lives on another cluster. If it is unreachable the board
     // should still show what this LMS holds, and say why it looks thin.
@@ -344,6 +401,7 @@ router.get('/', requireAuth, async (req, res) => {
     total: total + manual.length,
     page: filters.page,
     pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    topCount,
     feedAvailable,
     facets: { domains: DOMAINS, categories: ROLE_CATEGORIES, workTypes: WORK_TYPES, levels: EXPERIENCE_LEVELS },
   });
