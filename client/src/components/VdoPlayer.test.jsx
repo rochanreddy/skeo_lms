@@ -197,21 +197,38 @@ describe('picking up and finishing', () => {
   });
 });
 
-describe('captions', () => {
-  it('appear only when the video has some', async () => {
-    fake.api.getCaptionLanguages = vi.fn(() => Promise.resolve({ visible: false, languages: [{ language: 'en', label: 'English' }] }));
+describe('filling the screen where the browser cannot', () => {
+  it('takes the screen itself and sends the dock away, then gives both back', async () => {
     show();
     await ready();
-    const cc = await screen.findByRole('button', { name: 'Captions' });
-    fireEvent.click(cc);
-    expect(fake.api.setCaptionLanguage).toHaveBeenCalledWith('en');
-    fireEvent.click(cc);
-    expect(fake.api.hideCaptions).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
+    expect(document.querySelector('.vp').classList.contains('is-fake-full')).toBe(true);
+    expect(document.body.classList.contains('vp-fullscreen')).toBe(true);
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.querySelector('.vp').classList.contains('is-fake-full')).toBe(false);
+    expect(document.body.classList.contains('vp-fullscreen')).toBe(false);
+    expect(document.body.style.overflow).toBe('');
   });
 
-  it('stay out of the way otherwise', async () => {
+  it('turns on its side only while the phone is upright', async () => {
+    window.matchMedia = (q) => ({ matches: q.includes('portrait'), addEventListener() {}, removeEventListener() {} });
     show();
     await ready();
+    fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
+    expect(document.querySelector('.vp').classList.contains('is-sideways')).toBe(true);
+  });
+});
+
+describe('captions', () => {
+  it('stay off: the words are in the picture already', async () => {
+    fake.api.getCaptionLanguages = vi.fn(() => Promise.resolve({ visible: true, languages: [{ language: 'en', label: 'English' }] }));
+    show();
+    await ready();
+    await act(async () => { await Promise.resolve(); });
+    expect(fake.api.hideCaptions).toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Captions' })).toBeNull();
+    fireEvent.keyDown(document.querySelector('.vp'), { key: 'c' });
+    expect(fake.api.setCaptionLanguage).not.toHaveBeenCalled();
   });
 });

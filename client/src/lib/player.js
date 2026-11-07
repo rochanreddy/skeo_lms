@@ -64,7 +64,6 @@ export function keyAction(key, { shift = false } = {}) {
     case 'ArrowDown': return { type: 'volume', by: -0.1 };
     case 'm': case 'M': return { type: 'mute' };
     case 'f': case 'F': return { type: 'fullscreen' };
-    case 'c': case 'C': return { type: 'captions' };
     case 'Home': return { type: 'seekTo', fraction: 0 };
     case 'End': return { type: 'seekTo', fraction: 1 };
     case '<': case ',': return shift || key === '<' ? { type: 'rate', step: -1 } : null;
@@ -105,6 +104,15 @@ export function readRate() {
 }
 export function writeRate(rate) {
   try { localStorage.setItem(RATE, String(rate)); } catch { /* nothing to do */ }
+}
+
+/** Where along a bar a pointer is, whichever way the bar is lying. */
+export function fractionAlong(rect, clientX, clientY) {
+  if (!rect.width || !rect.height) return 0;
+  const along = rect.width >= rect.height
+    ? (clientX - rect.left) / rect.width
+    : (clientY - rect.top) / rect.height;
+  return clamp(along, 0, 1);
 }
 
 /* VdoCipher's player API, loaded once. It is a plain script that sets

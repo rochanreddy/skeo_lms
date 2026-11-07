@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import {
-  RATES, SKIP_SECONDS, bufferedEnd, clamp, clearPosition, formatTime, keyAction, loadPlayerApi,
+  RATES, SKIP_SECONDS, bufferedEnd, clamp, clearPosition, formatTime, fractionAlong, keyAction, loadPlayerApi,
   readPosition, readRate, resumePoint, spokenTime, stepRate, writePosition, writeRate,
 } from '../lib/player.js';
 
@@ -10,7 +10,7 @@ import {
  * VdoCipher plays the video inside its iframe and keeps the DRM there; its own
  * controls are switched off (controls=off) and everything a student touches is
  * drawn here, over the frame: play, the timeline, skipping, volume, speed,
- * captions, fullscreen and the keys every player answers to. The iframe is
+ * fullscreen and the keys every player answers to. The iframe is
  * driven through VdoCipher's player API, which hands back a proxy that behaves
  * like an HTML5 <video>.
  *
@@ -51,7 +51,6 @@ const I = {
   volume: (p) => <Glyph {...p}><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" /><path d="M15.5 9a4.2 4.2 0 0 1 0 6" /><path d="M18.3 6.2a8 8 0 0 1 0 11.6" /></Glyph>,
   quiet: (p) => <Glyph {...p}><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" /><path d="M15.5 9a4.2 4.2 0 0 1 0 6" /></Glyph>,
   muted: (p) => <Glyph {...p}><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" /><path d="m16 9.5 5 5" /><path d="m21 9.5-5 5" /></Glyph>,
-  captions: (p) => <Glyph {...p}><rect x="3" y="5.5" width="18" height="13" rx="2.5" /><path d="M10.2 10.3a2 2 0 1 0 0 3.4" /><path d="M16.2 10.3a2 2 0 1 0 0 3.4" /></Glyph>,
   enter: (p) => <Glyph {...p}><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9" /><path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9" /><path d="M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15" /><path d="M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15" /></Glyph>,
   exit: (p) => <Glyph {...p}><path d="M9 4v3.5A1.5 1.5 0 0 1 7.5 9H4" /><path d="M15 4v3.5A1.5 1.5 0 0 0 16.5 9H20" /><path d="M20 15h-3.5a1.5 1.5 0 0 0-1.5 1.5V20" /><path d="M4 15h3.5A1.5 1.5 0 0 1 9 16.5V20" /></Glyph>,
   check: (p) => <Glyph {...p}><path d="m5 12.5 4.5 4.5L19 7.5" /></Glyph>,
@@ -86,29 +85,56 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
   const resumed = useRef(false);
   const dragging = useRef(false);
   const lastTap = useRef({ at: 0, side: '' });
+  // The timeline is painted straight onto its elements: four times a second
+  // for the playhead and on every mouse move for the tooltip, which is far too
+  // often to rebuild the whole player for. React keeps the whole seconds.
+  const paint = useRef({ played: null, loaded: null, knob: null, tip: null, mark: null, bar: null });
+  const shown = useRef({ time: 0, duration: 0 });
 
   const [ready, setReady] = useState(false); // the API is talking to the frame
   const [started, setStarted] = useState(false); // play has been pressed once
   const [playing, setPlaying] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [ended, setEnded] = useState(false);
-  const [time, setTime] = useState(0);
+  const [time, setTimeState] = useState(0); // whole seconds, for the label
   const [duration, setDuration] = useState(0);
-  const [buffered, setBuffered] = useState(0);
+  const [hovering, setHovering] = useState(false); // the pointer is on the timeline
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [rate, setRate] = useState(readRate);
   const [resumeAt, setResumeAt] = useState(0); // where to pick up, once play is pressed
-  const [captions, setCaptions] = useState({ languages: [], visible: false });
-  const [menu, setMenu] = useState(''); // 'rate' | 'captions' | ''
+  const [menu, setMenu] = useState(''); // 'rate' | ''
   const [full, setFull] = useState(false);
   const [fakeFull, setFakeFull] = useState(false);
+  const [portrait, setPortrait] = useState(false); // while filling a phone held upright
   const [active, setActive] = useState(true); // controls shown
   const [toast, setToast] = useState('');
-  const [scrub, setScrub] = useState(null); // { x, time } while hovering the timeline
   const [nudge, setNudge] = useState(null); // { side, n } the skip indicator on touch
 
   const v = () => player.current?.video;
+
+  const paintPlayed = (t) => {
+    shown.current.time = t;
+    const d = shown.current.duration;
+    const pct = d ? `${(t / d) * 100}%` : '0%';
+    if (paint.current.played) paint.current.played.style.width = pct;
+    if (paint.current.knob) paint.current.knob.style.left = pct;
+    setTimeState((prev) => (Math.floor(t) === prev ? prev : Math.floor(t)));
+  };
+  const paintLoaded = (b) => {
+    const d = shown.current.duration;
+    if (paint.current.loaded) paint.current.loaded.style.width = d ? `${(b / d) * 100}%` : '0%';
+  };
+  const paintScrub = (fraction) => {
+    const d = shown.current.duration;
+    const pct = `${fraction * 100}%`;
+    if (paint.current.mark) paint.current.mark.style.left = pct;
+    if (paint.current.tip) {
+      paint.current.tip.style.left = pct;
+      paint.current.tip.textContent = formatTime(fraction * d);
+    }
+  };
+  const setTime = (t) => paintPlayed(t);
 
   // ── 1. The ticket ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -119,10 +145,9 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     setStarted(false);
     setPlaying(false);
     setEnded(false);
-    setTime(0);
+    shown.current = { time: 0, duration: 0 };
+    setTimeState(0);
     setDuration(0);
-    setBuffered(0);
-    setCaptions({ languages: [], visible: false });
     setResumeAt(0);
     endedOnce.current = false;
     resumed.current = false;
@@ -155,8 +180,8 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     const onTime = () => {
       if (dragging.current) return;
       const t = vid.currentTime || 0;
-      setTime(t);
-      setBuffered(bufferedEnd(vid.buffered, t));
+      paintPlayed(t);
+      paintLoaded(bufferedEnd(vid.buffered, t));
       if (t - lastSaved.current >= SAVE_EVERY_S) {
         lastSaved.current = t;
         writePosition(videoId, t);
@@ -165,7 +190,9 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     const onDuration = () => {
       const d = vid.duration;
       if (!Number.isFinite(d) || d <= 0) return;
+      shown.current.duration = d;
       setDuration(d);
+      paintPlayed(shown.current.time);
       // Somewhere to pick up? Decided once, as soon as the length is known.
       // The seek itself waits for play: the player drops a position set
       // before its media has loaded.
@@ -191,7 +218,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     };
     const onVolume = () => { setVolume(vid.volume ?? 1); setMuted(!!vid.muted); };
     const onRate = () => { if (RATES.includes(vid.playbackRate)) setRate(vid.playbackRate); };
-    const onProgress = () => setBuffered(bufferedEnd(vid.buffered, vid.currentTime || 0));
+    const onProgress = () => paintLoaded(bufferedEnd(vid.buffered, vid.currentTime || 0));
 
     const listeners = [
       ['timeupdate', onTime], ['durationchange', onDuration], ['loadedmetadata', onDuration],
@@ -217,16 +244,14 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
       });
     } catch { /* an older API without this event */ }
 
-    // Captions arrive whenever the player has them; a video without any never answers.
-    let alive = true;
+    // The lessons carry their words in the picture already, so a caption track
+    // on top would only double them up: keep VdoCipher's own captions off.
     Promise.resolve(p.api.getCaptionLanguages?.()).then((c) => {
-      if (!alive || !c) return;
-      const languages = Array.isArray(c.languages) ? c.languages : [];
-      setCaptions({ languages, visible: !!c.visible });
+      if (c?.visible) return p.api.hideCaptions?.();
+      return undefined;
     }).catch(() => {});
 
     return () => {
-      alive = false;
       for (const [name, fn] of listeners) vid.removeEventListener(name, fn);
       const t = vid.currentTime;
       if (t > 0) writePosition(videoId, t);
@@ -265,7 +290,9 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
       say(`Picked up at ${formatTime(resumeAt)}`);
     }
     if (rate !== 1 && vid.playbackRate !== rate) vid.playbackRate = rate;
-    vid.play?.();
+    // The proxy answers with a promise that can be refused (autoplay rules, a
+    // frame still loading); the 'playing' event is what we go by, not this.
+    Promise.resolve(vid.play?.()).catch(() => {});
     setStarted(true);
   };
   const startOver = () => {
@@ -273,7 +300,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     setTime(0);
     clearPosition(videoId);
   };
-  const pause = () => v()?.pause?.();
+  const pause = () => { Promise.resolve(v()?.pause?.()).catch(() => {}); };
   const toggle = () => (playing ? pause() : play());
   const seekTo = (s) => {
     const vid = v();
@@ -284,7 +311,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     if (ended && t < duration) setEnded(false);
   };
   const seekBy = (by) => {
-    seekTo((v()?.currentTime ?? time) + by);
+    seekTo((v()?.currentTime ?? shown.current.time) + by);
     wake();
   };
   const setVol = (n) => {
@@ -312,23 +339,6 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     setMenu('');
     say(r === 1 ? 'Normal speed' : `${r}× speed`);
   };
-  const chooseCaption = (lang) => {
-    const a = player.current?.api;
-    if (!a) return;
-    if (lang == null) {
-      a.hideCaptions?.();
-      setCaptions((c) => ({ ...c, visible: false }));
-    } else {
-      a.setCaptionLanguage?.(lang);
-      setCaptions((c) => ({ ...c, visible: true, current: lang }));
-    }
-    setMenu('');
-  };
-  const toggleCaptions = () => {
-    if (!captions.languages.length) return;
-    if (captions.visible) chooseCaption(null);
-    else chooseCaption(captions.languages[0].language ?? captions.languages[0].id ?? captions.languages[0]);
-  };
   const replay = () => { setResumeAt(0); seekTo(0); play(); };
 
   const toggleFullscreen = () => {
@@ -340,24 +350,41 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
       return;
     }
     if (el.requestFullscreen) {
-      el.requestFullscreen().catch(() => setFakeFull(true));
+      el.requestFullscreen().then(() => {
+        // A video is a landscape thing. Phones that can turn, do.
+        if (touchDevice()) screen.orientation?.lock?.('landscape').catch(() => {});
+      }).catch(() => setFakeFull(true));
     } else {
-      // iPhones have no element fullscreen: the frame fills the screen itself.
+      // iPhones have no element fullscreen: the frame fills the screen itself,
+      // and turns on its side if the phone is upright (see the portrait effect).
       setFakeFull(true);
     }
   };
   useEffect(() => {
-    const onChange = () => setFull(!!document.fullscreenElement);
+    const onChange = () => {
+      const on = !!document.fullscreenElement;
+      setFull(on);
+      if (!on) { try { screen.orientation?.unlock?.(); } catch { /* not held */ } }
+    };
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
   useEffect(() => {
-    if (!fakeFull) return undefined;
+    if (!fakeFull) { setPortrait(false); return undefined; }
+    const upright = window.matchMedia('(orientation: portrait)');
+    const follow = () => setPortrait(upright.matches);
+    follow();
+    upright.addEventListener?.('change', follow);
     const onKey = (e) => { if (e.key === 'Escape') setFakeFull(false); };
     document.addEventListener('keydown', onKey);
+    // The page's own chrome steps aside: the dock and top bar sit in stacking
+    // contexts of their own, so a z-index here could not be relied on to win.
+    document.body.classList.add('vp-fullscreen');
     document.body.style.overflow = 'hidden';
     return () => {
+      upright.removeEventListener?.('change', follow);
       document.removeEventListener('keydown', onKey);
+      document.body.classList.remove('vp-fullscreen');
       document.body.style.overflow = '';
     };
   }, [fakeFull]);
@@ -376,7 +403,6 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
       case 'volume': setVol((muted ? 0 : volume) + action.by); break;
       case 'mute': toggleMute(); break;
       case 'fullscreen': toggleFullscreen(); break;
-      case 'captions': toggleCaptions(); break;
       case 'rate': chooseRate(stepRate(rate, action.step)); break;
       default: break;
     }
@@ -388,7 +414,8 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     if (touchDevice()) {
       const now = Date.now();
       const rect = root.current.getBoundingClientRect();
-      const side = e.clientX - rect.left < rect.width / 2 ? 'left' : 'right';
+      const across = rect.width >= rect.height ? (e.clientX - rect.left) / rect.width : (e.clientY - rect.top) / rect.height;
+      const side = across < 0.5 ? 'left' : 'right';
       if (now - lastTap.current.at < 320 && lastTap.current.side === side) {
         lastTap.current = { at: 0, side: '' };
         seekBy(side === 'left' ? -SKIP_SECONDS : SKIP_SECONDS);
@@ -408,29 +435,28 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
 
   // ── 6. The timeline ───────────────────────────────────────────────────────
   const bar = useRef(null);
-  const fractionAt = (clientX) => {
-    const rect = bar.current.getBoundingClientRect();
-    return clamp((clientX - rect.left) / rect.width, 0, 1);
-  };
+  const fractionAt = (e) => fractionAlong(bar.current.getBoundingClientRect(), e.clientX, e.clientY);
   const onBarPointerDown = (e) => {
     if (!duration) return;
     e.preventDefault();
     dragging.current = true;
     bar.current.setPointerCapture?.(e.pointerId);
-    const t = fractionAt(e.clientX) * duration;
-    setTime(t);
-    setScrub({ x: fractionAt(e.clientX), time: t });
+    const f = fractionAt(e);
+    paintPlayed(f * duration);
+    paintScrub(f);
+    setHovering(true);
   };
   const onBarPointerMove = (e) => {
     if (!duration) return;
-    const f = fractionAt(e.clientX);
-    setScrub({ x: f, time: f * duration });
-    if (dragging.current) setTime(f * duration);
+    const f = fractionAt(e);
+    paintScrub(f);
+    if (!hovering) setHovering(true);
+    if (dragging.current) paintPlayed(f * duration);
   };
   const onBarPointerUp = (e) => {
     if (!dragging.current) return;
     dragging.current = false;
-    seekTo(fractionAt(e.clientX) * duration);
+    seekTo(fractionAt(e) * duration);
     wake();
   };
   const onBarKey = (e) => {
@@ -440,8 +466,6 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
-  const played = duration ? (time / duration) * 100 : 0;
-  const loaded = duration ? (buffered / duration) * 100 : 0;
   const isFull = full || fakeFull;
   const showChrome = !error && ticket && ready;
   const idle = playing && !active && !menu;
@@ -450,13 +474,14 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
   return (
     <div
       ref={root}
-      className={`vp ${idle ? 'is-idle' : ''} ${isFull ? 'is-full' : ''} ${fakeFull ? 'is-fake-full' : ''} ${started ? 'is-started' : ''} ${ended ? 'is-ended' : ''}`}
+      className={`vp ${idle ? 'is-idle' : ''} ${isFull ? 'is-full' : ''} ${fakeFull ? 'is-fake-full' : ''} ${fakeFull && portrait ? 'is-sideways' : ''} ${started ? 'is-started' : ''} ${ended ? 'is-ended' : ''}`}
       tabIndex={0}
       role="region"
       aria-label={`Video: ${title}`}
       onKeyDown={onKeyDown}
       onPointerMove={wake}
-      onPointerLeave={() => { if (playing && !menu) setActive(false); }}
+      // A mouse that leaves takes the controls with it; a finger lifting off is not leaving.
+      onPointerLeave={(e) => { if (e.pointerType && e.pointerType !== 'mouse') return; if (playing && !menu) setActive(false); }}
     >
       {ticket && (
         <iframe
@@ -541,7 +566,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
         <>
           {isFull && <div className="vp-head"><span className="vp-head-title">{title}</span></div>}
 
-          <div className="vp-chrome" onClick={(e) => e.stopPropagation()}>
+          <div className="vp-chrome" onClick={(e) => e.stopPropagation()} onPointerDown={wake}>
             {/* The timeline. The whole strip is the target; the bar is the picture. */}
             <div
               ref={bar}
@@ -558,17 +583,15 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
               onPointerMove={onBarPointerMove}
               onPointerUp={onBarPointerUp}
               onPointerCancel={() => { dragging.current = false; }}
-              onPointerLeave={() => { if (!dragging.current) setScrub(null); }}
+              onPointerLeave={() => { if (!dragging.current) setHovering(false); }}
             >
               <div className="vp-track">
-                <div className="vp-loaded" style={{ width: `${loaded}%` }} />
-                <div className="vp-played" style={{ width: `${played}%` }} />
-                {scrub && <div className="vp-scrub" style={{ left: `${scrub.x * 100}%` }} />}
+                <div className="vp-loaded" ref={(el) => { paint.current.loaded = el; }} />
+                <div className="vp-played" ref={(el) => { paint.current.played = el; }} />
+                <div className={`vp-scrub ${hovering ? '' : 'is-hidden'}`} ref={(el) => { paint.current.mark = el; }} />
               </div>
-              <div className="vp-knob" style={{ left: `${played}%` }} />
-              {scrub && duration > 0 && (
-                <div className="vp-tip" style={{ left: `${scrub.x * 100}%` }}>{formatTime(scrub.time)}</div>
-              )}
+              <div className="vp-knob" ref={(el) => { paint.current.knob = el; }} />
+              <div className={`vp-tip ${hovering && duration > 0 ? '' : 'is-hidden'}`} ref={(el) => { paint.current.tip = el; }} />
             </div>
 
             <div className="vp-row">
@@ -625,34 +648,6 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
                   </div>
                 )}
               </div>
-
-              {captions.languages.length > 0 && (
-                <div className="vp-menu-wrap">
-                  <button
-                    type="button"
-                    className={`vp-btn ${captions.visible ? 'is-on' : ''}`}
-                    onClick={() => (captions.languages.length === 1 ? toggleCaptions() : setMenu(menu === 'captions' ? '' : 'captions'))}
-                    aria-pressed={captions.visible}
-                    aria-label="Captions"
-                    title="Captions (c)"
-                  >
-                    <I.captions />
-                  </button>
-                  {menu === 'captions' && (
-                    <div className="vp-menu" role="menu" aria-label="Captions">
-                      <button type="button" role="menuitemradio" aria-checked={!captions.visible} className={`vp-item ${!captions.visible ? 'is-on' : ''}`} onClick={() => chooseCaption(null)}>Off</button>
-                      {captions.languages.map((l, i) => {
-                        const id = l.language ?? l.id ?? l;
-                        const label = l.label ?? l.name ?? l.language ?? String(l);
-                        const on = captions.visible && (captions.current ?? captions.languages[0]) === id;
-                        return (
-                          <button type="button" role="menuitemradio" aria-checked={on} key={`${id}-${i}`} className={`vp-item ${on ? 'is-on' : ''}`} onClick={() => chooseCaption(id)}>{label}</button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
 
               <button type="button" className="vp-btn" onClick={toggleFullscreen} aria-label={isFull ? 'Exit fullscreen' : 'Fullscreen'} title={isFull ? 'Exit fullscreen (f)' : 'Fullscreen (f)'}>
                 {isFull ? <I.exit /> : <I.enter />}

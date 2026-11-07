@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  bufferedEnd, formatTime, keyAction, readPosition, readRate, resumePoint, spokenTime, stepRate, writePosition, writeRate,
+  bufferedEnd, formatTime, fractionAlong, keyAction, readPosition, readRate, resumePoint, spokenTime, stepRate,
+  writePosition, writeRate,
 } from './player.js';
 
 describe('time', () => {
@@ -81,6 +82,19 @@ describe('speed', () => {
     expect(readRate()).toBe(1.5);
     localStorage.setItem('skeo_vrate', '7');
     expect(readRate()).toBe(1);
+  });
+});
+
+
+describe('a bar lying either way', () => {
+  it('reads along its long side', () => {
+    expect(fractionAlong({ left: 100, top: 50, width: 200, height: 10 }, 150, 55)).toBe(0.25);
+    expect(fractionAlong({ left: 100, top: 50, width: 10, height: 200 }, 105, 150)).toBe(0.5); // on its side
+  });
+  it('stays inside the bar', () => {
+    expect(fractionAlong({ left: 100, top: 50, width: 200, height: 10 }, 20, 55)).toBe(0);
+    expect(fractionAlong({ left: 100, top: 50, width: 200, height: 10 }, 900, 55)).toBe(1);
+    expect(fractionAlong({ left: 0, top: 0, width: 0, height: 0 }, 5, 5)).toBe(0);
   });
 });
 

@@ -6,6 +6,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .vp {
+  /* Two quick taps on the controls are two taps, never a zoom. */
+  touch-action: manipulation;
   --vp-ink: #ffffff;
   --vp-ink-2: rgba(255, 255, 255, .78);
   --vp-line: rgba(255, 255, 255, .28);
@@ -29,6 +31,20 @@
 /* ── Fullscreen ── */
 .vp.is-full { border-radius: 0; }
 .vp.is-fake-full { position: fixed; z-index: 1000; border-radius: 0; }
+body.vp-fullscreen .dock, body.vp-fullscreen .topbar, body.vp-fullscreen .dock-sheet, body.vp-fullscreen .dock-sheet-scrim, body.vp-fullscreen .pwa-nudge, body.vp-fullscreen .pwa-update { display: none !important; }
+/* A fixed box is measured from its nearest transformed ancestor, and the page's
+   entry animation leaves <main> with a transform. Lift it, or a scrolled page
+   would show the "fullscreen" video shifted off the top. */
+body.vp-fullscreen .page-enter { transform: none !important; animation: none; }
+/* An upright phone that cannot turn: the player turns instead, so the picture
+   gets the long side. The swap of vw and vh is what makes the maths come out. */
+.vp.is-sideways {
+  inset: auto; top: 0; left: 0; width: 100vh; height: 100vw;
+  transform: rotate(90deg) translateY(-100%); transform-origin: top left;
+}
+@supports (height: 100dvh) {
+  .vp.is-sideways { width: 100dvh; height: 100dvw; }
+}
 .vp-head {
   position: absolute; left: 0; right: 0; top: 0; padding: 22px 28px 60px;
   background: linear-gradient(to bottom, rgba(0, 0, 0, .55), transparent);
@@ -46,7 +62,8 @@
 .vp-buffering { background: rgba(0, 0, 0, .18); }
 .vp-error { pointer-events: auto; background: radial-gradient(ellipse at center, #1c1b1a 0%, #000 72%); color: var(--vp-ink); }
 .vp-error p { margin: 0; max-width: 42ch; line-height: 1.5; color: var(--vp-ink-2); }
-.vp-spinner { color: var(--vp-ink); animation: vp-spin 1s linear infinite; }
+/* Its own layer, or the turning SVG is repainted on the main thread sixty times a second. */
+.vp-spinner { color: var(--vp-ink); animation: vp-spin 1s linear infinite; will-change: transform; }
 @keyframes vp-spin { to { transform: rotate(360deg); } }
 
 /* The invitation: the accent circle, sized for a thumb, lifted off the picture. */
@@ -89,6 +106,8 @@
   position: absolute; left: 0; right: 0; bottom: 0; padding: 36px 14px 8px;
   background: linear-gradient(to top, rgba(0, 0, 0, .78) 0%, rgba(0, 0, 0, .45) 55%, transparent 100%);
   transition: opacity .25s var(--vp-ease), transform .25s var(--vp-ease);
+  /* A layer of its own: the gradient is painted once, not on every tick of the playhead. */
+  will-change: transform, opacity;
 }
 .vp.is-idle .vp-chrome { opacity: 0; transform: translateY(6px); pointer-events: none; }
 .vp:not(.is-started) .vp-chrome .vp-row { opacity: .92; }
@@ -127,7 +146,8 @@
 .vp-vol:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, .45); }
 
 /* ── Timeline ── */
-.vp-bar { position: relative; height: 18px; display: flex; align-items: center; cursor: pointer; touch-action: none; border-radius: 4px; }
+/* Also its own layer, so the playhead and the tooltip repaint a thin strip and nothing else. */
+.vp-bar { position: relative; height: 18px; display: flex; align-items: center; cursor: pointer; touch-action: none; border-radius: 4px; will-change: transform; }
 .vp-bar:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, .9); }
 .vp-track { position: relative; width: 100%; height: 4px; border-radius: 2px; background: var(--vp-line); overflow: hidden; transition: height .14s var(--vp-ease); }
 .vp-bar:hover .vp-track, .vp-bar:active .vp-track { height: 6px; }
@@ -135,6 +155,7 @@
 .vp-loaded { background: rgba(255, 255, 255, .32); }
 .vp-played { background: var(--vp-accent); }
 .vp-scrub { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, .7); }
+.vp-scrub.is-hidden, .vp-tip.is-hidden { display: none; }
 .vp-knob {
   position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
   background: var(--vp-accent); box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
@@ -227,6 +248,12 @@
   .vp-end-next { max-width: 12ch; }
   .vp-head { padding: 14px 16px 40px; }
   .vp-head-title { font-size: 15px; }
+}
+
+/* Protected video on Android can go black under a rounded clip, and a phone
+   screen has no room for the corners anyway. */
+@media (max-width: 640px) {
+  .cp-player:has(.vp) { border-radius: 0; box-shadow: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
