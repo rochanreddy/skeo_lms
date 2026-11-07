@@ -2808,6 +2808,17 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .jb-count strong { font-family: var(--display); font-size: 17px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 .jb-count span { color: var(--muted); font-size: 13.5px; }
 .jb-active { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+
+/* ── Group headings ── the board's two parts: the curated head by day
+   ("Posted today", "Posted yesterday"), then "More openings". A rule under
+   the title so a heading reads as a section break, not as another card. */
+.jb-group {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap;
+  margin-top: 14px; padding: 0 2px 8px; border-bottom: 1px solid var(--line);
+}
+.jb-group:first-child { margin-top: 0; }
+.jb-group strong { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.jb-group span { font-size: 12.5px; color: var(--muted); }
 /* A chip that removes its own filter — the same pill, worn as a statement
    rather than an option. */
 .jb-active-chip {

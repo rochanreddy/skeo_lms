@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
 import {
@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
  * feed goes straight through, and the only thing an admin can do that a
  * student can't is add an opening and remove one they added.
  *
- * Listings show for 45 days from the date the role opened and then drop off
+ * Listings show for 15 days from the date the role opened and then drop off
  * on their own, 1 to 2 lakh of them, so the board is a rolling six weeks rather than an
  * archive nobody prunes.
  *
@@ -61,18 +61,46 @@ function httpUrl(value) {
   }
 }
 
+/**
+ * Calendar days since a date, in India time - the count the server groups
+ * the board by (server/lib/jobTopPicks.js), so a card's "yesterday" and the
+ * "Posted yesterday" heading above it always agree.
+ */
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const istDay = (t) => Math.floor((t + IST_OFFSET_MS) / 86400000);
+const daysOld = (value) => Math.max(0, istDay(Date.now()) - istDay(new Date(value).getTime()));
+
 /** How long ago, in the units people actually think in. */
 function ago(value) {
   if (!value) return '';
-  const days = Math.round((Date.now() - new Date(value).getTime()) / 86400000);
+  const days = daysOld(value);
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   return `${days}d ago`;
 }
 
-/** Posted in the last two days. Worth saying loudly on a ten-day board. */
-const isFresh = (value) =>
-  Boolean(value) && Date.now() - new Date(value).getTime() < 2 * 86400000;
+/** Posted today or yesterday. Worth saying loudly. */
+const isFresh = (value) => Boolean(value) && daysOld(value) <= 1;
+
+/**
+ * The heading a card opens a new group with, or null.
+ *
+ * The board is one list in two parts (server/routes/jobs.js): the curated
+ * head - the best openings of the last few days, newest day first - then
+ * everything else from the window, best match first. A heading marks each
+ * day of the head and the start of the rest, and repeats at the top of a
+ * page so a reader landing mid-group still knows where they are.
+ */
+function groupHeading(job, prev) {
+  if (job.origin !== 'feed') return null;
+  if (job.tier === 'top') {
+    if (prev && prev.origin === 'feed' && prev.tier === 'top' && prev.day === job.day) return null;
+    const when = job.day === 0 ? 'Posted today' : job.day === 1 ? 'Posted yesterday' : `Posted ${job.day} days ago`;
+    return { title: when, note: 'Top picks: strong matches, newest first' };
+  }
+  if (prev && prev.origin === 'feed' && prev.tier !== 'top') return null;
+  return { title: 'More openings', note: 'Everything else from the last 15 days, best match first' };
+}
 
 /**
  * A company's monogram and its colour.
@@ -260,7 +288,7 @@ export default function JobBoard() {
           <h1>Openings</h1>
           <p>
             Roles from across the web, refreshed every morning, plus openings shared by the
-            team. Listings stay up for 45 days from the day they were posted.
+            team. Listings stay up for 15 days from the day they were posted, the newest and strongest first.
           </p>
         </div>
         {isAdmin && !postOpen && (
@@ -356,9 +384,20 @@ export default function JobBoard() {
             </div>
           )}
 
-          {!loading && data.jobs.map((j) => (
-            <JobCard key={j.id} job={j} isAdmin={isAdmin} onRemoved={load} labelOf={labelOf} />
-          ))}
+          {!loading && data.jobs.map((j, i) => {
+            const heading = groupHeading(j, data.jobs[i - 1]);
+            return (
+              <Fragment key={j.id}>
+                {heading && (
+                  <div className="jb-group">
+                    <strong>{heading.title}</strong>
+                    <span>{heading.note}</span>
+                  </div>
+                )}
+                <JobCard job={j} isAdmin={isAdmin} onRemoved={load} labelOf={labelOf} />
+              </Fragment>
+            );
+          })}
         </div>
 
         {!loading && data.pages > 1 && (
@@ -600,7 +639,7 @@ function AdminPost({ onPosted, onClose, facets }) {
           <h3 style={{ margin: 0 }}>Post an opening</h3>
           <p className="muted">
             For roles that never reach a job board. It appears at the top of the list for
-            everyone, and drops off after 45 days like any other.
+            everyone, and drops off after 15 days like any other.
           </p>
         </div>
         <button type="button" className="btn sm ghost" onClick={onClose}>Cancel</button>
