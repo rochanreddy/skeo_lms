@@ -717,7 +717,14 @@ function Content() {
             {topic && hasVideo && (
               <div className="cp-player">
                 {vdoId
-                  ? <VdoPlayer key={topic._id} videoId={vdoId} title={topic.title} />
+                  ? (
+                    <VdoPlayer
+                      key={topic._id}
+                      videoId={vdoId}
+                      title={topic.title}
+                      upNext={next && !nextLocked ? { title: next.topic.title, onPlay: () => selectTopic(next) } : null}
+                    />
+                  )
                   : <LessonVideo key={topic._id} url={videoUrl} />}
               </div>
             )}

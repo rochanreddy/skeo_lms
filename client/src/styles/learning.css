@@ -15,7 +15,7 @@
 /* ── Player ── */
 .cp-player { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-lg); }
 .cp-player video.lesson-video { width: 100%; height: 100%; margin: 0; border-radius: 0; aspect-ratio: auto; object-fit: contain; }
-.cp-player .vdo-frame { position: absolute; inset: 0; border-radius: 0; aspect-ratio: auto; }
+.cp-player .vp { border-radius: inherit; }
 .cp-player .lesson-video-error { position: absolute; inset: 0; display: grid; place-content: center; border-radius: 0; margin: 0; }
 
 /* ── Title and actions ── */

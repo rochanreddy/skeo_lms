@@ -1,0 +1,235 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LESSON PLAYER — the LMS's own chrome over VdoCipher's DRM frame
+   Always on the dark stage, whatever the page theme: the picture decides the
+   ground, so the type is white and the only colour is the accent, on the
+   played part of the timeline and the one big invitation to play.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.vp {
+  --vp-ink: #ffffff;
+  --vp-ink-2: rgba(255, 255, 255, .78);
+  --vp-line: rgba(255, 255, 255, .28);
+  --vp-fill: rgba(255, 255, 255, .14);
+  --vp-accent: var(--blue);
+  --vp-ease: cubic-bezier(.2, .7, .2, 1);
+  position: absolute; inset: 0;
+  background: #000;
+  color: var(--vp-ink);
+  font-family: var(--font);
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.vp:focus-visible { box-shadow: inset 0 0 0 3px var(--blue-glow); }
+.vp.is-idle { cursor: none; }
+.vp-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.vp-surface { position: absolute; inset: 0; cursor: pointer; }
+.vp.is-idle .vp-surface { cursor: none; }
+
+/* ── Fullscreen ── */
+.vp.is-full { border-radius: 0; }
+.vp.is-fake-full { position: fixed; z-index: 1000; border-radius: 0; }
+.vp-head {
+  position: absolute; left: 0; right: 0; top: 0; padding: 22px 28px 60px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, .55), transparent);
+  pointer-events: none; transition: opacity .25s var(--vp-ease);
+}
+.vp-head-title { font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+.vp.is-idle .vp-head { opacity: 0; }
+
+/* ── States in the middle of the frame ── */
+.vp-state {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  pointer-events: none; color: var(--vp-ink-2); font-size: 13.5px; text-align: center; padding: 24px;
+}
+.vp-loading { background: radial-gradient(ellipse at center, #1c1b1a 0%, #000 72%); }
+.vp-buffering { background: rgba(0, 0, 0, .18); }
+.vp-error { pointer-events: auto; background: radial-gradient(ellipse at center, #1c1b1a 0%, #000 72%); color: var(--vp-ink); }
+.vp-error p { margin: 0; max-width: 42ch; line-height: 1.5; color: var(--vp-ink-2); }
+.vp-spinner { color: var(--vp-ink); animation: vp-spin 1s linear infinite; }
+@keyframes vp-spin { to { transform: rotate(360deg); } }
+
+/* The invitation: the accent circle, sized for a thumb, lifted off the picture. */
+.vp-big {
+  position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px;
+  display: grid; place-items: center; padding: 0 0 0 4px; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--vp-accent); color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .3), 0 18px 40px rgba(0, 0, 0, .45);
+  transition: transform .22s var(--vp-ease), box-shadow .22s var(--vp-ease), background .16s;
+}
+.vp-big:hover { transform: scale(1.06); background: var(--blue-dark); }
+.vp-big:active { transform: scale(.98); }
+.vp-big:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(255, 255, 255, .85), 0 18px 40px rgba(0, 0, 0, .45); }
+
+.vp-big { z-index: 2; } /* a tap on it always wins, whatever sits at the foot */
+
+/* On a small frame the bar would sit on the invitation, so before play there
+   is only the invitation and the length. */
+.vp-length {
+  display: none; position: absolute; right: 10px; bottom: 10px; padding: 3px 8px; border-radius: 6px;
+  background: rgba(14, 14, 16, .78); color: var(--vp-ink); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+
+/* Under the invitation: where it will pick up, and the way not to. */
+.vp-resume {
+  position: absolute; left: 50%; top: calc(50% + 52px); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: 999px;
+  background: rgba(14, 14, 16, .78); color: var(--vp-ink-2); font-size: 13px; font-weight: 500; white-space: nowrap;
+  animation: vp-fade .25s var(--vp-ease);
+}
+.vp-resume-reset {
+  border: 0; border-radius: 999px; padding: 5px 11px; background: rgba(255, 255, 255, .12); color: var(--vp-ink);
+  font-family: var(--font); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .14s;
+}
+.vp-resume-reset:hover { background: rgba(255, 255, 255, .22); }
+.vp-resume-reset:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, .8); }
+
+/* ── The chrome at the foot ── */
+.vp-chrome {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 36px 14px 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, .78) 0%, rgba(0, 0, 0, .45) 55%, transparent 100%);
+  transition: opacity .25s var(--vp-ease), transform .25s var(--vp-ease);
+}
+.vp.is-idle .vp-chrome { opacity: 0; transform: translateY(6px); pointer-events: none; }
+.vp:not(.is-started) .vp-chrome .vp-row { opacity: .92; }
+
+.vp-row { display: flex; align-items: center; gap: 2px; margin-top: 6px; }
+.vp-spacer { flex: 1; }
+.vp-btn {
+  display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 10px;
+  background: transparent; color: var(--vp-ink); cursor: pointer; font-family: var(--font);
+  transition: background .14s, transform .08s;
+}
+.vp-btn:hover { background: var(--vp-fill); }
+.vp-btn:active { transform: scale(.94); }
+.vp-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .9); }
+.vp-btn.is-on { color: var(--vp-ink); position: relative; }
+.vp-btn.is-on::after { content: ''; position: absolute; left: 50%; bottom: 5px; width: 14px; height: 2px; margin-left: -7px; border-radius: 2px; background: var(--vp-accent); }
+.vp-rate { width: auto; min-width: 44px; padding: 0 8px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+
+.vp-time { display: flex; gap: 5px; margin-left: 8px; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--vp-ink); white-space: nowrap; }
+.vp-time-sep { color: var(--vp-line); }
+.vp-time span:last-child { color: var(--vp-ink-2); }
+
+/* Volume: the icon is always there; the slider slides out beside it on hover. */
+.vp-volume { display: flex; align-items: center; }
+.vp-vol {
+  width: 0; height: 28px; margin: 0; padding: 0; opacity: 0; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
+  transition: width .2s var(--vp-ease), opacity .2s, margin .2s;
+}
+.vp-volume:hover .vp-vol, .vp-volume:focus-within .vp-vol { width: 72px; opacity: 1; margin-right: 6px; }
+.vp-vol::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--vp-ink) var(--level), var(--vp-line) var(--level)); }
+.vp-vol::-moz-range-track { height: 4px; border-radius: 2px; background: var(--vp-line); }
+.vp-vol::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--vp-ink); }
+.vp-vol::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border-radius: 50%; background: var(--vp-ink); border: 0; }
+.vp-vol::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--vp-ink); border: 0; }
+.vp-vol:focus-visible { outline: none; }
+.vp-vol:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, .45); }
+
+/* ── Timeline ── */
+.vp-bar { position: relative; height: 18px; display: flex; align-items: center; cursor: pointer; touch-action: none; border-radius: 4px; }
+.vp-bar:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, .9); }
+.vp-track { position: relative; width: 100%; height: 4px; border-radius: 2px; background: var(--vp-line); overflow: hidden; transition: height .14s var(--vp-ease); }
+.vp-bar:hover .vp-track, .vp-bar:active .vp-track { height: 6px; }
+.vp-loaded, .vp-played { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
+.vp-loaded { background: rgba(255, 255, 255, .32); }
+.vp-played { background: var(--vp-accent); }
+.vp-scrub { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, .7); }
+.vp-knob {
+  position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+  background: var(--vp-accent); box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+  transform: scale(0); transition: transform .14s var(--vp-ease); pointer-events: none;
+}
+.vp-bar:hover .vp-knob, .vp-bar:active .vp-knob, .vp-bar:focus-visible .vp-knob { transform: scale(1); }
+.vp-tip {
+  position: absolute; bottom: 22px; transform: translateX(-50%); padding: 4px 8px; border-radius: 7px;
+  background: rgba(14, 14, 16, .92); color: var(--vp-ink); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  white-space: nowrap; pointer-events: none;
+}
+
+/* ── Menus (speed, captions) ── */
+.vp-menu-wrap { position: relative; }
+.vp-menu {
+  position: absolute; right: 0; bottom: 48px; min-width: 132px; padding: 6px; border-radius: 12px;
+  background: rgba(14, 14, 16, .94); box-shadow: 0 2px 4px rgba(0, 0, 0, .4), 0 16px 40px rgba(0, 0, 0, .55);
+  display: flex; flex-direction: column; gap: 2px; z-index: 2;
+  animation: vp-rise .18s var(--vp-ease);
+}
+@keyframes vp-rise { from { opacity: 0; transform: translateY(6px); } }
+.vp-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; padding: 0 12px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--vp-ink-2); font: inherit; font-size: 13.5px; font-weight: 500; text-align: left; cursor: pointer;
+}
+.vp-item:hover { background: var(--vp-fill); color: var(--vp-ink); }
+.vp-item.is-on { color: var(--vp-ink); font-weight: 700; }
+.vp-item.is-on::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--vp-accent); }
+.vp-item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .9); }
+
+/* ── The end ── */
+.vp-end {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 24px; background: rgba(0, 0, 0, .62); text-align: center;
+  animation: vp-fade .3s var(--vp-ease);
+}
+@keyframes vp-fade { from { opacity: 0; } }
+.vp-end-mark { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--vp-accent); color: #fff; margin-bottom: 4px; }
+.vp-end-title { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+.vp-end-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+.vp-end-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .35); background: rgba(255, 255, 255, .1); color: var(--vp-ink);
+  font-family: var(--font); font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background .14s, border-color .14s;
+}
+.vp-end-btn.is-primary { min-width: 0; }
+.vp-end-btn:hover { background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .6); }
+.vp-end-btn.is-primary { background: var(--vp-accent); border-color: transparent; }
+.vp-end-btn.is-primary:hover { background: var(--blue-dark); }
+.vp-end-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .7); }
+.vp-end-next { max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+
+/* ── Small things that say what just happened ── */
+.vp-toast {
+  position: absolute; left: 50%; top: 18px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px;
+  background: rgba(14, 14, 16, .9); color: var(--vp-ink); font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none;
+  animation: vp-fade .2s var(--vp-ease);
+}
+.vp-nudge {
+  position: absolute; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 92px; height: 92px; justify-content: center; border-radius: 50%; background: rgba(0, 0, 0, .45); color: var(--vp-ink);
+  font-size: 12px; font-weight: 600; pointer-events: none; animation: vp-fade .15s var(--vp-ease);
+}
+.vp-nudge.is-left { left: 12%; }
+.vp-nudge.is-right { right: 12%; }
+
+/* ── Phones and thumbs ── */
+@media (pointer: coarse) {
+  .vp-chrome { padding: 30px 8px 6px; }
+  .vp-btn { width: 44px; height: 44px; }
+  .vp-bar { height: 24px; }
+  .vp-knob { transform: scale(1); }
+  .vp-volume .vp-vol { display: none; } /* the phone's own buttons do this */
+  .vp-big { width: 68px; height: 68px; margin: -34px 0 0 -34px; }
+}
+@media (max-width: 480px) {
+  .vp:not(.is-started):not(.is-ended) .vp-chrome { display: none; }
+  .vp:not(.is-started):not(.is-ended) .vp-length { display: block; }
+  .vp-chrome { padding-top: 18px; }
+  .vp-skip { display: none; } /* double-tap the sides instead */
+  .vp-time { font-size: 12px; margin-left: 4px; }
+  /* The bar keeps the foot; the card takes what is left, in one row. */
+  .vp-end { padding: 12px 16px 72px; gap: 6px; }
+  .vp-end-mark { width: 32px; height: 32px; margin-bottom: 0; }
+  .vp-end-mark svg { width: 16px; height: 16px; }
+  .vp-end-title { font-size: 16px; }
+  .vp-end-actions { margin-top: 4px; gap: 8px; flex-wrap: nowrap; max-width: 100%; }
+  .vp-end-btn { min-height: 38px; padding: 0 13px; font-size: 13px; }
+  .vp-end-btn.is-primary { min-width: 0; }
+  .vp-end-next { max-width: 12ch; }
+  .vp-head { padding: 14px 16px 40px; }
+  .vp-head-title { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-chrome, .vp-big, .vp-track, .vp-knob, .vp-vol, .vp-head { transition: none; }
+  .vp-menu, .vp-end, .vp-toast, .vp-nudge, .vp-resume { animation: none; }
+}
