@@ -11,6 +11,7 @@ import './styles/student-pages.css';
 import './styles/learning.css';
 import './styles/shell.css';
 import './styles/usage.css';
+import './styles/vdo-check.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

@@ -3,6 +3,7 @@ import { api, postFile } from '../api.js';
 import LessonIcon from './LessonIcon.jsx';
 import { ProjectsManager, QuizzesManager } from './CourseWork.jsx';
 import VdoLibrary from './VdoLibrary.jsx';
+import VdoCheck from './VdoCheck.jsx';
 
 // Admin curriculum builder for one program. Upload a doc to auto-structure it,
 // then review/edit the Module → Chapter → Topic tree and publish.
@@ -55,6 +56,13 @@ export default function CurriculumEditor({ programId, onClose }) {
   const setChapterTitle = (mi, ci, v) => touch((m) => { m[mi].chapters[ci].title = v; });
   const setTopicField = (mi, ci, ti, patch) => touch((m) => { Object.assign(m[mi].chapters[ci].topics[ti], patch); });
   const move = (mi, dir) => touch((m) => { const j = mi + dir; if (j < 0 || j >= m.length) return; [m[mi], m[j]] = [m[j], m[mi]]; });
+  // From the video check: point each lesson at the library video it matched.
+  const linkVideos = (matches) => {
+    touch((m) => {
+      for (const p of matches) Object.assign(m[p.mi].chapters[p.ci].topics[p.ti], { videoSource: 'vdocipher', vdoVideoId: p.match.id });
+    });
+    flash(`Linked ${matches.length} lesson${matches.length === 1 ? '' : 's'}. Save to publish ${matches.length === 1 ? 'it' : 'them'}.`);
+  };
 
   async function onImport(e) {
     const file = e.target.files?.[0];
@@ -106,6 +114,8 @@ export default function CurriculumEditor({ programId, onClose }) {
 
       {view === 'curriculum' && (
       <>
+
+      {vdoReady && <VdoCheck modules={modules} onLink={linkVideos} onOpen={(p) => setSel({ mi: p.mi, ci: p.ci, ti: p.ti })} />}
 
       <div className="ce-import">
         <div>
