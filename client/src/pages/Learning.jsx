@@ -186,13 +186,19 @@ function QuizCard({ quiz, onDone }) {
   const pct = attempt && attempt.total ? Math.round((attempt.score / attempt.total) * 100) : null;
 
   return (
-    <div className="panel">
-      <div className="row">
-        <strong>{quiz.title}</strong>
-        <span className="badge">{quiz.type}</span>
-        {attempt && <span className="badge badge-student">Scored {attempt.score}/{attempt.total}</span>}
+    <div className={`panel quiz-card ${open && !attempt ? 'is-open' : ''}`}>
+      {/* Title and what it is on the left; the one thing to do on the right. */}
+      <div className="quiz-card-head">
+        <div className="quiz-card-text">
+          <strong className="quiz-card-title">{quiz.title}</strong>
+          <span className="quiz-card-meta">
+            {total} question{total === 1 ? '' : 's'}
+            {quiz.type && quiz.type !== 'quiz' && <> · {quiz.type}</>}
+            {attempt && <> · <span className="quiz-card-scored">Scored {attempt.score}/{attempt.total}</span></>}
+          </span>
+        </div>
+        {!attempt && !open && <button className="btn quiz-card-go" onClick={() => { setOpen(true); setQIndex(0); }}>Take quiz →</button>}
       </div>
-      {!attempt && !open && <button className="btn sm" onClick={() => { setOpen(true); setQIndex(0); }}>Take quiz</button>}
       {attempt && (
         <div className="quiz-review-bar">
           <div className="qr-score">

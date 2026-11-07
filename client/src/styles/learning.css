@@ -194,3 +194,19 @@
   .assign-brief .md { font-size: 14px; }
   .assign-brief.is-folded { max-height: 160px; }
 }
+
+/* ── Quiz cards ──
+   Title and "10 questions" on the left, Take quiz on the right; on a phone
+   the button takes the full width under the text. */
+.quiz-card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.quiz-card-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.quiz-card-title { font-family: var(--display); font-size: 16.5px; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.quiz-card-meta { font-size: 13px; color: var(--muted); }
+.quiz-card-scored { color: var(--green-ink); font-weight: 600; }
+.quiz-card-go { flex: none; padding: 11px 20px; white-space: nowrap; }
+.quiz-card .quiz-review-bar { margin-top: 14px; }
+.quiz-card.is-open .quiz-card-head { padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); margin-bottom: 14px; }
+@media (max-width: 640px) {
+  .quiz-card-head { flex-wrap: wrap; gap: 12px; }
+  .quiz-card-go { flex-basis: 100%; justify-content: center; min-height: 46px; }
+}
