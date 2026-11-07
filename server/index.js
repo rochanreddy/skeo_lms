@@ -11,6 +11,7 @@ import routes from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errors.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import { startUsageMeter, usageMeter } from './utils/usageMeter.js';
+import { syncLibrary } from './utils/librarySeed.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4200); // 4200 is Skeo's own port -- 4100 belongs to menler-lms, 4000 to the marketing API.
@@ -109,6 +110,12 @@ process.on('uncaughtException', (err) => {
 async function start() {
   try {
     await connectDb();
+    // The Library's own resources follow utils/librarySeed.js, so a deploy is
+    // what changes them. Off the critical path: a failure here is logged and
+    // the API starts regardless.
+    syncLibrary()
+      .then((r) => { if (r.changed) console.log(`[library] synced: removed ${r.removed}, added ${r.added}`); })
+      .catch((err) => console.error('[library] sync failed:', err.message));
     const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
     startUsageMeter(server);
 
