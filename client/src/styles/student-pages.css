@@ -46,6 +46,14 @@
    One card to a row on a phone. Titles clamp at two lines and descriptions at
    three, so a wordy card does not make its row twice the height of the next. */
 .lib-page .lib-card { min-width: 0; }
+/* A paid playbook the reader owns opens in-app, so it is a button — reset it
+   to look like the link cards beside it. */
+.lib-page button.lib-card { font: inherit; text-align: left; cursor: pointer; width: 100%; }
+/* One they don't own: still listed, so they can see what's on offer, but quiet. */
+.lib-page .lib-card.is-locked { background: var(--bg); }
+.lib-page .lib-card.is-locked strong,
+.lib-page .lib-card.is-locked .muted { opacity: .7; }
+.lib-page .lib-card.is-locked .lib-open { color: var(--muted); }
 .lib-page .lib-card strong,
 .lib-page .lib-card .muted {
   overflow-wrap: anywhere;

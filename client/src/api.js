@@ -250,6 +250,21 @@ export async function postFile(path, file) {
   return data;
 }
 
+// Fetch an authenticated file's bytes — the paid playbooks, which are never a
+// public link, so the reader has to be handed them rather than a URL.
+export async function fetchFileBytes(path) {
+  const send = () => fetch(`${API}${path}`, {
+    headers: { ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) },
+  });
+  let res = await send();
+  if (res.status === 401 && (await renewAccessToken())) res = await send();
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+  return res.arrayBuffer();
+}
+
 // Download an authenticated file (CSV reports) and trigger a browser save.
 export async function downloadFile(path, fallbackName = 'report.csv') {
   const send = () => fetch(`${API}${path}`, {

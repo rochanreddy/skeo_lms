@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, fetchFileBytes } from '../api.js';
+import FileViewer from '../components/FileViewer.jsx';
+import { PRICING_URL } from '../components/GetSkeo.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 
 const CATEGORIES = ['PPT', 'eBook', 'Note', 'Library'];
+// The paid sets a playbook can belong to, as the website sells them.
+const SET_LABEL = { claude: 'Claude Playbooks', ai: 'AI Library' };
 
 // Downloadable resource library. Everyone browses; admins add by link.
 export default function Library() {
@@ -17,6 +21,7 @@ export default function Library() {
   // Until the first load lands, an empty list means "not known yet", not
   // "nothing here" — saying the latter reads as broken rather than slow.
   const [loading, setLoading] = useState(true);
+  const [reading, setReading] = useState(null); // the paid playbook open in the reader
 
   const load = () => api('/library').then((d) => setItems(d.items || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
@@ -72,16 +77,44 @@ export default function Library() {
 
       <div className="lib-grid">
         {loading && [0, 1, 2, 3].map((n) => <div key={n} className="lib-card skeleton-row" style={{ height: 132 }} />)}
-        {!loading && shown.map((i) => (
+        {!loading && shown.map((i) => (i.playbookSet ? (
+          // A paid playbook: read in the in-app reader by a buyer, otherwise a
+          // pointer to the plans. Never a link to the file itself.
+          i.locked ? (
+            <a key={i._id} className="lib-card is-locked" href={PRICING_URL}>
+              <span className="badge">{i.category}</span>
+              <strong>{i.title}</strong>
+              {i.description && <p className="muted">{i.description}</p>}
+              <span className="lib-open">Locked · {SET_LABEL[i.playbookSet]} or Everything AI →</span>
+            </a>
+          ) : (
+            <button key={i._id} type="button" className="lib-card" onClick={() => setReading(i)}>
+              <span className="badge">{i.category}</span>
+              <strong>{i.title}</strong>
+              {i.description && <p className="muted">{i.description}</p>}
+              <span className="lib-open">Read →</span>
+            </button>
+          )
+        ) : (
           <a key={i._id} className="lib-card" href={i.url || '#'} target={i.url ? '_blank' : undefined} rel="noreferrer">
             <span className="badge">{i.category}</span>
             <strong>{i.title}</strong>
             {i.description && <p className="muted">{i.description}</p>}
             <span className="lib-open">{i.url ? 'Open →' : 'No link'}</span>
           </a>
-        ))}
+        )))}
         {!loading && shown.length === 0 && <p className="muted">No resources yet.</p>}
       </div>
+
+      {reading && (
+        <FileViewer
+          label={SET_LABEL[reading.playbookSet]}
+          subtitle={reading.title}
+          url={reading.url}
+          loadBytes={() => fetchFileBytes(reading.url)}
+          onClose={() => setReading(null)}
+        />
+      )}
     </div>
   );
 }

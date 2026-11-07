@@ -12,7 +12,7 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 // For course material the whole point is to withhold the browser's native
 // viewer, download and print included — so it stays off by default; callers
 // with nothing to protect can opt in.
-function FileViewer({ label, subtitle, url, onClose, allowNewTab = false }) {
+function FileViewer({ label, subtitle, url, onClose, allowNewTab = false, loadBytes }) {
   const ext = (url.split(/[?#]/)[0].split('.').pop() || '').toLowerCase();
   const isOffice = ['ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx'].includes(ext);
   const isPdf = ext === 'pdf';
@@ -46,7 +46,7 @@ function FileViewer({ label, subtitle, url, onClose, allowNewTab = false }) {
           <button className="fv-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
         {isPdf
-          ? <PdfReader url={url} />
+          ? <PdfReader url={url} loadBytes={loadBytes} />
           : <iframe className="fv-frame" src={src} title={`${label} — ${subtitle}`} />}
         {isOffice && isLocal && (
           <div className="fv-note">
@@ -250,7 +250,13 @@ function PdfPage({ doc, lib, num, zoom, term, base, root, onCurrent, bind }) {
 //
 // The library is imported lazily, so a student who never opens a document never
 // pays for it.
-function PdfReader({ url }) {
+//
+// `loadBytes`, when given, supplies the document instead of `url` — for files
+// behind the API's auth (the paid playbooks), which pdf.js cannot fetch itself.
+// It is read through a ref so a fresh closure each render doesn't reopen it.
+function PdfReader({ url, loadBytes }) {
+  const loadRef = useRef(loadBytes);
+  loadRef.current = loadBytes;
   const stageRef = useRef(null);
   const libRef = useRef(null);
   const docRef = useRef(null);
@@ -282,7 +288,9 @@ function PdfReader({ url }) {
       try {
         const lib = await import('pdfjs-dist/build/pdf.min.mjs');
         lib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-        const doc = await lib.getDocument({ url, isEvalSupported: false }).promise;
+        const source = loadRef.current ? { data: await loadRef.current() } : { url };
+        if (dead) return;
+        const doc = await lib.getDocument({ ...source, isEvalSupported: false }).promise;
         if (dead) { doc.destroy(); return; }
         const first = await doc.getPage(1);
         const unit = first.getViewport({ scale: 1 });
