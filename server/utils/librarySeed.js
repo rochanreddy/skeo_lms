@@ -1,26 +1,23 @@
 import { LibraryItem } from '../models/LibraryItem.js';
 
 /**
- * The Library resources skeo itself provides: the Claude curriculum and the
- * skeo playbooks.
+ * The Library resources skeo itself provides: the skeo playbooks.
  *
- * The curriculum is free and served by the client (client/public/pdfs, built
- * by scripts/buildCurriculumPdf.js). The playbooks are paid: they stay on the
- * server in assets/playbooks — the same files the purchase mail attaches — and
- * the Library serves each one only to a buyer of its set (routes/library.js).
+ * They are paid: they stay on the server in assets/playbooks — the same files
+ * the purchase mail attaches — and the Library serves each one only to a buyer
+ * of its set (routes/library.js).
+ *
+ * The Claude curriculum PDF is deliberately not listed: it lives on as the
+ * lessons' reading (scripts/seedClaude.js), but not as a Library card.
  *
  * Applied on every server start (syncLibrary below), so changing this list and
  * deploying is all it takes to change the live Library — no one has to run a
  * script against the production database by hand.
  */
-const CURRICULUM = '/pdfs/skeo_Claude_Curriculum.pdf';
 // An API path, not a link: the client fetches it with the user's token.
 const playbook = (set, file) => ({ playbookSet: set, url: `/library/playbooks/${set}/${encodeURIComponent(file)}` });
 
 export const LIBRARY_ITEMS = [
-  // ── Library: flagship curated resources ──
-  { category: 'Library', title: 'Claude Curriculum', description: 'The full 8-week Claude course — every module, lesson and assignment, plus the capstone menu.', url: CURRICULUM },
-
   // ── AI Library (₹99, or Everything AI) ──
   { category: 'Library', title: '100 Prompts Playbook', description: '100+ tested prompts across business, engineering and beginner tracks.', ...playbook('ai', 'skeo_100_Prompts_Playbook.pdf') },
   { category: 'Library', title: 'AI Stack Map', description: 'The full map of AI tools and where each fits in your workflow.', ...playbook('ai', 'skeo_AI_Stack_Map.pdf') },
@@ -38,8 +35,9 @@ export const LIBRARY_ITEMS = [
 
 // What this module owns in the collection: the items above, plus everything
 // earlier seeds put there — every menler.in link (the Menler playbooks,
-// question banks, Kickstarter and Generalist resources) and the skeo playbooks
-// briefly served as public files. Anything an admin added is left alone.
+// question banks, Kickstarter and Generalist resources), the retired Claude
+// curriculum card, and the skeo playbooks briefly served as public files.
+// Anything an admin added is left alone.
 const OWNED = {
   $or: [
     { url: /menler\.in\/pdfs\// },
