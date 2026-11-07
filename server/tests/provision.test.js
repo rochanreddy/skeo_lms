@@ -123,3 +123,19 @@ test('the shipped playbook sets load, and every mail stays under the cap', async
     }
   }
 });
+
+test('the Library serves only files a set lists, by bare name', async () => {
+  const { playbookFilePath } = await import('../utils/playbooks.js');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'pb-path-'));
+  await fs.mkdir(path.join(dir, 'claude'));
+  await fs.writeFile(path.join(dir, 'claude', 'playbooks.json'), JSON.stringify([{ title: 'A', file: 'a.pdf' }]));
+  await fs.writeFile(path.join(dir, 'claude', 'a.pdf'), 'x');
+  await fs.writeFile(path.join(dir, 'claude', 'secret.pdf'), 'x');
+
+  assert.equal(await playbookFilePath('claude', 'a.pdf', dir), path.join(dir, 'claude', 'a.pdf'));
+  assert.equal(await playbookFilePath('claude', 'secret.pdf', dir), null); // present, but not listed
+  assert.equal(await playbookFilePath('claude', '../claude/a.pdf', dir), null);
+  assert.equal(await playbookFilePath('ai', 'a.pdf', dir), null);
+  assert.equal(await playbookFilePath('toString', 'a.pdf', dir), null);
+  await fs.rm(dir, { recursive: true, force: true });
+});

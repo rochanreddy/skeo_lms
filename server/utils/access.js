@@ -1,6 +1,7 @@
 import { Batch } from '../models/Batch.js';
 import { ProvisionedOrder } from '../models/ProvisionedOrder.js';
 import { classCache } from './classCache.js';
+import { PLAYBOOK_SETS, playbookSetsFor } from './playbooks.js';
 
 /**
  * Has this person paid for anything the LMS holds?
@@ -16,6 +17,22 @@ export async function hasPaidAccess(user) {
   if ((user.batchIds || []).length) return true;
   if (await Batch.exists({ studentIds: user._id })) return true;
   return Boolean(await ProvisionedOrder.exists({ userId: user._id, status: 'done' }));
+}
+
+/**
+ * Which paid playbook sets ('claude', 'ai') this person may read in the
+ * Library: everything for an admin or an Everything AI owner, otherwise the
+ * sets their completed orders paid for. Orders are matched by email as well as
+ * by account, because a Claude Playbooks or AI Library order makes no account
+ * of its own — its buyer may sign in later with one from another purchase.
+ */
+export async function ownedPlaybookSets(user) {
+  if (user.role === 'admin' || user.allAccess) return new Set(Object.keys(PLAYBOOK_SETS));
+  const orders = await ProvisionedOrder.find({
+    status: 'done',
+    $or: [{ userId: user._id }, ...(user.email ? [{ email: String(user.email).toLowerCase() }] : [])],
+  }).select('items').lean();
+  return new Set(playbookSetsFor(orders.flatMap((o) => o.items || [])));
 }
 
 const has = (arr, id) => (arr || []).some((x) => x.toString() === id);

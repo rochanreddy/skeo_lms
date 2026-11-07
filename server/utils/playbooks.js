@@ -46,6 +46,23 @@ const DEFAULT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..'
 const baseDir = () => process.env.PLAYBOOKS_DIR || DEFAULT_DIR;
 
 /**
+ * Where one playbook lives on disk, for the Library to serve it to a buyer —
+ * or null when the set or the file is not one listed in that set's
+ * playbooks.json. Only listed files are ever served, so a crafted name cannot
+ * reach anything else in the folder, let alone outside it.
+ */
+export async function playbookFilePath(key, file, from = baseDir()) {
+  const def = Object.hasOwn(PLAYBOOK_SETS, key) ? PLAYBOOK_SETS[key] : null;
+  if (!def || !/^[\w.-]+\.pdf$/i.test(String(file || ''))) return null;
+  const dir = path.join(from, def.folder);
+  const raw = await fs.readFile(path.join(dir, 'playbooks.json'), 'utf8').catch(() => '[]');
+  let list;
+  try { list = JSON.parse(raw); } catch { return null; }
+  if (!Array.isArray(list) || !list.some((p) => p?.file === file)) return null;
+  return path.join(dir, file);
+}
+
+/**
  * One set, read from disk: its label and its files. Throws if the set is
  * missing, empty, malformed or names a file that is not there — an order must
  * fail rather than send a mail with nothing in it.

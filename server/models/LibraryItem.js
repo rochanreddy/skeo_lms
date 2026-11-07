@@ -8,6 +8,10 @@ const libraryItemSchema = new mongoose.Schema(
     category: { type: String, enum: ['PPT', 'eBook', 'Note', 'Library'], default: 'Note', index: true },
     url: { type: String, default: '' },
     description: { type: String, default: '' },
+    // A paid playbook: the set ('claude' | 'ai') that unlocks it. Its url is
+    // then an API path, served only to someone who bought that set — never a
+    // public link. Empty for ordinary resources.
+    playbookSet: { type: String, enum: ['', 'claude', 'ai'], default: '' },
   },
   { timestamps: true },
 );
