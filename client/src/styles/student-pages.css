@@ -53,7 +53,15 @@
 .lib-page .lib-card.is-locked { background: var(--bg); }
 .lib-page .lib-card.is-locked strong,
 .lib-page .lib-card.is-locked .muted { opacity: .7; }
-.lib-page .lib-card.is-locked .lib-open { color: var(--muted); }
+/* The footer of a locked card: what includes it, then the way in. The note
+   takes the bottom-pinning margin so the link sits directly under it. */
+.lib-page .lib-lock {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: auto; padding-top: 4px;
+  font-size: 12.5px; color: var(--muted); line-height: 1.4;
+}
+.lib-page .lib-lock svg { flex: none; }
+.lib-page .lib-card.is-locked .lib-unlock { margin-top: 0; }
 .lib-page .lib-card strong,
 .lib-page .lib-card .muted {
   overflow-wrap: anywhere;
