@@ -731,6 +731,7 @@ function Content() {
                     {page && (
                       <button className="btn cp-complete" disabled={pageStart < 0} onClick={() => flat[pageStart] && selectTopic(flat[pageStart])}>{page.startLabel} →</button>
                     )}
+                    <ChipRow media={topic ? mediaOf(topic) : page.media} subtitle={topic ? topic.title : page.crumb} onOpen={setViewer} />
                     <div className="cp-nav">
                       {topic ? (
                         <>
@@ -743,7 +744,6 @@ function Content() {
                     </div>
                   </div>
 
-                  <ChipRow media={topic ? mediaOf(topic) : page.media} subtitle={topic ? topic.title : page.crumb} onOpen={setViewer} />
 
                 </div>
 

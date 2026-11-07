@@ -32,7 +32,8 @@
 .cp-nav { margin-left: auto; display: flex; gap: 8px; }
 .cp-nav .btn { white-space: nowrap; }
 
-.cp-res { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+/* Resources sit on the action row, between Mark as complete and Previous / Next. */
+.cp-res { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-width: 0; }
 .cp-chip {
   display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 8px 14px;
   border: 1px solid var(--line); border-radius: var(--pill, 999px); background: var(--card); color: var(--ink);
@@ -121,7 +122,10 @@
   .cp-actions .cp-complete { flex-basis: 100%; justify-content: center; min-height: 48px; }
   .cp-nav { margin-left: 0; width: 100%; }
   .cp-nav .btn { flex: 1; justify-content: center; min-height: 44px; }
-  .cp-chip { min-height: 42px; }
+  /* Phones: the resources come first, on one scrolling line above the buttons. */
+  .cp-res { order: -1; flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-bottom: 2px; }
+  .cp-res::-webkit-scrollbar { display: none; }
+  .cp-chip { flex: none; min-height: 40px; }
   .cp-next { flex-wrap: wrap; padding: 12px 14px; }
   .cp-next .btn { flex-basis: 100%; justify-content: center; min-height: 44px; }
 
