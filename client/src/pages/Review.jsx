@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
-// Student: leave a review of the programme. The questions come from the
-// server (server/config/reviews.js), so changing the form is a one-file job.
-// After submitting, the student is invited to say the same thing in public,
-// on Google and LinkedIn, when those links are set.
+// Student: feedback on the programme. The questions come from the server
+// (server/config/reviews.js), so changing the form is a one-file job.
+//
+// One compact card, as in the menler LMS class review: the scale stated once
+// at the top, each question with its stars and the word for the one picked,
+// an optional comment, one button. After sending, the card says thanks, plays
+// their answers back, and asks for a Google review.
 export default function Review() {
-  const [form, setForm] = useState(null); // { questions, links, mine }
+  const [form, setForm] = useState(null); // { intro, questions, links, mine }
   const [answers, setAnswers] = useState({});
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -22,12 +25,14 @@ export default function Review() {
       .catch(() => setFailed(true));
   }, []);
 
-  const set = (id, value) => setAnswers((cur) => ({ ...cur, [id]: value }));
+  const set = (id, value) => { setAnswers((cur) => ({ ...cur, [id]: value })); setError(''); };
 
   async function submit(e) {
     e.preventDefault();
-    const missing = form.questions.find((q) => q.required && (answers[q.id] === undefined || answers[q.id] === null || answers[q.id] === ''));
-    if (missing) return setError(`Please answer "${missing.label}".`);
+    const missing = form.questions.filter((q) => q.required && isBlank(answers[q.id]));
+    if (missing.length) {
+      return setError(missing.length === 1 ? `Please answer "${missing[0].label}"` : `Please answer all ${form.questions.filter((q) => q.required).length} ratings.`);
+    }
     setBusy(true); setError('');
     try {
       const d = await api('/reviews', { method: 'POST', body: { answers } });
@@ -35,69 +40,108 @@ export default function Review() {
       setEditing(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setError(err.message || 'Could not send your review. Try again.');
+      setError(err.message || 'Could not send your feedback. Try again.');
     } finally {
       setBusy(false);
     }
   }
 
-  if (failed) return <div className="rv-page"><h1>Review</h1><p className="muted">The review form didn't load. Refresh to try again.</p></div>;
-  if (!form) return <div className="rv-page"><h1>Review</h1><div className="skeleton" style={{ height: 320, borderRadius: 16 }} /></div>;
+  const head = (
+    <div className="page-head">
+      <div>
+        <div className="eyebrow">Feedback</div>
+        <h1>Your feedback</h1>
+        <p>Tell the skeo team how the programme is going for you.</p>
+      </div>
+    </div>
+  );
+
+  if (failed) return <div className="rv-page">{head}<p className="muted">The feedback form didn't load. Refresh to try again.</p></div>;
+  if (!form) return <div className="rv-page">{head}<div className="skeleton" style={{ height: 420, borderRadius: 16 }} /></div>;
 
   const done = form.mine && !editing;
+  const ratings = form.questions.filter((q) => q.type === 'rating');
+  const rated = ratings.filter((q) => !isBlank(answers[q.id])).length;
 
   return (
     <div className="rv-page">
-      <h1>Review</h1>
+      {head}
 
       {done ? (
-        <div className="panel rv-thanks">
-          <div className="rv-thanks-mark" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+        <div className="panel rv-sheet rv-thanks">
+          <div className="rv-thanks-top">
+            <span className="rv-thanks-mark" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </span>
+            <div>
+              <h2>Thank you for your feedback</h2>
+              <p className="muted">
+                It goes straight to the skeo team. Sent {new Date(form.mine.updatedAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}.
+              </p>
+            </div>
           </div>
-          <h2>Thank you for your review</h2>
-          <p className="muted">
-            It goes straight to the skeo team. Sent {new Date(form.mine.updatedAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}.
-          </p>
 
-          {/* The ask for a public review, always shown after submitting. */}
+          {/* What they said, played back. */}
+          <dl className="rv-recap">
+            {form.mine.answers.map((a) => (
+              <div key={a.questionId} className={a.type === 'rating' ? '' : 'is-text'}>
+                <dt>{a.question}</dt>
+                <dd>
+                  {a.type === 'rating' ? (
+                    <span className="rv-recap-stars" aria-label={`${a.value} of 5, ${STAR_WORDS[a.value]}`}>
+                      <span className="on">{'★'.repeat(a.value)}</span>{'★'.repeat(5 - a.value)}
+                      <span className="rv-recap-word">{STAR_WORDS[a.value]}</span>
+                    </span>
+                  ) : a.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {/* The ask for a public review, always shown after sending. */}
           <div className="rv-public">
-            <GoogleMark size={28} />
-            <p className="rv-public-lead">Drop us a Google review</p>
-            <p className="muted rv-public-sub">It takes a minute, and it's how the next student finds skeo.</p>
+            <GoogleMark size={26} />
+            <div className="rv-public-text">
+              <p className="rv-public-lead">Drop us a Google review</p>
+              <p className="muted rv-public-sub">It takes a minute, and it's how the next student finds skeo.</p>
+            </div>
             <div className="rv-public-btns">
               <a className="btn rv-google" href={form.links.google || GOOGLE_FALLBACK} target="_blank" rel="noreferrer">
-                Write a Google review <span aria-hidden="true">↗</span>
+                Write a review <span aria-hidden="true">↗</span>
               </a>
               {form.links.linkedin && (
                 <a className="btn rv-link" href={form.links.linkedin} target="_blank" rel="noreferrer">
-                  <LinkedInMark /> Recommend us on LinkedIn
+                  <LinkedInMark /> LinkedIn
                 </a>
               )}
             </div>
           </div>
 
-          <button type="button" className="btn ghost sm rv-edit" onClick={() => setEditing(true)}>Edit your review</button>
+          <button type="button" className="rv-edit" onClick={() => setEditing(true)}>Edit your feedback</button>
         </div>
       ) : (
-        <form className="panel rv-form" onSubmit={submit}>
-          <h2 className="rv-title">{form.intro?.title || 'How was the class?'}</h2>
-          {form.intro?.note && <p className="muted rv-intro">{form.intro.note}</p>}
+        <form className="panel rv-sheet rv-form" onSubmit={submit} noValidate>
+          <div className="rv-form-head">
+            <div>
+              <h2 className="rv-title">{form.intro?.title || 'How was the class?'}</h2>
+              {form.intro?.note && <p className="muted rv-scale-note">{form.intro.note}</p>}
+            </div>
+            {ratings.length > 0 && <span className="rv-progress" aria-live="polite">{rated}/{ratings.length} rated</span>}
+          </div>
 
-          {form.questions.map((q, i) => (
-            <fieldset className="rv-q" key={q.id}>
-              <legend className="rv-q-label">
-                <span className="rv-q-n">{i + 1}</span>
-                <span>{q.label}{q.required ? '' : <span className="rv-optional"> (optional)</span>}</span>
-              </legend>
+          {form.questions.map((q) => (
+            <div className="rv-field" key={q.id}>
+              <span className="rv-label" id={`rv-${q.id}`}>
+                {q.label}{!q.required && <span className="rv-optional"> (optional)</span>}
+              </span>
               <Answer q={q} value={answers[q.id]} onChange={(v) => set(q.id, v)} />
-            </fieldset>
+            </div>
           ))}
 
           {error && <p className="rv-error" role="alert">{error}</p>}
           <div className="rv-actions">
+            <button className="btn rv-send" disabled={busy}>{busy ? 'Sending…' : form.mine ? 'Save feedback' : 'Send feedback'}</button>
             {form.mine && <button type="button" className="btn ghost" onClick={() => { setEditing(false); setError(''); }}>Cancel</button>}
-            <button className="btn" disabled={busy}>{busy ? 'Sending…' : form.mine ? 'Save review' : 'Submit review'}</button>
           </div>
         </form>
       )}
@@ -105,35 +149,37 @@ export default function Review() {
   );
 }
 
+const isBlank = (v) => v === undefined || v === null || v === '';
+
 // One question's input, by type.
 function Answer({ q, value, onChange }) {
   if (q.type === 'rating') {
     return (
       <div className="rv-rating">
-      <div className="rv-stars" role="radiogroup" aria-label={q.label}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            role="radio"
-            aria-checked={value === n}
-            aria-label={`${n}, ${STAR_WORDS[n]}`}
-            title={STAR_WORDS[n]}
-            className={`rv-star ${value >= n ? 'on' : ''}`}
-            onClick={() => onChange(n)}
-          >
-            <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z" fill="currentColor" /></svg>
-          </button>
-        ))}
-      </div>
-      <span className={`rv-star-word ${value ? '' : 'is-empty'}`}>{value ? STAR_WORDS[value] : 'Tap a star'}</span>
+        <div className="rv-stars" role="radiogroup" aria-labelledby={`rv-${q.id}`}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={value === n}
+              aria-label={`${n} of 5, ${STAR_WORDS[n]}`}
+              title={STAR_WORDS[n]}
+              className={`rv-star ${value >= n ? 'on' : ''}`}
+              onClick={() => onChange(n)}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z" fill="currentColor" /></svg>
+            </button>
+          ))}
+        </div>
+        <span className={`rv-star-word ${value ? '' : 'is-empty'}`}>{value ? STAR_WORDS[value] : ''}</span>
       </div>
     );
   }
   if (q.type === 'scale') {
     return (
       <div>
-        <div className="rv-scale" role="radiogroup" aria-label={q.label}>
+        <div className="rv-scale" role="radiogroup" aria-labelledby={`rv-${q.id}`}>
           {Array.from({ length: 11 }, (_, n) => (
             <button key={n} type="button" role="radio" aria-checked={value === n} className={`rv-pill ${value === n ? 'on' : ''}`} onClick={() => onChange(n)}>{n}</button>
           ))}
@@ -144,7 +190,7 @@ function Answer({ q, value, onChange }) {
   }
   if (q.type === 'choice') {
     return (
-      <div className="rv-choices" role="radiogroup" aria-label={q.label}>
+      <div className="rv-choices" role="radiogroup" aria-labelledby={`rv-${q.id}`}>
         {(q.options || []).map((o) => (
           <button key={o} type="button" role="radio" aria-checked={value === o} className={`rv-pill ${value === o ? 'on' : ''}`} onClick={() => onChange(o)}>{o}</button>
         ))}
@@ -152,21 +198,20 @@ function Answer({ q, value, onChange }) {
     );
   }
   return q.long ? (
-    <>
-      <textarea className="rv-text" rows={4} value={value || ''} maxLength={q.max} placeholder={q.placeholder} onChange={(e) => onChange(e.target.value)} aria-label={q.label} />
-      {q.max && <div className="rv-count">{(value || '').length} / {q.max}</div>}
-    </>
+    <div className="rv-textwrap">
+      <textarea className="rv-text" rows={4} value={value || ''} maxLength={q.max} placeholder={q.placeholder} onChange={(e) => onChange(e.target.value)} aria-labelledby={`rv-${q.id}`} />
+      {q.max && <span className="rv-count">{(value || '').length}/{q.max}</span>}
+    </div>
   ) : (
-    <input className="rv-text" value={value || ''} maxLength={q.max} placeholder={q.placeholder} onChange={(e) => onChange(e.target.value)} aria-label={q.label} />
+    <input className="rv-text" value={value || ''} maxLength={q.max} placeholder={q.placeholder} onChange={(e) => onChange(e.target.value)} aria-labelledby={`rv-${q.id}`} />
   );
 }
 
-// What each star means, said under the stars as you pick.
+// What each star means, said beside the stars as you pick.
 const STAR_WORDS = { 1: 'Poor', 2: 'Not great', 3: 'Fine', 4: 'Good', 5: 'Excellent' };
 
-// Until the real "write a review" link is set (REVIEW_GOOGLE_URL on the
-// server), a Google search for skeo: its business panel carries the
-// "Write a review" button.
+// Used only if the server has no Google link set: a Google search for skeo,
+// whose business panel carries the "Write a review" button.
 const GOOGLE_FALLBACK = 'https://www.google.com/search?q=skeo+ai+reviews';
 
 const GoogleMark = ({ size = 18 }) => (

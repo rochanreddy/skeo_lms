@@ -1,52 +1,96 @@
-/* ── Reviews: the student form and the admin list ─────────────────────────── */
-.rv-page { max-width: 760px; }
-.rv-form { padding: 26px 28px 28px; }
-.rv-intro { margin: 0 0 22px; font-size: 14.5px; line-height: 1.55; }
+/* ── Feedback: the student form and the admin list ─────────────────────────── */
+.rv-page { max-width: 640px; }
 
-.rv-q { border: 0; margin: 0; padding: 20px 0; border-top: 1px solid var(--line-soft); min-width: 0; }
-.rv-q-label { display: flex; gap: 12px; align-items: baseline; padding: 0; margin-bottom: 14px; font-size: 15.5px; font-weight: 600; color: var(--ink); line-height: 1.4; }
-.rv-q-n { flex: none; width: 24px; height: 24px; border-radius: 7px; display: inline-grid; place-items: center; background: var(--purple-soft); color: var(--purple); font-size: 12px; font-weight: 700; }
-.rv-optional { color: var(--muted); font-weight: 500; font-size: 13.5px; }
+/* The student's card: the form, and after sending, the thanks. */
+.rv-sheet { padding: 26px 28px 24px; }
 
-.rv-stars { display: flex; gap: 4px; padding-left: 36px; }
-.rv-star { border: 0; background: none; padding: 4px; cursor: pointer; color: var(--line); transition: color .12s, transform .12s; }
-.rv-star:hover { transform: scale(1.08); }
+.rv-form-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 6px; }
+.rv-title { margin: 0; font-size: 20px; }
+.rv-scale-note { margin: 4px 0 0; font-size: 13.5px; }
+.rv-progress { flex: none; margin-top: 4px; padding: 4px 10px; border-radius: 999px; background: var(--wash); color: var(--muted); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.rv-field { padding: 16px 0; border-top: 1px solid var(--line-soft); }
+.rv-form-head + .rv-field { margin-top: 14px; }
+.rv-label { display: block; font-size: 14.5px; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 8px; }
+.rv-optional { color: var(--muted); font-weight: 500; font-size: 13px; }
+
+/* Stars, then the word for the one picked. */
+.rv-rating { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 36px; }
+.rv-stars { display: flex; gap: 2px; }
+.rv-star { border: 0; background: none; padding: 3px; cursor: pointer; color: var(--line); border-radius: 6px; transition: color .12s, transform .12s; }
+.rv-star:hover { transform: scale(1.1); }
+.rv-star:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
 .rv-star.on { color: #f5b301; }
-.rv-stars:hover .rv-star { color: var(--line); }
-.rv-stars:hover .rv-star:has(~ .rv-star:hover), .rv-stars .rv-star:hover { color: #f5b301; }
+/* Hovering previews the score: every star up to the one under the pointer. */
+@media (hover: hover) {
+  .rv-stars:hover .rv-star { color: var(--line); }
+  .rv-stars:hover .rv-star:has(~ .rv-star:hover), .rv-stars .rv-star:hover { color: #f5b301; }
+}
+.rv-star-word { font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
 
-.rv-scale, .rv-choices { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 36px; }
+.rv-scale, .rv-choices { display: flex; flex-wrap: wrap; gap: 6px; }
 .rv-pill {
-  min-width: 40px; min-height: 40px; padding: 0 12px; border-radius: 10px;
+  min-width: 40px; min-height: 38px; padding: 0 12px; border-radius: 9px;
   border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
   font-family: var(--font); font-size: 14px; font-weight: 600; cursor: pointer;
   transition: background .12s, border-color .12s, color .12s;
 }
 .rv-pill:hover { border-color: var(--purple-line); }
 .rv-pill.on { background: var(--purple); border-color: var(--purple); color: #fff; }
-.rv-scale-ends { display: flex; justify-content: space-between; max-width: 506px; padding-left: 36px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.rv-scale-ends { display: flex; justify-content: space-between; max-width: 470px; margin-top: 8px; font-size: 12px; color: var(--muted); }
 
+.rv-textwrap { position: relative; }
 .rv-text {
-  display: block; width: calc(100% - 36px); margin-left: 36px; box-sizing: border-box;
-  padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
-  background: var(--card); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; resize: vertical;
+  display: block; width: 100%; box-sizing: border-box;
+  padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14.5px; line-height: 1.5; resize: vertical;
 }
-.rv-text:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.rv-text:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-soft); }
+.rv-count { display: block; text-align: right; font-size: 11.5px; color: var(--muted); margin-top: 5px; font-variant-numeric: tabular-nums; }
 
-.rv-error { margin: 4px 0 0; color: var(--danger, var(--red-ink)); font-size: 13.5px; }
-.rv-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+.rv-error { margin: 0 0 12px; padding: 10px 12px; border-radius: 9px; background: var(--red-soft); color: var(--red-ink); font-size: 13.5px; }
+.rv-actions { display: flex; align-items: center; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.rv-send { min-width: 160px; justify-content: center; }
 
-/* After submitting */
-.rv-thanks { text-align: center; padding: 36px 28px 30px; }
-.rv-thanks h2 { margin: 14px 0 6px; }
-.rv-thanks > .muted { margin: 0; }
-.rv-thanks-mark { width: 56px; height: 56px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--green-soft); color: var(--green-ink); }
-.rv-public { margin: 26px auto 0; padding-top: 22px; border-top: 1px solid var(--line-soft); max-width: 480px; }
-.rv-public-lead { margin: 0 0 14px; font-weight: 600; color: var(--ink); }
-.rv-public-btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-.rv-link { display: inline-flex; align-items: center; gap: 9px; background: var(--card); color: var(--ink); border: 1px solid var(--line); box-shadow: none; text-decoration: none; }
-.rv-link:hover { border-color: var(--purple-line); background: var(--purple-soft); text-decoration: none; }
-.rv-edit { margin-top: 22px; }
+/* After sending */
+.rv-thanks-top { display: flex; align-items: flex-start; gap: 14px; }
+.rv-thanks-top h2 { margin: 2px 0 4px; font-size: 19px; }
+.rv-thanks-top .muted { margin: 0; font-size: 13.5px; }
+.rv-thanks-mark { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--green-soft); color: var(--green-ink); }
+
+.rv-recap { margin: 18px 0 0; padding: 4px 0; border-top: 1px solid var(--line-soft); display: grid; }
+.rv-recap > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
+.rv-recap > div.is-text { display: block; }
+.rv-recap dt { font-size: 13.5px; color: var(--ink-2); line-height: 1.4; }
+.rv-recap dd { margin: 0; font-size: 14px; color: var(--ink); }
+.rv-recap > div.is-text dd { margin-top: 6px; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.rv-recap-stars { white-space: nowrap; color: var(--line); letter-spacing: 1px; font-size: 15px; }
+.rv-recap-stars .on { color: #f5b301; }
+.rv-recap-word { margin-left: 8px; font-size: 12.5px; letter-spacing: 0; color: var(--muted); }
+
+/* The Google review ask: one row, the mark, why, and the button. */
+.rv-public { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 16px; border-radius: 12px; background: var(--wash); border: 1px solid var(--line-soft); }
+.rv-public > svg { flex: none; }
+.rv-public-text { flex: 1; min-width: 0; }
+.rv-public-lead { margin: 0; font-family: var(--display); font-size: 15.5px; font-weight: 700; color: var(--ink); }
+.rv-public-sub { margin: 2px 0 0; font-size: 13px; }
+.rv-public-btns { flex: none; display: flex; gap: 8px; }
+.rv-google, .rv-link { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap; }
+.rv-google:hover, .rv-link:hover { text-decoration: none; }
+.rv-link { background: var(--card); color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+.rv-edit { margin-top: 14px; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 13.5px; font-weight: 600; color: var(--purple); cursor: pointer; }
+.rv-edit:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .rv-sheet { padding: 18px 16px; }
+  .rv-form-head { flex-direction: column; gap: 8px; }
+  .rv-pill { min-width: 38px; }
+  .rv-send { flex: 1; }
+  .rv-public { flex-wrap: wrap; }
+  .rv-public-btns { width: 100%; }
+  .rv-public-btns .btn { flex: 1; justify-content: center; }
+  .rv-recap > div { flex-direction: column; gap: 4px; }
+}
 
 /* Admin */
 .rv-of { font-size: 14px; color: var(--muted); font-weight: 600; margin-left: 2px; }
@@ -60,28 +104,3 @@
 .rv-answers dd { margin: 4px 0 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .rv-stars-read { color: #f5b301; letter-spacing: 2px; font-size: 16px; }
 .rv-stars-read span { color: var(--line); }
-
-@media (max-width: 640px) {
-  .rv-form { padding: 18px 16px 20px; }
-  .rv-stars, .rv-scale, .rv-choices, .rv-scale-ends { padding-left: 0; }
-  .rv-text { width: 100%; margin-left: 0; }
-  .rv-pill { min-width: 38px; }
-  .rv-actions .btn { flex: 1; }
-  .rv-public-btns .btn { width: 100%; justify-content: center; }
-}
-
-/* Star questions: the stars, then the word for the one picked. */
-.rv-title { margin: 0 0 4px; }
-.rv-rating { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-left: 36px; }
-.rv-rating .rv-stars { padding-left: 0; }
-.rv-star-word { font-size: 14px; font-weight: 600; color: var(--ink-2); min-width: 80px; }
-.rv-star-word.is-empty { color: var(--muted); font-weight: 500; }
-.rv-count { text-align: right; font-size: 12px; color: var(--muted); margin-top: 6px; }
-@media (max-width: 640px) { .rv-rating { padding-left: 0; } }
-
-/* The Google review ask, after submitting: its own block, one clear button. */
-.rv-public { display: flex; flex-direction: column; align-items: center; }
-.rv-public .rv-public-lead { margin: 10px 0 4px; font-family: var(--display); font-size: 17px; font-weight: 700; }
-.rv-public-sub { margin: 0 0 16px; font-size: 13.5px; }
-.rv-google { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
-.rv-google:hover { text-decoration: none; }
