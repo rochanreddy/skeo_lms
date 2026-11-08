@@ -8,6 +8,7 @@ import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Batch } from '../models/Batch.js';
 import { canManageBatch, myBatchIds } from '../utils/access.js';
 import { classCache } from '../utils/classCache.js';
+import { courseOrder } from '../utils/courseOrder.js';
 
 const router = Router();
 
@@ -25,16 +26,6 @@ const quizColumns = (match, order) => Quiz.aggregate([
   { $project: { title: 1, type: 1, createdAt: 1, batchId: 1, qCount: { $size: { $ifNull: ['$questions', []] } } } },
 ]);
 
-// Course order, not newest first: M01 before M02. By due date where there is
-// one (undated last), then by title read the way people number things, so
-// "M2" sorts before "M10", then by when it was set.
-const byTitle = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
-function courseOrder(x, y) {
-  if (x.due && y.due && +new Date(x.due) !== +new Date(y.due)) return new Date(x.due) - new Date(y.due);
-  if (!!x.due !== !!y.due) return x.due ? -1 : 1;
-  return byTitle.compare(x.title || '', y.title || '') || new Date(x.at) - new Date(y.at);
-}
-
 // GET /api/skeo/grades/me: the student's consolidated gradebook: every
 // assignment and quiz across their batches, with their own score/status.
 router.get('/me', requireAuth, async (req, res) => {
@@ -43,7 +34,7 @@ router.get('/me', requireAuth, async (req, res) => {
   // and lean, because none of it is anything but JSON on the way out.
   const [assignments, quizzes] = await Promise.all([
     classCache.get(`grade-assignments:${batchIds.join()}`, () => (
-      Assignment.find({ batchId: { $in: batchIds } }).select('title type createdAt dueDate').lean()
+      Assignment.find({ batchId: { $in: batchIds } }).select('title type createdAt').lean()
     )),
     classCache.get(`grade-quizzes:${batchIds.join()}`, () => quizColumns({ batchId: { $in: batchIds } }, -1)),
   ]);
@@ -66,7 +57,6 @@ router.get('/me', requireAuth, async (req, res) => {
         max: 10, // assignments graded out of 10
         feedback: s?.feedback || '',
         at: a.createdAt,
-        due: a.dueDate || null,
       };
     }).sort(courseOrder),
     ...quizzes.map((q) => {

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
-import LineIcon from './LineIcon.jsx';
 import Markdown from './Markdown.jsx';
-import DateTimePicker from './DateTimePicker.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.jsx';
 
 // Authoring for the two things students hand in against: projects/assignments
@@ -10,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 // lessons they belong to, writing a module and writing its work is one job.
 // Grading what comes back stays on the Course page.
 
-const dueLabel = (d) => new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 // What an admin can demand inside the student's Drive folder. Written
 // deliverables only: no video or photo requirements. Ticking 'html' also
@@ -68,8 +65,6 @@ export function ProjectsManager({ batchId }) {
                 <div className="assignment-head">
                   <strong>{a.title}</strong>
                   <span className={`badge ${a.type === 'project' ? 'badge-accent' : ''}`}>{a.type}</span>
-                  {a.startDate && <span className="assignment-due"><LineIcon name="clock" size={13} /> Opens {dueLabel(a.startDate)}</span>}
-                  {a.dueDate && <span className="assignment-due"><LineIcon name="clock" size={13} /> Due {dueLabel(a.dueDate)}</span>}
                   <span className="assignment-tools">
                     <button className="btn sm ghost" onClick={() => setEditing(a._id)}>Edit</button>
                     <button className="btn sm ghost-danger" onClick={() => remove(a)}>Delete</button>
@@ -103,15 +98,6 @@ export function ProjectsManager({ batchId }) {
   );
 }
 
-// The picker's value contract is 'YYYY-MM-DDTHH:mm' local; the API stores ISO.
-const toPickerValue = (iso) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-
 // One form, two jobs: posting new work and editing existing work. Pass
 // `initial` to edit: it opens prefilled and stays open.
 export function AssignmentForm({ onAdd, initial, onCancel }) {
@@ -122,16 +108,13 @@ export function AssignmentForm({ onAdd, initial, onCancel }) {
   const [description, setDescription] = useState(initial?.description || '');
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl || '');
   const [pdfUrl, setPdfUrl] = useState(initial?.pdfUrl || '');
-  const [startDate, setStartDate] = useState(toPickerValue(initial?.startDate));
-  const [dueDate, setDueDate] = useState(toPickerValue(initial?.dueDate));
   const [required, setRequired] = useState(initial?.requiredDriveTypes || ['doc']);
-  const [err, setErr] = useState('');
 
   function reset() {
     if (editing) { onCancel?.(); return; }
     setTitle(''); setType('assignment'); setDescription(''); setVideoUrl(''); setPdfUrl('');
-    setStartDate(''); setDueDate(''); setRequired(['doc']);
-    setErr(''); setOpen(false);
+    setRequired(['doc']);
+    setOpen(false);
   }
 
   const toggleType = (key) =>
@@ -140,17 +123,12 @@ export function AssignmentForm({ onAdd, initial, onCancel }) {
   function submit(e) {
     e.preventDefault();
     if (!title.trim()) return;
-    if (startDate && dueDate && new Date(startDate) > new Date(dueDate)) {
-      return setErr('The start date must be before the last date for submission.');
-    }
     onAdd({
       title: title.trim(),
       type,
       description: description.trim(),
       videoUrl: videoUrl.trim(),
       pdfUrl: pdfUrl.trim(),
-      startDate: startDate ? new Date(startDate).toISOString() : null,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       requiredDriveTypes: required,
     });
     reset();
@@ -197,17 +175,8 @@ export function AssignmentForm({ onAdd, initial, onCancel }) {
         ))}
       </div>
 
-      {err && <p className="sub-check-error">{err}</p>}
 
       <div className="af-foot">
-        <label className="af-due">
-          <span>Start date <span className="muted">(optional)</span></span>
-          <DateTimePicker value={startDate} onChange={setStartDate} placeholder="Open immediately" />
-        </label>
-        <label className="af-due">
-          <span>Last date to submit <span className="muted">(optional)</span></span>
-          <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="No deadline" />
-        </label>
         <div className="af-actions">
           <button type="button" className="btn ghost sm" onClick={reset}>Cancel</button>
           <button className="btn sm" disabled={!title.trim()}>{editing ? 'Save changes' : `Post ${type}`}</button>

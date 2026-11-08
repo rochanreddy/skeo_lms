@@ -102,7 +102,7 @@ router.get('/', requireAuth, async (req, res) => {
       batchId: { $in: batchIds },
       $or: [{ title: rx }, { description: rx }],
     })
-      .sort({ dueDate: 1 })
+      .sort({ createdAt: 1 })
       .limit(8)
       .lean();
     for (const a of assignments) {
@@ -110,8 +110,7 @@ router.get('/', requireAuth, async (req, res) => {
         type: a.type === 'project' ? 'project' : 'assignment',
         id: String(a._id),
         title: a.title,
-        subtitle: [batchName.get(String(a.batchId)), a.dueDate ? `due ${new Date(a.dueDate).toLocaleDateString([], { day: 'numeric', month: 'short' })}` : null]
-          .filter(Boolean).join(' · '),
+        subtitle: batchName.get(String(a.batchId)) || '',
         to: isStudent ? '/app/learning?tab=assignments' : '/app/programs',
         rank: 1,
       });

@@ -1091,14 +1091,10 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
     finally { setBusy(false); }
   }
 
-  const fmt = (d) => new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const overdue = a.dueDate && new Date(a.dueDate) < new Date();
-  const notOpenYet = a.startDate && new Date(a.startDate) > new Date();
-  const start = a.startDate && fmt(a.startDate);
-  const showForm = (!sub || editing) && !notOpenYet;
-  // Mirrors the server's rules, the API is still the authority, this just
-  // avoids offering an action that would be rejected.
-  const editable = !sub?.locked && !overdue && !notOpenYet;
+  // No deadlines: work can be handed in, and changed, at any time. Only an
+  // admin's own grade locks it.
+  const showForm = !sub || editing;
+  const editable = !sub?.locked;
   const required = (a.requiredDriveTypes || []).map((t) => REQUIRED_LABELS[t] || t);
   const noun = a.type === 'project' ? 'project' : 'assignment';
   // No video and no PDF means no left column at all, an empty rail beside
@@ -1106,9 +1102,8 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
   const hasMedia = Boolean(a.videoUrl || a.pdfUrl);
 
   // One badge in the corner answers "where do I stand" before anything else.
-  // A passed deadline gets no badge of its own: no "Missed".
   const state = !sub
-    ? (notOpenYet ? ['Opens soon', 'badge-muted'] : overdue ? null : ['Not submitted', 'badge-muted'])
+    ? ['Not submitted', 'badge-muted']
     : sub.status === 'graded' ? ['Graded', 'badge-student']
     : sub.status === 'submitted' ? ['Submitted', 'badge-submitted']
     : [sub.status, ''];
@@ -1175,9 +1170,7 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
 
               {error && <p className="sub-check-error">{error}</p>}
 
-              {notOpenYet ? (
-                <p className="assign-note">Submissions for this {noun} open on {start}.</p>
-              ) : showForm ? (
+              {showForm ? (
                 <form className="sub-form" onSubmit={submit}>
                   {/* On an edit after a failed check, lead with what needs fixing. */}
                   {editing && (sub?.checkStatus === 'NEEDS_FIXES' || sub?.checkStatus === 'CHECK_FAILED') && sub?.errorDetail && (
@@ -1219,8 +1212,6 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                 </form>
               ) : sub?.locked ? (
                 <p className="assign-note">This submission has been reviewed and is locked. Ask your administrator to unlock it if you need to change it.</p>
-              ) : overdue ? (
-                <p className="assign-note">The deadline has passed, so this submission can no longer be changed.</p>
               ) : (
                 <div className="assign-submit">
                   <button type="button" className="btn ghost sm" onClick={() => setEditing(true)} disabled={!editable}>Edit link</button>

@@ -96,7 +96,7 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
   const batchIds = batches.map((b) => b._id);
 
   const [assignments, submissions, quizzes, attempts, progress, outlines] = await Promise.all([
-    Assignment.find({ batchId: { $in: batchIds } }).select('title type batchId dueDate').sort({ createdAt: -1 }).lean(),
+    Assignment.find({ batchId: { $in: batchIds } }).select('title type batchId createdAt').sort({ createdAt: -1 }).lean(),
     Submission.find({ studentId: uid, isDeleted: false })
       .select('assignmentId status score feedback updatedAt driveLink url checkStatus errorDetail files locked checkedAt').lean(),
     Quiz.find({ batchId: { $in: batchIds } }).select('title type batchId').lean(),
@@ -130,7 +130,6 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
             type: a.type,
             batchId: a.batchId,
             batchName: batchName.get(String(a.batchId)) || '',
-            dueDate: a.dueDate,
             // Grading fields and Drive-verification fields are kept as separate
             // groups here on purpose, they answer different questions and a
             // later automated-review layer gets its own group again.

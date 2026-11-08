@@ -8,16 +8,8 @@ import { verifyDriveFolder } from '../utils/driveVerify.js';
 
 const router = Router();
 
-function isPastDue(assignment) {
-  return !!(assignment?.dueDate && new Date() > new Date(assignment.dueDate));
-}
-
-function isBeforeStart(assignment) {
-  return !!(assignment?.startDate && new Date() < new Date(assignment.startDate));
-}
-
-const startsAtMsg = (a) =>
-  `Submissions for this ${a?.type || 'assignment'} open on ${new Date(a.startDate).toLocaleString()}.`;
+// There are no deadlines: a student can hand work in, change it or withdraw
+// it at any time. Only an admin's own grade locks a submission.
 
 async function runCheck(sub, assignment) {
   const result = await verifyDriveFolder(sub.driveLink, { requiredTypes: assignment?.requiredDriveTypes });
@@ -51,8 +43,6 @@ router.post('/', requireAuth, async (req, res) => {
   // Only `locked` is read off it, so only `locked` is fetched.
   const existing = await Submission.findOne({ assignmentId: a._id, studentId: req.user._id }).select('locked').lean();
   if (existing?.locked) return res.status(403).json({ error: 'This submission has been reviewed and is locked. Ask your administrator to unlock it before resubmitting.' });
-  if (isBeforeStart(a)) return res.status(403).json({ error: startsAtMsg(a) });
-  if (isPastDue(a)) return res.status(403).json({ error: 'The due date for this assignment has passed.' });
 
   const sub = await Submission.findOneAndUpdate(
     { assignmentId: a._id, studentId: req.user._id },
@@ -83,7 +73,7 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   if (status) q.checkStatus = status;
 
   const submissions = await Submission.find(q)
-    .populate('assignmentId', 'title type batchId dueDate')
+    .populate('assignmentId', 'title type batchId')
     .populate('studentId', 'fullName email')
     .sort({ createdAt: -1 })
     .lean();
@@ -94,7 +84,7 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
 // GET /api/skeo/submissions/:id, admin detail view.
 router.get('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, isDeleted: false })
-    .populate('assignmentId', 'title type batchId dueDate')
+    .populate('assignmentId', 'title type batchId')
     .populate('studentId', 'fullName email')
     .lean();
   if (!sub) return res.status(404).json({ error: 'Submission not found.' });
@@ -103,13 +93,12 @@ router.get('/:id', requireAuth, requireRole('admin'), async (req, res) => {
 });
 
 // PATCH /api/skeo/submissions/:id  { driveLink?, assignmentId? }, student edits
-// their own submission (own, un-locked, before the due date). Resets checkStatus
+// their own submission (own, un-locked). Resets checkStatus
 // and re-verifies: never leaves stale error text on a changed link.
 router.patch('/:id', requireAuth, async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, studentId: req.user._id, isDeleted: false }).populate('assignmentId');
   if (!sub) return res.status(404).json({ error: 'Submission not found.' });
   if (sub.locked) return res.status(403).json({ error: 'This submission has been reviewed and is locked. Ask your administrator to unlock it before making changes.' });
-  if (isPastDue(sub.assignmentId)) return res.status(403).json({ error: 'The due date for this assignment has passed; you can no longer edit your submission.' });
 
   const { driveLink, assignmentId } = req.body || {};
   let assignment = sub.assignmentId;
@@ -118,7 +107,6 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const newAssignment = await Assignment.findById(assignmentId);
     if (!newAssignment) return res.status(404).json({ error: 'Assignment not found.' });
     if (!(await canAccessBatch(req.user, newAssignment.batchId))) return res.status(403).json({ error: 'You are not in this batch.' });
-    if (isPastDue(newAssignment)) return res.status(403).json({ error: 'The due date for that assignment has passed.' });
     // Another existence question, so exists() rather than a whole document.
     if (await Submission.exists({ assignmentId: newAssignment._id, studentId: req.user._id, isDeleted: false })) {
       return res.status(409).json({ error: 'You already have a submission for that assignment.' });
@@ -139,10 +127,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
 // DELETE /api/skeo/submissions/:id, student soft-deletes their own submission.
 router.delete('/:id', requireAuth, async (req, res) => {
-  const sub = await Submission.findOne({ _id: req.params.id, studentId: req.user._id, isDeleted: false }).populate('assignmentId', 'dueDate');
+  const sub = await Submission.findOne({ _id: req.params.id, studentId: req.user._id, isDeleted: false });
   if (!sub) return res.status(404).json({ error: 'Submission not found.' });
   if (sub.locked) return res.status(403).json({ error: 'This submission has been reviewed and is locked. Ask your administrator to unlock it before deleting.' });
-  if (isPastDue(sub.assignmentId)) return res.status(403).json({ error: 'The due date for this assignment has passed; you can no longer delete your submission.' });
   sub.isDeleted = true;
   await sub.save();
   res.json({ ok: true });

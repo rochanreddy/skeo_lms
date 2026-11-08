@@ -13,10 +13,6 @@ const assignmentSchema = new mongoose.Schema(
     // and a PDF that opens in the in-page viewer. Both optional.
     videoUrl: { type: String, default: '' },
     pdfUrl: { type: String, default: '' },
-    // Submissions open at startDate and close at dueDate. Both optional,
-    // null start means "open immediately", null due means "no cutoff".
-    startDate: { type: Date, default: null },
-    dueDate: { type: Date, default: null },
     // File types a Drive-folder submission must contain to pass verification.
     // Written deliverables only: no video or photo requirements.
     // Listing 'html' also opts this assignment out of the default HTML block.
@@ -30,11 +26,11 @@ const assignmentSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Both shapes the lists come in: newest-first for the board, due-date order
-// for a student's schedule and for ⌘K. The leading batchId also serves the
-// plain `find({ batchId })` and `find({ batchId: { $in } })` filters.
+// The board lists newest first. The leading batchId also serves the plain
+// `find({ batchId })` and `find({ batchId: { $in } })` filters.
+//
+// There are no deadlines: coursework opens when it is set and stays open.
 assignmentSchema.index({ batchId: 1, createdAt: -1 });
-assignmentSchema.index({ batchId: 1, dueDate: 1 });
 
 keepsClassCacheFresh(assignmentSchema);
 

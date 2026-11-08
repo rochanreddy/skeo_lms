@@ -6,12 +6,13 @@ import { Batch } from '../models/Batch.js';
 import { canAccessBatch, canManageBatch, myBatchIds, isBlockedFromAssignment } from '../utils/access.js';
 import { notifyMany } from '../utils/notify.js';
 import { classCache } from '../utils/classCache.js';
+import { courseOrder } from '../utils/courseOrder.js';
 
 const router = Router();
 
 // GET /api/skeo/assignments?batchId=..  OR  ?scope=mine
 // With scope=mine, each assignment carries the requesting student's submission
-// (so the UI can show "due" vs "submitted" vs "graded").
+// (so the UI can show "not submitted" vs "submitted" vs "graded").
 router.get('/', requireAuth, async (req, res) => {
   const { batchId, scope } = req.query;
   let filter;
@@ -32,10 +33,9 @@ router.get('/', requireAuth, async (req, res) => {
   const assignments = everyone.filter((a) => !isBlockedFromAssignment(req.user, a._id));
 
   if (scope === 'mine') {
-    // A student reads their list as a schedule: soonest deadline first, which
-    // for the course is week order. No deadline sorts last; ties keep newest-first.
-    const due = (a) => (a.dueDate ? new Date(a.dueDate).getTime() : Infinity);
-    assignments.sort((a, b) => due(a) - due(b));
+    // A student works through their list in course order: M01 first,
+    // capstones last.
+    assignments.sort(courseOrder);
     const subs = await Submission.find({ studentId: req.user._id, isDeleted: false, assignmentId: { $in: assignments.map((a) => a._id) } }).lean();
     const byId = new Map(subs.map((s) => [s.assignmentId.toString(), s]));
     // Plain objects already, so no toObject() conversion on the way out either.
@@ -46,12 +46,9 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /api/skeo/assignments: admin sets an assignment/project.
 router.post('/', requireAuth, async (req, res) => {
-  const { batchId, type, title, description, videoUrl, pdfUrl, startDate, dueDate, requiredDriveTypes } = req.body || {};
+  const { batchId, type, title, description, videoUrl, pdfUrl, requiredDriveTypes } = req.body || {};
   if (!batchId || !title) return res.status(400).json({ error: 'batchId and title are required.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
-  if (startDate && dueDate && new Date(startDate) > new Date(dueDate)) {
-    return res.status(400).json({ error: 'The start date must be before the last date for submission.' });
-  }
 
   const ALLOWED_TYPES = ['doc', 'slides', 'html'];
   const required = Array.isArray(requiredDriveTypes)
@@ -65,8 +62,6 @@ router.post('/', requireAuth, async (req, res) => {
     description: description || '',
     videoUrl: videoUrl || '',
     pdfUrl: pdfUrl || '',
-    startDate: startDate || null,
-    dueDate: dueDate || null,
     ...(required ? { requiredDriveTypes: required } : {}),
   });
   const batch = await Batch.findById(batchId).select('studentIds').lean();
@@ -81,16 +76,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (!assignment) return res.status(404).json({ error: 'Assignment not found.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
 
-  const { type, title, description, videoUrl, pdfUrl, startDate, dueDate, requiredDriveTypes } = req.body || {};
+  const { type, title, description, videoUrl, pdfUrl, requiredDriveTypes } = req.body || {};
   if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Title cannot be empty.' });
-
-  // Validate against the dates as they WILL be, not just the ones sent, so an
-  // edit that moves only one end still can't invert the window.
-  const nextStart = startDate !== undefined ? startDate : assignment.startDate;
-  const nextDue = dueDate !== undefined ? dueDate : assignment.dueDate;
-  if (nextStart && nextDue && new Date(nextStart) > new Date(nextDue)) {
-    return res.status(400).json({ error: 'The start date must be before the last date for submission.' });
-  }
 
   const ALLOWED_TYPES = ['doc', 'slides', 'html'];
   if (title !== undefined) assignment.title = String(title).trim();
@@ -98,8 +85,6 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (description !== undefined) assignment.description = description || '';
   if (videoUrl !== undefined) assignment.videoUrl = videoUrl || '';
   if (pdfUrl !== undefined) assignment.pdfUrl = pdfUrl || '';
-  if (startDate !== undefined) assignment.startDate = startDate || null;
-  if (dueDate !== undefined) assignment.dueDate = dueDate || null;
   if (Array.isArray(requiredDriveTypes)) {
     assignment.requiredDriveTypes = [...new Set(requiredDriveTypes.filter((t) => ALLOWED_TYPES.includes(t)))];
   }

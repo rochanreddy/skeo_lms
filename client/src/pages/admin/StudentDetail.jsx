@@ -260,19 +260,18 @@ export default function StudentDetail() {
           <div className="table-wrap">
             <table className="grade-table">
               <thead>
-                <tr><th>Title</th><th>Type</th><th>Batch</th><th>Due</th><th>Status</th><th>Drive check</th><th>Score</th>{isAdmin && <th></th>}</tr>
+                <tr><th>Title</th><th>Type</th><th>Batch</th><th>Status</th><th>Drive check</th><th>Score</th>{isAdmin && <th></th>}</tr>
               </thead>
               <tbody>
                 {data.assignments.map((a) => {
                   const s = a.submission;
-                  const cols = isAdmin ? 8 : 7;
+                  const cols = isAdmin ? 7 : 6;
                   const expanded = openSub === a.id;
                   return [
                     <tr key={a.id} className={a.blocked ? 'row-blocked' : ''}>
                       <td>{a.title} {a.blocked && isAdmin && <span className="badge badge-blocked">blocked</span>}</td>
                       <td><span className={`badge ${a.type === 'project' ? 'badge-accent' : ''}`}>{a.type}</span></td>
                       <td>{a.batchName}</td>
-                      <td>{a.dueDate ? fmtDate(a.dueDate) : '-'}</td>
                       <td>{s ? s.status : 'not submitted'}</td>
                       <td>
                         {s ? (

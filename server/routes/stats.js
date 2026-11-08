@@ -90,9 +90,6 @@ function assess(m) {
   let score = 0;
   const flag = (points, label, detail) => { score += points; reasons.push({ label, detail }); };
 
-  if (m.missedAssignments >= 2) flag(3, 'Missing work', `${m.missedAssignments} assignments overdue`);
-  else if (m.missedAssignments === 1) flag(1, 'Missing work', '1 assignment overdue');
-
   if (m.quizzesTaken >= 1) {
     if (m.quizAvg < 40) flag(3, 'Failing quizzes', `${m.quizAvg}% average`);
     else if (m.quizAvg < 60) flag(2, 'Struggling on quizzes', `${m.quizAvg}% average`);
@@ -131,27 +128,23 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
 
   // Fetch every signal in two batched rounds, then score in memory. Per-student
   // queries would be N+1 and get slow the moment a cohort grows. All lean: this
-  // is the widest read in the app -- every student, assignment, quiz, attempt
-  // and progress row across every cohort -- and not one of these documents is
+  // is the widest read in the app -- every student, quiz, attempt and progress
+  // row across every cohort -- and not one of these documents is
   // saved or has a method called on it, so hydrating them all into Mongoose
   // documents was pure cost.
-  const [users, assignments, quizzes, lessonTotals, progress] = await Promise.all([
+  const [users, quizzes, lessonTotals, progress] = await Promise.all([
     User.find({ _id: { $in: studentIds } }).select('fullName email lastActiveAt').lean(),
-    Assignment.find({ batchId: { $in: batchIds } }).select('batchId dueDate').lean(),
     Quiz.find({ batchId: { $in: batchIds } }).select('batchId').lean(),
     // Counted in the database rather than by pulling every curriculum tree.
     topicCounts(programIds),
     Progress.find({ studentId: { $in: studentIds }, programId: { $in: programIds } }).select('studentId programId completedTopics').lean(),
   ]);
 
-  const [submissions, attempts] = await Promise.all([
-    Submission.find({ assignmentId: { $in: assignments.map((a) => a._id) }, studentId: { $in: studentIds } }).select('assignmentId studentId').lean(),
-    QuizAttempt.find({ quizId: { $in: quizzes.map((q) => q._id) }, studentId: { $in: studentIds } }).select('quizId studentId score total').lean(),
-  ]);
+  const attempts = await QuizAttempt.find({ quizId: { $in: quizzes.map((q) => q._id) }, studentId: { $in: studentIds } })
+    .select('quizId studentId score total').lean();
 
   // ── Lookup tables ──
   const userById = new Map(users.map((u) => [u._id.toString(), u]));
-  const submitted = new Set(submissions.map((s) => `${s.assignmentId}:${s.studentId}`));
   const batchOfQuiz = new Map(quizzes.map((q) => [q._id.toString(), q.batchId.toString()]));
 
   const attemptsByKey = new Map();
@@ -171,7 +164,6 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
   for (const b of batches) {
     const bid = b._id.toString();
     const pid = b.programId ? b.programId.toString() : null;
-    const overdue = assignments.filter((a) => a.batchId.toString() === bid && a.dueDate && new Date(a.dueDate).getTime() < now);
     const quizzesAvailable = quizzes.filter((q) => q.batchId.toString() === bid).length;
     const lessonTotal = (pid && lessonTotals.get(pid)) || 0;
 
@@ -183,7 +175,6 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
       const doneLessons = (pid && progressByKey.get(key(sid, pid))) || 0;
 
       const metrics = {
-        missedAssignments: overdue.filter((a) => !submitted.has(`${a._id}:${sid}`)).length,
         quizAvg: myAttempts.length
           ? Math.round(myAttempts.reduce((s, a) => s + (a.total ? (a.score / a.total) * 100 : 0), 0) / myAttempts.length)
           : 0,

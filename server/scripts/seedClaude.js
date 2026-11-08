@@ -44,25 +44,22 @@ const PDF = '/pdfs/skeo_Claude_Curriculum.pdf';
 const RETIRED_PDF = 'https://menler.in/pdfs/Menler_AI_Kickstarter_Curriculum.pdf';
 
 // ── Assignments & projects ────────────────────────────────────────────────
-// The course runs eight weeks, one module a week. Each module's hands-on tasks
-// become that week's assignment; Module 8's capstone menu becomes the
+// One module a week for eight weeks. Each module's hands-on tasks become that
+// module's assignment; Module 8's capstone menu becomes the
 // projects, of which a student ships one. What students hand BACK is written
 // work only: documents, decks, artifacts.
-const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 // One assignment per module that sets tasks. Module 7 is a use-case library
 // and Module 8 is the capstone, so neither sets one here.
 const ASSIGNMENTS = MODULES
-  .map((m, mi) => ({ m, week: mi + 1, tasks: m.lessons.filter((l) => l.assignment) }))
+  .map((m) => ({ m, tasks: m.lessons.filter((l) => l.assignment) }))
   .filter(({ tasks }) => tasks.length)
-  .map(({ m, week, tasks }) => {
+  .map(({ m, tasks }) => {
     const [code, name] = m.title.split(' · ');
     return {
       type: 'assignment',
       title: `${code} assignment · ${name.split(': ')[0]}`,
       requires: ['doc'],
-      opensWeek: week - 1,
-      dueWeek: week,
       description: [
         `The hands-on tasks set in the lessons of **${m.title}**. Do each one in Claude, then write up what happened.`,
         '',
@@ -152,9 +149,6 @@ const PROJECTS = CAPSTONES.map((c) => {
     type: 'project',
     title: `Capstone · ${lesson.title}`,
     requires: c.requires,
-    // Open from Week 7 so there is time to plan; due at the end of Week 8.
-    opensWeek: 6,
-    dueWeek: 8,
     description: [CAPSTONE_INTRO, '', `*${lesson.points[0]}.*`, '', ...c.brief].join('\n'),
   };
 });
@@ -390,25 +384,16 @@ async function run() {
 
   // ── Assignments & projects, per batch ──
   for (const b of batches) {
-    // The 8-week schedule counts from the course's start date. Without one it
-    // counts from when Week 1's assignment opened, so later runs line up with
-    // earlier ones: and from today on the very first run.
-    const week1 = await Assignment.findOne({ batchId: b._id, title: COURSEWORK[0].title }).select('startDate');
-    const start = new Date(b.startDate || week1?.startDate || Date.now()).getTime();
-    const schedule = (p) => ({ startDate: new Date(start + p.opensWeek * WEEK), dueDate: new Date(start + p.dueWeek * WEEK) });
-
     // Earlier titles first, so a renamed record is found below under its new
     // title instead of being created a second time. A dry run renames nothing,
     // so it remembers the record under its new title to report truthfully.
-    // The old records carried stand-in deadlines; a rename puts them on the
-    // course schedule along with the new title.
     const renamed = new Map();
     for (const [from, to] of Object.entries(RENAMED)) {
       const prev = await Assignment.findOne({ batchId: b._id, title: from });
       if (prev && !(await Assignment.exists({ batchId: b._id, title: to }))) {
-        note(`- rename "${from}" → "${to}", on the course schedule`);
+        note(`- rename "${from}" → "${to}"`);
         if (WRITE) {
-          Object.assign(prev, { title: to }, schedule(COURSEWORK.find((p) => p.title === to)));
+          prev.title = to;
           await prev.save();
         } else renamed.set(to, prev);
       }
@@ -425,8 +410,8 @@ async function run() {
       }
     }
 
-    // Upserted by title. Dates and media are set once, on creation: re-running
-    // must not move a live deadline or detach an uploaded brief.
+    // Upserted by title. Media is set once, on creation: re-running must not
+    // detach an uploaded brief. There are no deadlines.
     for (const p of COURSEWORK) {
       const existing = (await Assignment.findOne({ batchId: b._id, title: p.title })) || renamed.get(p.title);
       if (!existing) {
@@ -439,7 +424,6 @@ async function run() {
             description: p.description,
             videoUrl: VIDEO,
             pdfUrl: PDF,
-            ...schedule(p),
             requiredDriveTypes: p.requires,
           });
         }

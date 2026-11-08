@@ -120,14 +120,13 @@ router.get('/student/:id', requireAuth, requireRole('admin'), async (req, res) =
     rows.push([b.name, b.programId?.title || '', b.status]);
   }
 
-  rows.push([], ['Assignment / Project', 'Type', 'Batch', 'Due', 'Status', 'Score', 'Feedback']);
+  rows.push([], ['Assignment / Project', 'Type', 'Batch', 'Status', 'Score', 'Feedback']);
   for (const a of assignments) {
     const s = subByAssignment.get(String(a._id));
     rows.push([
       a.title,
       a.type,
       batchName.get(String(a.batchId)) || '',
-      a.dueDate ? new Date(a.dueDate).toISOString().slice(0, 10) : '',
       s ? s.status : 'not submitted',
       s?.score ?? '',
       s?.feedback || '',

@@ -1434,7 +1434,7 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .af-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 16px 0 7px; }
 .af-desc { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; font-family: var(--font); line-height: 1.6; box-sizing: border-box; resize: vertical; background: var(--card); }
 .af-desc::placeholder { color: var(--muted-2); }
-.af-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+.af-foot { display: flex; align-items: flex-end; justify-content: flex-end; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
 .af-due { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .af-due input { padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; font-family: var(--font); font-size: 13px; background: var(--card); }
 .af-actions { display: flex; gap: 10px; }

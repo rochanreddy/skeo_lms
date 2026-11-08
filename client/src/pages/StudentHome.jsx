@@ -296,7 +296,6 @@ export default function StudentHome() {
                         <span className="hg-title">{a.title}</span>
                         <span className="hg-sub">
                           {a.type === 'project' ? 'Project' : 'Assignment'}
-                          {a.dueDate && <> · {st.late ? 'was due' : 'due'} {fmtDate(a.dueDate)}</>}
                         </span>
                       </span>
                       <span className={`status ${st.cls}`}>{st.label}</span>
@@ -361,23 +360,19 @@ function SecHead({ n, title, children }) {
 // ── formatting ────────────────────────────────────────────────────────────
 const fmtDate = (d) => new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short' });
 
-// Graded → Submitted → Overdue → To do, each with its own dot colour.
+// Graded → Submitted → To do, each with its own dot colour.
 function projectStatus(a) {
   const sub = a.mySubmission;
   if (sub?.status === 'graded') {
     return { label: sub.score != null ? `Graded · ${sub.score}` : 'Graded', cls: 'status-done', mark: 'is-green' };
   }
   if (sub) return { label: 'Submitted', cls: 'status-progress', mark: 'is-green' };
-  const late = a.dueDate && new Date(a.dueDate) < new Date();
-  if (late) return { label: 'Overdue', cls: 'status-late', mark: 'is-rose', late: true };
   return { label: 'To do', cls: 'status-todo', mark: '' };
 }
 
-// What needs doing first: unsubmitted before submitted, then by due date, then
-// the undated ones last so they never crowd out a real deadline.
+// What needs doing first: unsubmitted before submitted. Within each, the
+// server's course order stands (M01 first, capstones last); sort is stable.
 function byUrgency(x, y) {
   const open = (a) => (a.mySubmission ? 1 : 0);
-  if (open(x) !== open(y)) return open(x) - open(y);
-  if (x.dueDate && y.dueDate) return new Date(x.dueDate) - new Date(y.dueDate);
-  return x.dueDate ? -1 : y.dueDate ? 1 : 0;
+  return open(x) - open(y);
 }

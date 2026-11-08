@@ -7,7 +7,6 @@ import { SubmissionCheckPanel } from './SubmissionCheck.jsx';
 import { DRIVE_TYPES } from './CourseWork.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.jsx';
 
-const dueLabel = (d) => new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 // The admin's batch detail: enrol students, set assignments, author quizzes
 // and grade. With only two roles there is no
@@ -169,8 +168,6 @@ export default function BatchWorkspace({ batchId }) {
                 <div className="assignment-head">
                   <strong>{a.title}</strong>
                   <span className={`badge ${a.type === 'project' ? 'badge-accent' : ''}`}>{a.type}</span>
-                  {a.startDate && <span className="assignment-due"><LineIcon name="clock" size={13} /> Opens {dueLabel(a.startDate)}</span>}
-                  {a.dueDate && <span className="assignment-due"><LineIcon name="clock" size={13} /> Due {dueLabel(a.dueDate)}</span>}
                 </div>
                 {(a.requiredDriveTypes || []).length > 0 && (
                   <div className="assignment-reqs">
@@ -315,14 +312,6 @@ function QuizResults({ quizId }) {
 }
 
 
-// The picker speaks 'YYYY-MM-DDTHH:mm' in local time; the API stores ISO.
-const toPickerValue = (iso) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
 
 // One form, two jobs: posting a new assignment/project and editing an existing
 // one. Pass `initial` to edit: the form opens prefilled and stays open, the
