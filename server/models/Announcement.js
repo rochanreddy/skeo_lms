@@ -1,14 +1,17 @@
 import mongoose from 'mongoose';
 import { keepsClassCacheFresh } from '../utils/classCache.js';
 
-// A broadcast an admin posts to a batch. Students see it on their
-// dashboard and get a notification.
+// A broadcast an admin posts. With a batchId it goes to that cohort; with
+// none it is an update from Menler to every student. Students see it in the
+// Updates card on their home screen and get a notification.
 const announcementSchema = new mongoose.Schema(
   {
-    batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', required: true, index: true },
+    batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', default: null, index: true },
     authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true },
     body: { type: String, default: '' },
+    // Optional: where the update points, a Menler page, an event, a form.
+    link: { type: String, default: '', trim: true },
   },
   { timestamps: true },
 );

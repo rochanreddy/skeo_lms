@@ -13,6 +13,7 @@ import './styles/shell.css';
 import './styles/usage.css';
 import './styles/vdo-check.css';
 import './styles/player.css';
+import './styles/updates.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

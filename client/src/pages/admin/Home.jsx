@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, downloadFile } from '../../api.js';
 import AtRiskPanel from '../../components/AtRiskPanel.jsx';
+import PushUpdates from '../../components/PushUpdates.jsx';
 import { Donut, MiniLine, SEQ } from '../../components/Charts.jsx';
 
 // Admin platform overview: headline counts, distribution donuts, signup trend,
@@ -37,6 +38,8 @@ export default function AdminHome() {
           </div>
         ))}
       </div>
+
+      <PushUpdates />
 
       {(s.blockedUsers ?? 0) > 0 && (
         <div className="blockbox" style={{ marginBottom: 18 }}>
