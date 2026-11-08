@@ -22,6 +22,9 @@ import {
 const PLAYER_ORIGIN = 'https://player.vdocipher.com';
 const HIDE_AFTER_MS = 2600;
 const SAVE_EVERY_S = 5;
+// Watched "enough" to count the lesson done. Not the very end: people stop
+// once the content is over and skip the sign-off.
+const WATCHED_AT = 0.9;
 
 const touchDevice = () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
@@ -69,8 +72,12 @@ const Spinner = () => (
  * @param title    the lesson's title, shown while fullscreen
  * @param upNext   { title, onPlay } for the card at the end, or null
  * @param onEnded  called once when the video reaches its end
+ * @param onWatched called once when most of the video (WATCHED_AT) has played,
+ *                  or it ends: the classroom marks the lesson done on this
+ * @param clock    optional, from lib/videoClock.js: the time is published to
+ *                 it and seeks requested through it are carried out
  */
-export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = null, onEnded }) {
+export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = null, onEnded, onWatched, clock = null }) {
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -82,6 +89,16 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
   const toastTimer = useRef(null);
   const lastSaved = useRef(0);
   const endedOnce = useRef(false);
+  const watchedOnce = useRef(false);
+  // Held in a ref so the listeners, attached once per ticket, always call
+  // the newest callback rather than the one from the render that attached them.
+  const onWatchedRef = useRef(onWatched);
+  onWatchedRef.current = onWatched;
+  const markWatched = () => {
+    if (watchedOnce.current) return;
+    watchedOnce.current = true;
+    onWatchedRef.current?.();
+  };
   const resumed = useRef(false);
   const dragging = useRef(false);
   const lastTap = useRef({ at: 0, side: '' });
@@ -120,6 +137,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     if (paint.current.played) paint.current.played.style.width = pct;
     if (paint.current.knob) paint.current.knob.style.left = pct;
     setTimeState((prev) => (Math.floor(t) === prev ? prev : Math.floor(t)));
+    clock?.set(t, d);
   };
   const paintLoaded = (b) => {
     const d = shown.current.duration;
@@ -150,6 +168,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     setDuration(0);
     setResumeAt(0);
     endedOnce.current = false;
+    watchedOnce.current = false;
     resumed.current = false;
     player.current = null;
     (async () => {
@@ -186,6 +205,8 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
         lastSaved.current = t;
         writePosition(videoId, t);
       }
+      const d = vid.duration;
+      if (Number.isFinite(d) && d > 0 && t / d >= WATCHED_AT) markWatched();
     };
     const onDuration = () => {
       const d = vid.duration;
@@ -211,6 +232,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
       setEnded(true);
       setActive(true);
       clearPosition(videoId);
+      markWatched();
       if (!endedOnce.current) {
         endedOnce.current = true;
         onEnded?.();
@@ -310,6 +332,14 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     setTime(t);
     if (ended && t < duration) setEnded(false);
   };
+  // The classroom's timeline under the title seeks through the clock.
+  const seekRef = useRef(seekTo);
+  seekRef.current = seekTo;
+  useEffect(() => clock?.onSeek((f) => {
+    const d = shown.current.duration;
+    if (d) seekRef.current(f * d);
+  }), [clock]);
+
   const seekBy = (by) => {
     seekTo((v()?.currentTime ?? shown.current.time) + by);
     wake();

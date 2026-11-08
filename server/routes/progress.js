@@ -93,6 +93,24 @@ router.post('/toggle', requireAuth, async (req, res) => {
   res.json({ completedTopics: doc?.completedTopics || [], completed: !has });
 });
 
+// POST /api/skeo/progress/complete { programId, topicId }, mark a lesson done.
+//
+// What the classroom calls on its own: when a student has watched most of a
+// video, or has had a reading lesson open for a moment. Only ever adds, so a
+// second call (a replay, two tabs) can never untick a lesson the way calling
+// the toggle twice would.
+router.post('/complete', requireAuth, async (req, res) => {
+  const { programId, topicId } = req.body || {};
+  if (!programId || !topicId) return res.status(400).json({ error: 'programId and topicId are required.' });
+  if (!mongoose.isValidObjectId(programId)) return res.status(400).json({ error: 'Invalid programId.' });
+  const doc = await Progress.findOneAndUpdate(
+    { studentId: req.user._id, programId },
+    { $addToSet: { completedTopics: String(topicId) } },
+    { new: true, upsert: true, projection: { completedTopics: 1 } },
+  ).lean();
+  res.json({ completedTopics: doc?.completedTopics || [] });
+});
+
 // GET /api/skeo/progress/certificate?programId=, issues a certificate at 100%.
 router.get('/certificate', requireAuth, async (req, res) => {
   const { programId } = req.query;

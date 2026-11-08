@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import FileViewer from '../components/FileViewer.jsx';
@@ -8,10 +8,23 @@ import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
+import { createVideoClock } from '../lib/videoClock.js';
+import { formatTime } from '../lib/player.js';
 import { mediaOf, mediaFrom, stripParentContext, lessonWords, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
 import CertificateModal from '../components/CertificateModal.jsx';
+import StudentGrades from './StudentGrades.jsx';
 
-// Learning. For students: Content + Assignments (submit) + Quizzes (take).
+// The student tabs, as ?tab= spells them.
+const TABS = ['content', 'assignments', 'quizzes', 'grades'];
+
+// The one-column phone layout, where the list sits under the player.
+const isPhone = () => window.matchMedia('(max-width: 900px)').matches;
+
+// How long a reading lesson has to be open before it counts as done.
+const READ_COUNTS_AFTER_MS = 4000;
+
+// Learning. For students: Content + Projects (submit) + Quizzes (take) +
+// Grades (what came back). Grades used to be its own tab in the navbar.
 // For admins: just the course content to teach from, they create &
 // grade assignments/quizzes under Course, not here.
 export default function Learning() {
@@ -22,14 +35,14 @@ export default function Learning() {
   const [params] = useSearchParams();
   const [tab, setTab] = useState(() => {
     const t = params.get('tab');
-    return ['content', 'assignments', 'quizzes'].includes(t) ? t : 'content';
+    return TABS.includes(t) ? t : 'content';
   });
 
   // …and keeps working when a result is opened while already on this page.
   const wantTab = params.get('tab');
   const wantTopic = params.get('topic');
   useEffect(() => {
-    if (wantTab && ['content', 'assignments', 'quizzes'].includes(wantTab)) setTab(wantTab);
+    if (wantTab && TABS.includes(wantTab)) setTab(wantTab);
     else if (wantTopic) setTab('content');
   }, [wantTab, wantTopic]);
 
@@ -48,12 +61,14 @@ export default function Learning() {
       <h1>Learning</h1>
       <div className="tabs">
         <button className={`tab ${tab === 'content' ? 'active' : ''}`} onClick={() => setTab('content')}>Content</button>
-        <button className={`tab ${tab === 'assignments' ? 'active' : ''}`} onClick={() => setTab('assignments')}>Assignments & Projects</button>
+        <button className={`tab ${tab === 'assignments' ? 'active' : ''}`} onClick={() => setTab('assignments')}>Projects</button>
         <button className={`tab ${tab === 'quizzes' ? 'active' : ''}`} onClick={() => setTab('quizzes')}>Quizzes</button>
+        <button className={`tab ${tab === 'grades' ? 'active' : ''}`} onClick={() => setTab('grades')}>Grades</button>
       </div>
       {tab === 'content' && <Content />}
       {tab === 'assignments' && <Assignments />}
       {tab === 'quizzes' && <Quizzes />}
+      {tab === 'grades' && <StudentGrades embedded />}
     </div>
   );
 }
@@ -557,11 +572,24 @@ function Content() {
     if (program) setParams({ program: program._id }, { replace: true });
   }
 
+  // All lessons, on a phone: every module folded, an outline to pick from.
+  function showAllLessons() {
+    if (mobileTab !== 'lessons') { setOpen({}); setOpenChap(null); }
+    setMobileTab('lessons');
+  }
+
   // Pressing a module opens it and shows its page. Pressing the one already
   // open, while its page is showing, folds it away and returns the reader to
   // the landing state.
   function pressModule(m) {
     const id = String(m._id);
+    // Phones, in the All lessons view: a module is a plain dropdown. Opening
+    // its overview page would swap the view and take the lesson off screen.
+    if (isPhone()) {
+      setOpen((o) => ({ ...o, [id]: !o[id] }));
+      setOpenChap(null);
+      return;
+    }
     const showingPage = pageRef?.kind === 'module' && String(pageRef.id) === id;
     // Fold it away when pressing the module that's already open while its page
     // is showing: or, for a module that has no page, on any second press,
@@ -607,7 +635,7 @@ function Content() {
     // list under the player. Either way the player comes to the top, except
     // on arrival, when the page is already at the top and must stay there.
     setMobileTab(f.topic.body ? 'about' : 'lessons');
-    if (!quiet && window.matchMedia('(max-width: 900px)').matches) {
+    if (!quiet && isPhone()) {
       requestAnimationFrame(() => document.querySelector('.cp-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
   }
@@ -654,10 +682,28 @@ function Content() {
     }
   }, [urlProgram, urlTopic]);
 
-  async function toggleComplete(tid) {
-    const { completedTopics } = await api('/progress/toggle', { method: 'POST', body: { programId: program._id, topicId: tid } });
-    setCompleted(new Set(completedTopics));
+  // Lessons complete themselves: a video once most of it has played, any
+  // other lesson once it has been open for a moment. There is no button.
+  const completedRef = useRef(completed);
+  completedRef.current = completed;
+  async function markDone(tid) {
+    if (!isStudent || !program || completedRef.current.has(tid)) return;
+    try {
+      const { completedTopics } = await api('/progress/complete', { method: 'POST', body: { programId: program._id, topicId: tid } });
+      setCompleted(new Set(completedTopics));
+    } catch { /* the next visit will try again */ }
   }
+  // A reading lesson counts once it has been open a few seconds, long enough
+  // that paging past it with Next doesn't tick it off. A video lesson waits
+  // for the player; one whose recording isn't published yet waits for that.
+  useEffect(() => {
+    if (!topic || !isStudent || topic.contentType === 'video') return undefined;
+    const t = setTimeout(() => markDone(topic._id), READ_COUNTS_AFTER_MS);
+    return () => clearTimeout(t);
+  }, [topic?._id, isStudent, program?._id]);
+
+  // The open video's time, shared with the timeline between ◀ and ▶.
+  const clock = useMemo(() => createVideoClock(), [topic?._id]);
   async function viewCertificate() {
     const c = await api(`/progress/certificate?programId=${program._id}`);
     if (c.eligible) setCert(c);
@@ -670,7 +716,6 @@ function Content() {
   // this module's gate, in which case the gate is what's next.
   const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
   const nextLocked = !!next && isLocked(modIndexOf(next.modId));
-  const curGate = current ? gateFor(current.modId) : null;
   // A DRM lesson wins over every plain URL on the topic: if the admin put the
   // recording in VdoCipher, that is where it is watched.
   const vdoId = topic?.contentType === 'video' ? (topic.vdoVideoId || '') : '';
@@ -715,6 +760,16 @@ function Content() {
         <div className="cp-layout">
           {/* ── The player column ── */}
           <main className="cp-main">
+            {/* Phones only: switch between this lesson's notes and the list
+                of all lessons. It sits above the video; what it switches
+                stays below. Without any text there is nothing to switch to. */}
+            {reading && hasAbout && (
+              <div className="cp-seg" role="tablist" aria-label="Lesson view">
+                <button type="button" role="tab" aria-selected={mobileTab === 'about'} onClick={() => setMobileTab('about')}>This lesson</button>
+                <button type="button" role="tab" aria-selected={mobileTab === 'lessons'} onClick={showAllLessons}>All lessons <span className="cp-seg-n">{flat.length}</span></button>
+              </div>
+            )}
+
             {topic && hasVideo && (
               <div className="cp-player">
                 {vdoId
@@ -723,6 +778,8 @@ function Content() {
                       key={topic._id}
                       videoId={vdoId}
                       title={topic.title}
+                      onWatched={() => markDone(topic._id)}
+                      clock={clock}
                       upNext={next && !nextLocked ? { title: next.topic.title, onPlay: () => selectTopic(next) } : null}
                     />
                   )
@@ -737,81 +794,58 @@ function Content() {
                   <h1 className="cp-title">{topic ? topic.title : page.title}</h1>
 
                   <div className="cp-actions">
-                    {topic && isStudent && (
-                      <button className={`btn cp-complete ${isDone ? 'is-done' : ''}`} onClick={() => toggleComplete(topic._id)} aria-pressed={isDone}>
-                        {isDone ? <><LineIcon name="check" size={16} /> Completed</> : 'Mark as complete'}
-                      </button>
+                    {topic && isStudent && isDone && (
+                      <span className="cp-status" role="status"><LineIcon name="check" size={15} /> Completed</span>
                     )}
                     {page && (
                       <button className="btn cp-complete" disabled={pageStart < 0} onClick={() => flat[pageStart] && selectTopic(flat[pageStart])}>{page.startLabel} →</button>
                     )}
                     <ChipRow media={topic ? mediaOf(topic) : page.media} subtitle={topic ? topic.title : page.crumb} onOpen={setViewer} />
-                    <div className="cp-nav">
-                      {topic ? (
-                        <>
-                          <button className="btn ghost sm" disabled={idx <= 0} onClick={() => flat[idx - 1] && selectTopic(flat[idx - 1])}>← Previous</button>
-                          <button className="btn ghost sm" disabled={!next || nextLocked} onClick={() => next && selectTopic(next)}>Next →</button>
-                        </>
-                      ) : (
-                        <button className="btn ghost sm" disabled={pageStart <= 0} onClick={() => flat[pageStart - 1] && selectTopic(flat[pageStart - 1])}>← Previous</button>
-                      )}
-                    </div>
                   </div>
+
+                  {/* Step through the course: previous lesson on the left,
+                      next on the right, and between them the video's own
+                      timeline. Next stops at a module whose quiz is waiting. */}
+                  {topic && (
+                    <div className="cp-step">
+                      <button
+                        type="button"
+                        className="cp-step-btn"
+                        disabled={idx <= 0}
+                        onClick={() => flat[idx - 1] && selectTopic(flat[idx - 1])}
+                        aria-label="Previous lesson"
+                        title={idx > 0 ? lessonWords(flat[idx - 1].topic.title) : undefined}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 4.5v15a1 1 0 0 1-1.5.87l-12-7.5a1 1 0 0 1 0-1.74l12-7.5A1 1 0 0 1 17 4.5z" fill="currentColor" /></svg>
+                      </button>
+                      {vdoId ? (
+                        <StepTimeline clock={clock} />
+                      ) : (
+                        <div className="cp-step-mid cp-step-plain">Lesson {idx + 1} of {flat.length}</div>
+                      )}
+                      <button
+                        type="button"
+                        className="cp-step-btn"
+                        disabled={!next || nextLocked}
+                        onClick={() => next && selectTopic(next)}
+                        aria-label={nextLocked ? 'Next lesson (take the module quiz to unlock it)' : 'Next lesson'}
+                        title={next ? (nextLocked ? 'Take the module quiz to unlock the next module' : lessonWords(next.topic.title)) : undefined}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.87l12-7.5a1 1 0 0 0 0-1.74l-12-7.5A1 1 0 0 0 7 4.5z" fill="currentColor" /></svg>
+                      </button>
+                    </div>
+                  )}
 
 
                 </div>
 
-                {/* Phones only: About and the list share the space under the
-                    player. Without any text there is nothing to switch to. */}
-                {hasAbout && (
-                  <div className="cp-seg" role="tablist" aria-label="Lesson view">
-                    <button type="button" role="tab" aria-selected={mobileTab === 'about'} onClick={() => setMobileTab('about')}>This lesson</button>
-                    <button type="button" role="tab" aria-selected={mobileTab === 'lessons'} onClick={() => setMobileTab('lessons')}>All lessons <span className="cp-seg-n">{flat.length}</span></button>
-                  </div>
-                )}
-
-                {/* The lesson's own notes, then, and only then, what comes
-                    after it. Up next above the notes read as their heading. */}
+                {/* The lesson's own notes. */}
                 <div className={`cp-after ${hasAbout && mobileTab !== 'about' ? 'phone-hide' : ''}`}>
                   {hasAbout ? (
                     <div className="cp-body"><Markdown text={bodyText} /></div>
                   ) : topic && !hasVideo ? (
                     <p className="cp-empty">Nothing has been added to this lesson yet. Check back soon.</p>
                   ) : null}
-                  {/* Up next: so finishing a lesson never means hunting the
-                      list for the one after it. Lit once this one is done. */}
-                  {topic && (next && !nextLocked ? (
-                    <div className={`cp-next ${isDone ? 'lit' : ''}`}>
-                      <span className="cp-next-icon"><LessonIcon type={next.topic.contentType} size={16} /></span>
-                      <div className="cp-next-text">
-                        <div className="cp-next-eyebrow">Up next</div>
-                        <div className="cp-next-title">{lessonWords(next.topic.title)}</div>
-                        {String(next.modId) !== String(current.modId) && <div className="cp-next-crumb">{next.mod}</div>}
-                      </div>
-                      <button className={`btn sm ${isDone ? '' : 'ghost'}`} onClick={() => selectTopic(next)}>Continue →</button>
-                    </div>
-                  ) : next && nextLocked ? (
-                    <div className={`cp-next ${isDone ? 'lit' : ''}`}>
-                      <span className="cp-next-icon"><LineIcon name="key" size={16} /></span>
-                      <div className="cp-next-text">
-                        <div className="cp-next-eyebrow">Up next</div>
-                        <div className="cp-next-title">{curGate && !curGate.myAttempt ? `Module ${modIndexOf(current.modId) + 1} quiz` : 'Module quiz'}</div>
-                        <div className="cp-next-crumb">Attempt it to unlock {next.mod}</div>
-                      </div>
-                      <button className={`btn sm ${isDone ? '' : 'ghost'}`} onClick={() => setParams({ tab: 'quizzes' })}>Take quiz →</button>
-                    </div>
-                  ) : isDone && isStudent ? (
-                    <div className="cp-next lit">
-                      <span className="cp-next-icon"><LineIcon name="check" size={16} /></span>
-                      <div className="cp-next-text">
-                        <div className="cp-next-eyebrow">That was the last lesson</div>
-                        <div className="cp-next-title">{pct === 100 ? 'Course complete: well done.' : `${total - done} lesson${total - done === 1 ? '' : 's'} still to finish.`}</div>
-                      </div>
-                      {pct === 100
-                        ? <button className="btn sm" onClick={viewCertificate}>🎓 Certificate</button>
-                        : <button className="btn sm ghost" onClick={() => resume && selectTopic(resume.f)}>Go there →</button>}
-                    </div>
-                  ) : null)}
                 </div>
               </>
             ) : (
@@ -934,6 +968,64 @@ function Content() {
 // Lesson recordings live on VdoCipher and nowhere else. A lesson whose video
 // is not there yet shows this card: a quiet word for the student, and for the
 // admin the way to fix it. Never an error, never a raw link.
+// The video's timeline between the ◀ and ▶ buttons: elapsed on the left,
+// length on the right, and a bar that can be clicked or dragged to seek.
+// Subscribes to the clock, so only this re-renders as the video plays.
+function StepTimeline({ clock }) {
+  const { time, duration } = useSyncExternalStore(clock.subscribe, clock.get);
+  const bar = useRef(null);
+  const dragging = useRef(false);
+  const frac = duration ? Math.min(1, time / duration) : 0;
+
+  const fractionAt = (e) => {
+    const r = bar.current.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  };
+  const down = (e) => {
+    if (!duration) return;
+    dragging.current = true;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    clock.seek(fractionAt(e));
+  };
+  const move = (e) => { if (dragging.current) clock.seek(fractionAt(e)); };
+  const up = () => { dragging.current = false; };
+  const key = (e) => {
+    if (!duration) return;
+    const step = { ArrowLeft: -5, ArrowRight: 5, Home: -Infinity, End: Infinity }[e.key];
+    if (step === undefined) return;
+    e.preventDefault();
+    clock.seek(Math.min(1, Math.max(0, (time + step) / duration)));
+  };
+
+  return (
+    <div className="cp-step-mid">
+      <div className="cp-step-label">
+        <span>{formatTime(time)}</span>
+        <span>{duration ? formatTime(duration) : '--:--'}</span>
+      </div>
+      <div
+        ref={bar}
+        className="cp-step-bar"
+        role="slider"
+        tabIndex={0}
+        aria-label="Video position"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(duration)}
+        aria-valuenow={Math.round(time)}
+        aria-valuetext={`${formatTime(time)} of ${formatTime(duration)}`}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+        onKeyDown={key}
+      >
+        <span className="cp-step-done" style={{ width: `${frac * 100}%` }} />
+        <span className="cp-step-here" style={{ left: `${frac * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function LessonSoon({ url, failed, onRetry }) {
   const { user } = useOutletContext();
   const canManage = user?.role && user.role !== 'student';
@@ -974,6 +1066,8 @@ function Assignments() {
   // Before the first response an empty list means "not known yet", announcing
   // "no assignments" and then replacing it reads as a bug, not as loading.
   const [loading, setLoading] = useState(true);
+  // A dropdown list: every card folds to its header, and one opens at a time.
+  const [openId, setOpenId] = useState(null);
   const load = () => api('/assignments?scope=mine').then((d) => setItems(d.assignments || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
@@ -987,7 +1081,15 @@ function Assignments() {
   if (items.length === 0) return <p className="muted">No assignments yet. They appear once they're set.</p>;
   return (
     <div className="list">
-      {items.map((a) => <AssignmentCard key={a._id} a={a} onChange={load} />)}
+      {items.map((a) => (
+        <AssignmentCard
+          key={a._id}
+          a={a}
+          onChange={load}
+          open={openId === a._id}
+          onToggle={() => setOpenId((cur) => (cur === a._id ? null : a._id))}
+        />
+      ))}
     </div>
   );
 }
@@ -999,28 +1101,11 @@ const REQUIRED_LABELS = {
   html: 'An HTML file or artifact',
 };
 
-// "3 days left" for the header: the one number a student actually scans for.
-// Null once the deadline has passed; the overdue state is worded separately.
-function timeLeft(due) {
-  const ms = new Date(due) - Date.now();
-  if (ms <= 0) return null;
-  const days = Math.floor(ms / 86_400_000);
-  if (days >= 1) return `${days} day${days === 1 ? '' : 's'} left`;
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 1) return `${hours} hour${hours === 1 ? '' : 's'} left`;
-  return 'Due within the hour';
-}
-
-function AssignmentCard({ a, onChange }) {
-  const { user } = useOutletContext();
+function AssignmentCard({ a, onChange, open, onToggle }) {
   const sub = a.mySubmission;
   const [driveLink, setDriveLink] = useState(sub?.driveLink || '');
   const [pdf, setPdf] = useState(null); // { label, subtitle, url }
   const [editing, setEditing] = useState(false);
-  // A long brief starts folded to a few lines; the student opens it when
-  // they sit down to do the work, not every time they scroll past the card.
-  const longBrief = (a.description || '').length > 420;
-  const [briefOpen, setBriefOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -1051,54 +1136,45 @@ function AssignmentCard({ a, onChange }) {
   const fmt = (d) => new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const overdue = a.dueDate && new Date(a.dueDate) < new Date();
   const notOpenYet = a.startDate && new Date(a.startDate) > new Date();
-  const due = a.dueDate && fmt(a.dueDate);
   const start = a.startDate && fmt(a.startDate);
-  const left = a.dueDate && !sub && timeLeft(a.dueDate);
   const showForm = (!sub || editing) && !notOpenYet;
   // Mirrors the server's rules, the API is still the authority, this just
   // avoids offering an action that would be rejected.
   const editable = !sub?.locked && !overdue && !notOpenYet;
   const required = (a.requiredDriveTypes || []).map((t) => REQUIRED_LABELS[t] || t);
-  const studentName = user?.full_name || user?.fullName || user?.email;
   const noun = a.type === 'project' ? 'project' : 'assignment';
   // No video and no PDF means no left column at all, an empty rail beside
   // the brief reads as something that failed to load.
   const hasMedia = Boolean(a.videoUrl || a.pdfUrl);
 
   // One badge in the corner answers "where do I stand" before anything else.
+  // A passed deadline gets no badge of its own: no "Missed".
   const state = !sub
-    ? (notOpenYet ? ['Opens soon', 'badge-muted'] : overdue ? ['Missed', 'badge-blocked'] : ['Not submitted', 'badge-muted'])
+    ? (notOpenYet ? ['Opens soon', 'badge-muted'] : overdue ? null : ['Not submitted', 'badge-muted'])
     : sub.status === 'graded' ? ['Graded', 'badge-student']
     : sub.status === 'submitted' ? ['Submitted', 'badge-submitted']
     : [sub.status, ''];
 
   return (
-    <div className="panel assign-card">
-      <div className="assign-head">
-        <div className="assign-headline">
-          <div className="assign-title">
-            <h3>{a.title}</h3>
+    <div className={`panel assign-card ${open ? 'is-open' : ''}`}>
+      <button type="button" className="assign-head" onClick={onToggle} aria-expanded={open} aria-controls={`assign-${a._id}`}>
+        <span className="assign-headline">
+          <span className="assign-title">
+            <span className="assign-name">{a.title}</span>
             <span className={`badge ${a.type === 'project' ? 'badge-accent' : ''}`}>{a.type}</span>
-          </div>
-          <div className="assign-meta">
-            {start && <span className="assign-meta-item"><LineIcon name="calendar" size={13} /> Opens {start}</span>}
-            {due && (
-              <span className="assign-meta-item">
-                <LineIcon name="clock" size={13} /> Due {due}
-              </span>
-            )}
-            {left && <span className="assign-countdown">{left}</span>}
-            {overdue && !sub && <span className="assign-countdown overdue">Deadline passed</span>}
-          </div>
-        </div>
-        <span className={`badge ${state[1]}`}>{state[0]}</span>
-      </div>
+          </span>
+        </span>
+        {state && <span className={`badge ${state[1]}`}>{state[0]}</span>}
+        <span className="assign-caret" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+        </span>
+      </button>
 
-      {/* Two columns. Watching and reading on the left, the video, with the
-          brief PDF under it; doing, on the right, read the brief, then hand
-          the work in directly beneath it. The media column sticks, so the
+      {/* Two columns. Watching on the left, the video with the brief PDF
+          under it; handing in on the right. The media column sticks, so the
           video stays put while a student works down the right-hand side. */}
-      <div className={`assign-split ${hasMedia ? '' : 'solo'}`}>
+      {open && (
+      <div className={`assign-split ${hasMedia ? '' : 'solo'}`} id={`assign-${a._id}`}>
         {hasMedia && (
           <div className="assign-media">
             <h4 className="assign-pane-head">{a.videoUrl ? 'Walkthrough' : 'Resources'}</h4>
@@ -1121,34 +1197,9 @@ function AssignmentCard({ a, onChange }) {
         )}
 
         <div className="assign-work">
-          <section className="assign-content">
-            <h4 className="assign-pane-head">The brief</h4>
-            {a.description ? (
-              <>
-                <div className={`assign-brief ${longBrief && !briefOpen ? 'is-folded' : ''}`}><Markdown text={a.description} /></div>
-                {longBrief && (
-                  <button type="button" className="assign-brief-more" onClick={() => setBriefOpen((v) => !v)} aria-expanded={briefOpen}>
-                    {briefOpen ? 'Show less ↑' : 'Read the full brief ↓'}
-                  </button>
-                )}
-              </>
-            ) : <p className="assign-note">No brief posted for this {noun} yet.</p>}
-          </section>
-
           <aside className="assign-submitpane">
             <div className="assign-rail">
               <h4 className="assign-pane-head">Your submission</h4>
-
-              <dl className="assign-dates">
-                <div>
-                  <dt>Opens</dt>
-                  <dd>{start || 'Open now'}</dd>
-                </div>
-                <div>
-                  <dt>Last date to submit</dt>
-                  <dd className={overdue ? 'is-overdue' : ''}>{due || 'No deadline'}</dd>
-                </div>
-              </dl>
 
               {/* Current verification state: visible without opening notifications. */}
               {sub && !editing && (
@@ -1199,13 +1250,12 @@ function AssignmentCard({ a, onChange }) {
                       required
                     />
                   </div>
-                  <p className="sub-form-hint">Share the folder as “Anyone with the link can view”, and include everything the brief asks for.</p>
+                  <p className="sub-form-hint">Share the folder as “Anyone with the link can view”, and include everything the task asks for.</p>
 
                   <div className="assign-submit">
                     <button className="btn" disabled={busy}>{busy ? 'Checking…' : (sub ? 'Save changes' : 'Submit for review')}</button>
                     {sub && <button type="button" className="btn ghost" onClick={() => { setEditing(false); setError(''); setDriveLink(sub.driveLink || ''); }}>Cancel</button>}
                   </div>
-                  {studentName && <p className="assign-as">Submitting as <strong>{studentName}</strong></p>}
                 </form>
               ) : sub?.locked ? (
                 <p className="assign-note">This submission has been reviewed and is locked. Ask your administrator to unlock it if you need to change it.</p>
@@ -1221,6 +1271,7 @@ function AssignmentCard({ a, onChange }) {
           </aside>
         </div>
       </div>
+      )}
 
       {pdf && <FileViewer url={pdf.url} label={pdf.label} subtitle={pdf.subtitle} onClose={() => setPdf(null)} />}
     </div>

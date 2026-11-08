@@ -2264,23 +2264,26 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
    beneath it, so reading the task and handing it in are one movement. The
    media column sticks, which is what keeps the video on screen while a
    student works their way down the right-hand side. */
-.assign-card { margin-bottom: 14px; padding: 26px 28px 28px; }
+.assign-card { margin-bottom: 12px; padding: 18px 24px; }
+.assign-card.is-open { padding: 22px 28px 28px; }
 
 /* Header: title, type, the dates, and one status badge in the corner. */
-.assign-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+/* The header is the dropdown's button: title, type and status, and a caret
+   that turns when the card is open. */
+.assign-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; padding: 0; border: 0; background: none; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.assign-head:focus-visible { outline: 2px solid var(--purple); outline-offset: 6px; border-radius: 8px; }
+.assign-head:hover .assign-name { color: var(--purple); }
+.assign-caret { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--muted); transition: transform .2s, background .16s; }
+.assign-head:hover .assign-caret { background: var(--purple-soft); color: var(--purple); }
+.assign-card.is-open .assign-caret { transform: rotate(180deg); }
 .assign-headline { min-width: 0; }
 .assign-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.assign-title h3 { font-size: 20px; margin: 0; line-height: 1.25; }
-.assign-meta { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; margin-top: 8px; }
-.assign-meta-item { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-.assign-meta-item.overdue { color: var(--red); font-weight: 600; }
-/* The countdown is the one number a student scans for, so it gets a pill. */
-.assign-countdown {
-  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--pill);
-  background: var(--a3-soft); color: var(--a3-ink); font-size: 12px; font-weight: 700;
-}
-.assign-countdown.overdue { background: var(--red-soft); color: var(--red-ink); }
-.assign-head > .badge { flex: none; margin-top: 4px; }
+.assign-name { font-family: var(--display); font-size: 18px; font-weight: 700; line-height: 1.25; color: var(--ink); transition: color .16s; }
+.assign-head > .badge { flex: none; margin-left: auto; }
 
 .assign-split { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(340px, 1fr); gap: 32px; margin-top: 24px; align-items: start; }
 /* Nothing to watch and nothing to download: the brief gets the whole card
@@ -2298,8 +2301,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 }
 
 /* The brief is the task itself, so it reads as prose, no grey box. */
-.assign-brief .md { font-size: 15px; }
-.assign-brief .md-p:last-child, .assign-brief .md-list:last-child { margin-bottom: 0; }
 
 /* The video keeps the 16:9 stage it has in lessons; the PDF under it becomes
    a row you can actually read. */
@@ -2328,11 +2329,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .assign-rail .sub-check { margin-top: 16px; }
 .assign-rail .sub-check-error { margin-top: 12px; }
 
-.assign-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 0; }
-.assign-dates > div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
-.assign-dates dt { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
-.assign-dates dd { margin: 3px 0 0; font-size: 13.5px; font-weight: 600; color: var(--ink); }
-.assign-dates dd.is-overdue { color: var(--red); }
 
 .assign-reqs { display: flex; flex-direction: column; gap: 8px; }
 .assign-req-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -2364,8 +2360,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .assign-submit { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .sub-form .assign-submit { margin-top: 16px; }
 .sub-form .assign-submit .btn:first-child { flex: 1; justify-content: center; }
-.assign-as { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); text-align: center; }
-.assign-as strong { color: var(--ink-2); font-weight: 600; }
 
 .assign-rail .graded { margin-top: 14px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .assign-rail .graded .muted { margin: 4px 0 0; font-size: 13.5px; }
@@ -2379,7 +2373,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   .assign-rail { padding: 18px 16px 20px; }
 }
 @media (max-width: 560px) {
-  .assign-dates { grid-template-columns: 1fr; }
   .assign-head { flex-direction: column; }
   .assign-head > .badge { margin-top: 0; }
 }
@@ -2690,11 +2683,8 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 /* The assignment card: the rail sits a step above the card, the resources
    row and the date tiles a step above the rail. */
 .assign-rail { background: var(--wash); border-color: var(--line); }
-.assign-dates > div, .assign-resource { background: var(--card); }
 .assign-resource:hover { background: var(--wash); border-color: var(--blue-line); }
 .assign-resource-icon { background: var(--blue-soft); color: var(--blue-ink); }
-.assign-countdown { background: var(--amber-soft); color: var(--amber-ink); border: 1px solid var(--amber-line); }
-.assign-countdown.overdue { background: var(--red-soft); color: var(--red-ink); border-color: var(--red-line); }
 .assign-req-list li svg { color: var(--green); }
 
 /* ── Job board ─────────────────────────────────────────────────────────────
@@ -3214,18 +3204,17 @@ body:has(.fv) .dock { visibility: hidden; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { flex: none; white-space: nowrap; font-size: 14.5px; }
 
-  .assign-card { padding: 18px 16px 20px; }
+  .assign-card, .assign-card.is-open { padding: 16px; }
   .assign-head {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: 'type state' 'name name' 'meta meta';
-    align-items: center; gap: 10px 12px;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: 'type state caret' 'name name name';
+    align-items: center; gap: 10px 8px;
   }
+  .assign-caret { grid-area: caret; width: 28px; height: 28px; }
   .assign-headline, .assign-title { display: contents; }
   .assign-title .badge { grid-area: type; justify-self: start; }
   .assign-head > .badge { grid-area: state; margin: 0; }
-  .assign-title h3 { grid-area: name; font-size: 18px; overflow-wrap: anywhere; }
-  .assign-meta { grid-area: meta; margin-top: 0; gap: 6px 12px; }
-  .assign-meta-item { font-size: 12.5px; }
+  .assign-name { grid-area: name; font-size: 17px; overflow-wrap: anywhere; }
 
   .assign-split { margin-top: 18px; gap: 22px; }
   .assign-work { gap: 22px; }
@@ -3234,17 +3223,10 @@ body:has(.fv) .dock { visibility: hidden; }
   .assign-resource { padding: 11px 12px; gap: 12px; }
   .assign-resource-icon { width: 36px; height: 36px; }
 
-  .assign-brief { overflow-wrap: anywhere; }
-  .assign-brief .md { font-size: 14.5px; }
-  .assign-brief .md-pre, .assign-brief table { max-width: 100%; overflow-x: auto; }
 
   /* The rail runs edge to edge inside the card rather than nesting a third box. */
   .assign-rail { margin: 0 -16px -20px; padding: 18px 16px 20px; border-width: 1px 0 0; border-radius: 0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px); }
   /* Dates read as two label/value rows, a 2-up grid can't fit "Thu, 30 Oct, 10:00 am". */
-  .assign-dates { grid-template-columns: 1fr; gap: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
-  .assign-dates > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: none; border: 0; border-radius: 0; padding: 10px 12px; }
-  .assign-dates > div + div { border-top: 1px solid var(--line-soft); }
-  .assign-dates dd { margin: 0; text-align: right; font-size: 13px; }
   .sub-form .assign-submit .btn { flex: 1; justify-content: center; }
   .assign-submit > .btn.sm { flex: 1; justify-content: center; }
 
