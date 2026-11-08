@@ -43,7 +43,7 @@ router.get('/me', requireAuth, async (req, res) => {
   // and lean, because none of it is anything but JSON on the way out.
   const [assignments, quizzes] = await Promise.all([
     classCache.get(`grade-assignments:${batchIds.join()}`, () => (
-      Assignment.find({ batchId: { $in: batchIds } }).select('title createdAt dueDate').lean()
+      Assignment.find({ batchId: { $in: batchIds } }).select('title type createdAt dueDate').lean()
     )),
     classCache.get(`grade-quizzes:${batchIds.join()}`, () => quizColumns({ batchId: { $in: batchIds } }, -1)),
   ]);
@@ -60,7 +60,7 @@ router.get('/me', requireAuth, async (req, res) => {
     ...assignments.map((a) => {
       const s = subBy.get(a._id.toString());
       return {
-        id: a._id, kind: 'Assignment', title: a.title,
+        id: a._id, kind: a.type === 'project' ? 'Project' : 'Assignment', title: a.title,
         status: s ? s.status : 'pending',
         score: s && s.score != null ? s.score : null,
         max: 10, // assignments graded out of 10
