@@ -28,6 +28,7 @@ const PATHS = {
   // put and the ribbon redraws, like the other icons' inner strokes.
   usage: <><path d="M3 20.5h18" /><path className="ico-draw" pathLength="1" d="M6.5 17v-5.5M12 17V5.5M17.5 17V9" /></>,
   certificates: <><circle cx="12" cy="8.5" r="5.5" /><circle className="ico-draw" pathLength="1" cx="12" cy="8.5" r="2.3" /><path className="ico-draw" pathLength="1" d="M8.6 12.9 7 21.5l5-2.8 5 2.8-1.6-8.6" /></>,
+  review: <><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z" /><path className="ico-draw" pathLength="1" d="M9.5 12.5h5" /></>,
   // The lifebuoy: the one icon everyone already reads as "help".
   support: <><circle cx="12" cy="12" r="9" /><circle className="ico-draw" pathLength="1" cx="12" cy="12" r="3.6" /><path className="ico-draw" pathLength="1" d="m5.64 5.64 3.82 3.82M14.54 14.54l3.82 3.82M18.36 5.64l-3.82 3.82M9.46 14.54l-3.82 3.82" /></>,
 };
@@ -36,7 +37,7 @@ const ALIAS = {
   'Home': 'home', 'Learning': 'learning', 'Library': 'library',
   'Profile': 'profile', 'Programs': 'programs', 'Course': 'batches',
   'Students': 'students', 'Account': 'account', 'Grades': 'grades',
-  'Job Board': 'jobs', 'Support': 'support', 'Certificates': 'certificates', 'Usage': 'usage', 'Webinars': 'webinars', 'Help & support': 'support',
+  'Job Board': 'jobs', 'Support': 'support', 'Certificates': 'certificates', 'Usage': 'usage', 'Webinars': 'webinars', 'Help & support': 'support', 'Review': 'review', 'Reviews': 'review',
 };
 
 export default function Icon({ name }) {

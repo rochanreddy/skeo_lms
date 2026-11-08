@@ -24,6 +24,7 @@ import certificateRoutes from './certificates.js';
 import provisionRoutes from './provision.js';
 import pushRoutes from './push.js';
 import usageRoutes from './usage.js';
+import reviewRoutes from './reviews.js';
 
 const router = Router();
 
@@ -48,6 +49,7 @@ router.use('/stats', statsRoutes);
 router.use('/progress', progressRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/announcements', announcementRoutes);
+router.use('/reviews', reviewRoutes);
 router.use('/grades', gradeRoutes);
 router.use('/search', searchRoutes); // universal ⌘K search across everything you can see
 router.use('/reports', reportRoutes); // admin CSV exports
