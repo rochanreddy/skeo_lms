@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   SHELL — the app frame and the global primitives on a phone
+   SHELL: the app frame and the global primitives on a phone
 
    Loaded right after styles.css (see main.jsx), unlayered like it, so a rule
    here with the same selector wins by source order and nothing in styles.css
    has to move. Everything in this file is about the shell (topbar, dock,
    search, panels over the page) or about a primitive every page shares
    (.main, .panel, .btn, .tabs, .stats…). Page-specific rules do not belong
-   here — they live with their page.
+   here: they live with their page.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* A badge is one label. Letting it break mid-word turned "SUBMITTED" into two
@@ -39,7 +39,7 @@
   .empty { padding: 24px 16px; }
   .empty-state { min-height: 160px; padding: 28px 16px; }
 
-  /* Figures: two a row from here down, not just under 560px — between the two
+  /* Figures: two a row from here down, not just under 560px, between the two
      breakpoints .stats was still four columns of 80px each. */
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
   .tiles { gap: 12px; }
@@ -63,8 +63,8 @@
 }
 
 /* ── The dock on a narrow phone ──────────────────────────────────────────────
-   Five slots in 300px is 60px each. The labels keep their words — an icon on
-   its own was what made the dock unreadable in the first place — and give up
+   Five slots in 300px is 60px each. The labels keep their words, an icon on
+   its own was what made the dock unreadable in the first place, and give up
    half a point and their tracking instead. The featured tab's label may run
    a pixel past its slot (styles.css lets it); the others ellipsise. */
 @media (max-width: 360px) {
@@ -76,7 +76,7 @@
 /* ── Topbar on a phone ───────────────────────────────────────────────────────
    styles.css already collapses the search field to its icon and hides the
    name and role beside the avatar under 900px. What is left is four controls
-   at the right; here each becomes a 40px target without changing its look —
+   at the right; here each becomes a 40px target without changing its look,
    the padding grows, the icon stays where it was. */
 @media (max-width: 900px) {
   .topbar { gap: 6px; }
@@ -109,7 +109,7 @@
 /* ── Search on a phone: a full-height sheet ─────────────────────────────────
    styles.css already turns the palette into a bottom sheet under 640px. It
    was capped at 82vh, which put the input low on the screen whenever the
-   list was short — exactly where the keyboard then appeared. Now the sheet
+   list was short: exactly where the keyboard then appeared. Now the sheet
    takes the whole screen: the input is pinned at the top where no keyboard
    reaches it, the list scrolls in the room that is left, and a Cancel button
    stands in for the scrim there is no longer room to tap. dvh, so the
@@ -151,7 +151,7 @@
 }
 
 /* ── While a page chunk arrives ─────────────────────────────────────────────
-   The fallback is shaped like a page — a title, a hero-sized card, two rows —
+   The fallback is shaped like a page, a title, a hero-sized card, two rows,
    with the title taking the room a page head takes, so the real page lands
    over it without the content jumping down. (.page-enter already stands
    still under prefers-reduced-motion; see styles.css.) */

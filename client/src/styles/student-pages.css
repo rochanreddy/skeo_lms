@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   STUDENT PAGES — the phone pass
+   STUDENT PAGES: the phone pass
    Grades, library, masterclasses, job board, profile, support, the auth
    screens, /install and /verify. Everything here is scoped to a page's own
    wrapper class (or a class only that page uses) and corrects the desktop
@@ -46,7 +46,7 @@
    One card to a row on a phone. Titles clamp at two lines and descriptions at
    three, so a wordy card does not make its row twice the height of the next. */
 .lib-page .lib-card { min-width: 0; }
-/* A paid playbook the reader owns opens in-app, so it is a button — reset it
+/* A paid playbook the reader owns opens in-app, so it is a button, reset it
    to look like the link cards beside it. */
 .lib-page button.lib-card { font: inherit; text-align: left; cursor: pointer; width: 100%; }
 /* One they don't own: still listed, so they can see what's on offer, but quiet. */
@@ -196,7 +196,7 @@
 
 /* ── Signing in, resetting, the plans page ──────────────────────────────────
    Under 900px the dark hero (and the syllabus drawing with it) is gone and
-   the form stands alone — styles.css. On a phone the card fills the width
+   the form stands alone, styles.css. On a phone the card fills the width
    with a 16px gutter, sits at the top rather than re-centring every time the
    keyboard opens, and its controls are full tap targets. */
 @media (max-width: 900px) {
@@ -248,7 +248,7 @@
 
 /* ── Sign in ──
    One solid button, then the two side roads as quiet buttons of their own on
-   one line — not underlined sentences stacked under it. */
+   one line: not underlined sentences stacked under it. */
 .auth-form .auth-submit { min-height: 50px; padding: 13px 20px; font-size: 15.5px; font-weight: 700; border-radius: 14px; box-shadow: 0 6px 18px color-mix(in srgb, var(--purple) 28%, transparent); }
 .auth-form .auth-submit:hover { box-shadow: 0 8px 22px color-mix(in srgb, var(--purple) 36%, transparent); }
 .auth-actions { display: flex; gap: 10px; margin-top: 14px; }

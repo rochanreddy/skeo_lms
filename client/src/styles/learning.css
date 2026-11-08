@@ -1,6 +1,6 @@
 /* ── Learning · the course player ───────────────────────────────────────────
    Content tab. The video leads, the lesson's title and actions sit under it,
-   and the course list stands beside it — the shape of every course player a
+   and the course list stands beside it, the shape of every course player a
    student already knows. On a phone the list moves under the player and
    shares the spot with the lesson text, switched by a segmented control.
    Loaded after styles.css so it can lean on the same tokens and win ties. */
@@ -159,7 +159,7 @@
 }
 
 /* Quiz options are cards the whole width of the question box, so the tap
-   target is the row, not a 14px radio. Scoped to the take-quiz form — the
+   target is the row, not a 14px radio. Scoped to the take-quiz form, the
    admin quiz builder shares the .quiz-opt name and keeps its text inputs. */
 .quiz-take .quiz-opt {
   display: flex; align-items: center; gap: 12px; width: 100%; margin: 8px 0 0;

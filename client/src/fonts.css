@@ -1,12 +1,12 @@
 /* Self-hosted, so the fonts are same-origin. Previously a render-blocking
    stylesheet on fonts.googleapis.com had to load and parse before the browser
-   could even discover the font files on fonts.gstatic.com — two serial hops to
+   could even discover the font files on fonts.gstatic.com, two serial hops to
    two third-party hosts. Now the faces are declared in the app CSS and the two
    UI families are preloaded from index.html.
 
    Generated from the exact CSS Google served, so unicode-ranges and metrics are
    unchanged. Only latin and latin-ext are carried (every character this product
-   renders), and each family is one variable file spanning its weight range —
+   renders), and each family is one variable file spanning its weight range,
    which is what Google was serving anyway. font-display: swap is preserved. */
 
 @font-face {

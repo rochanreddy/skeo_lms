@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TAILWIND + SHADCN — the bridge into the Skeo design language
+   TAILWIND + SHADCN: the bridge into the Skeo design language
 
    Two rules govern this file, and breaking either one breaks the app:
 
@@ -8,7 +8,7 @@
       exactly those, so we import theme + utilities only.
 
    2. EVERYTHING HERE IS LAYERED; styles.css is not. Unlayered CSS always beats
-      layered CSS in the cascade, whatever the specificity — so styles.css stays
+      layered CSS in the cascade, whatever the specificity, so styles.css stays
       the authority and shadcn can never quietly restyle an existing page.
       The flip side: a Tailwind utility also loses inside a styles.css selector
       (e.g. an <Input> under `.panel input`). Keep shadcn out of those, or
@@ -16,8 +16,8 @@
 
    Token names below are shadcn's contract, but every value traces back to a
    variable in styles.css, so components inherit the identity instead of
-   shadcn's default neutral gray. Nothing here redefines a styles.css variable
-   — collisions are real (`--ring` is a box-shadow there, a colour here; its
+   shadcn's default neutral gray. Nothing here redefines a styles.css variable,
+   since collisions are real (`--ring` is a box-shadow there, a colour here; its
    `--muted` is a text colour, shadcn's is a surface) so ours are `--sk-` prefixed.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -27,7 +27,7 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 @import 'tw-animate-css';
 
-/* The page follows the palette (Claude by day, Charcoal by night — see
+/* The page follows the palette (Claude by day, Charcoal by night, see
    styles.css); `.dark` is the "stage" (lessons, live sessions), which stays
    dark in both, so wrap a stage region in it and shadcn follows.
 
@@ -84,7 +84,7 @@
   --sk-radius: var(--radius, 18px);
 }
 
-/* The stage: lessons and live sessions — dark in both palettes. */
+/* The stage: lessons and live sessions, dark in both palettes. */
 .dark {
   --sk-background: var(--stage);
   --sk-foreground: #f2f3f5;
@@ -175,7 +175,7 @@
 }
 
 @layer base {
-  /* Tailwind's `border` utility sets width and style but not colour — preflight
+  /* Tailwind's `border` utility sets width and style but not colour, preflight
      normally supplies the default. Without it every shadcn component that says
      `border` (Select's listbox, Card, Input) inherits currentColor and draws a
      hard black rule. Colour only: elements with no border still show none, and
@@ -188,7 +188,7 @@
 
   /* The one piece of preflight shadcn genuinely needs: its `ghost`/`outline`
      button variants set no base background, so without this the UA button
-     chrome shows through. Scoped to buttons only — lists and headings keep
+     chrome shows through. Scoped to buttons only, lists and headings keep
      their UA defaults, which is what markdown rendering relies on. */
   button,
   [type='button'],
