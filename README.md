@@ -57,7 +57,7 @@ second kind needs a world to run against:
   every kind of write clears the cache only run when `TEST_MONGODB_URI` points
   at a local database.
 - `tests/api.test.js` talks to a **running server over HTTP**, on purpose: what
-  it protects is the whole chain — the auth middleware, the role guard and the
+  it protects is the whole chain, the auth middleware, the role guard and the
   error handler together, so that forgetting `requireRole` on a new admin route
   fails a test. It expects `http://localhost:4200` (override with
   `TEST_API_URL`) and a database seeded well enough to sign in as both roles.
@@ -71,7 +71,7 @@ npm run seed:demo                # the student aarav@demo.skeo.in, a batch, a qu
 npm run dev                      # leave this running, then npm test elsewhere
 ```
 
-It only reads — nothing in `api.test.js` creates, edits or deletes a document —
+It only reads: nothing in `api.test.js` creates, edits or deletes a document,
 but point `MONGODB_URI` at a scratch database rather than anything real.
 
 `cd client && npm test` runs the client's tests. They need nothing: the API is
@@ -88,13 +88,13 @@ other port has every request refused by the browser, which looks like the API
 being down rather than like a wrong port.
 
 ## Roles
-`student` · `admin` — a user has exactly one. Signup is student-only; admins are
+`student` · `admin`, a user has exactly one. Signup is student-only; admins are
 provisioned by another admin. Access is role-gated end to end: the API rejects
 unknown or retired roles at login and on every request (`requireAuth` +
 `requireRole`), and the client only mounts each role's own routes.
 
 Accounts carrying a role from the old system (`mentor`, `partner`) are not
-migrated and cannot sign in — `ROLES` in `server/models/User.js` is the single
+migrated and cannot sign in, `ROLES` in `server/models/User.js` is the single
 source of truth, and anything outside it is refused at the auth chokepoint.
 
 **Who does what.** Students learn, submit and ask. Admins do everything else:
@@ -111,7 +111,7 @@ Mounted at `/api/skeo`.
   · `announcements` · `library` · `jobs` · `reports` · `stats` · `search`
   · `users` · `notifications` · `videos` · `support` · `webinars`
 
-`routes/index.js` is the list that counts — if a name is not mounted there, it
+`routes/index.js` is the list that counts, if a name is not mounted there, it
 does not exist.
 
 ## Webinars
@@ -122,7 +122,7 @@ and every student is notified in the app.
 The card is a signpost, not a copy of that page: the speaker, the agenda and
 the registration form already live there, so nothing is re-keyed here and
 there is no second version to keep in sync. Registration happens on the
-landing page — the LMS neither hosts the session nor takes the sign-up.
+landing page: the LMS neither hosts the session nor takes the sign-up.
 
 A date is optional. Give one and the board sorts the schedule, says how far
 off a session is, and moves it into **Past sessions** once it's been; leave it
@@ -136,10 +136,10 @@ and the classifier there decides what is relevant.
 
 It has two halves, shown as one list:
 
-- **The feed** — ten sources, refreshed every morning, read from the pipeline's
+- **The feed**: ten sources, refreshed every morning, read from the pipeline's
   own Atlas cluster with a **read-only** user (`JOBS_MONGODB_URI`). This service
   can never write there, deliberately: several products read that feed.
-- **Hand-posted openings** — the roles that never reach a job board, typed in
+- **Hand-posted openings**: the roles that never reach a job board, typed in
   by an admin. They live in this LMS's own `skeo_job_postings`, because our
   credential for the other cluster is read-only, and they lead page one.
 
@@ -151,7 +151,7 @@ changing `FRESH_DAYS` in `routes/jobs.js` takes effect at once.
 Filters cover category (the seven the pipeline classifies into), place
 (India / International / Remote), work type and experience level, plus search.
 Every filter value is checked against `lib/jobTaxonomy.js` before it reaches
-Mongo — these arrive off a query string, and an unchecked one lets a visitor
+Mongo: these arrive off a query string, and an unchecked one lets a visitor
 send an operator instead of a value.
 
 An admin sees exactly what a student sees. The only extra is posting an opening
@@ -162,7 +162,7 @@ If `JOBS_MONGODB_URI` is unset, or that cluster is unreachable, the board falls
 back to the hand-posted openings and says so rather than erroring.
 
 `node scripts/checkJobsFeed.js` reads the feed the way the board does and prints
-the counts — it tells "the board is empty" apart from "the credential is wrong"
+the counts: it tells "the board is empty" apart from "the credential is wrong"
 without starting the API.
 
 ## Support
@@ -173,7 +173,7 @@ it is wanted on the day something breaks, not every day.
 What they send becomes a ticket with a thread, not an email. Every admin is
 notified, any admin can answer, and the reply lands back in the same thread with
 a notification for the student. A ticket is `open` (waiting on us), `answered`
-(waiting on them) or `resolved` — a reply from either side moves it, and either
+(waiting on them) or `resolved`, a reply from either side moves it, and either
 side can resolve or reopen it.
 
 Admins work the queue from the **Support** tab, which opens on what still needs
@@ -206,7 +206,7 @@ and the option stays hidden.
 
 The API secret never leaves the server. A student's browser asks
 `POST /api/skeo/videos/:videoId/otp` and gets a 5-minute playback ticket, and
-only for a video attached to a lesson in a module they are allowed to see —
+only for a video attached to a lesson in a module they are allowed to see,
 an id alone buys nothing. Playback is watermarked with the viewer's own name
 and email (`VDOCIPHER_WATERMARK=off` turns that off).
 
@@ -235,9 +235,9 @@ credential; the bytes never pass through this API.
 - **Backend** → Render (new Web Service, root `server/`, start `npm start`).
   Env: `MONGODB_URI`, `JWT_SECRET`, `SKEO_APP_URL=https://<your-frontend-domain>`,
   `VDOCIPHER_API_SECRET` (for DRM lesson video),
-  `JOBS_MONGODB_URI` (read-only, feeds the job board — use `jobs_reader`, never
+  `JOBS_MONGODB_URI` (read-only, feeds the job board, use `jobs_reader`, never
   the pipeline's own credentials).
-  `SKEO_APP_URL` is what the CORS allowlist trusts in production — there is no
+  `SKEO_APP_URL` is what the CORS allowlist trusts in production, there is no
   hard-coded fallback domain, so the frontend cannot call the API until it is set.
 - **Frontend** → Vercel (root `client/`). Env: `VITE_API_URL=https://<render-app>/api/skeo`.
   `VITE_API_URL` is read twice at build time: by the app, and by `vite.config.js`
@@ -247,7 +247,7 @@ credential; the bytes never pass through this API.
   **One thing to remember when replacing a font or an icon.** `vercel.json`
   serves everything under `/fonts/`, `/icons/`, plus `favicon.svg` and
   `apple-touch-icon.png`, as immutable for a year. Those names are fixed, not
-  content-hashed like `/assets/` — so a browser that has the old file will keep
+  content-hashed like `/assets/`, so a browser that has the old file will keep
   it for a year. If you change one of those files, change its name too (and the
   reference in `src/fonts.css`, `index.html` or the manifest). Everything under
   `/assets/` is hashed by the build and needs no such care.
@@ -255,4 +255,4 @@ credential; the bytes never pass through this API.
 ## Data isolation rule
 This service must only ever read/write `skeo_*` collections in the `skeo`
 database. Never touch the marketing collections (`leads`, `orders`, `users`) or
-the old LMS's `lms_*` collections — that keeps the shared cluster safe.
+the old LMS's `lms_*` collections: that keeps the shared cluster safe.

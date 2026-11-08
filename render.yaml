@@ -6,13 +6,13 @@
 #   * No persistent disk. The only upload path here is the programme importer,
 #     and it uses multer.memoryStorage() with a 15 MB cap (routes/programs.js),
 #     so nothing is ever written to the filesystem. Render's ephemeral disk is
-#     therefore not a problem — do NOT add one "to be safe"; it costs money and
+#     therefore not a problem, do NOT add one "to be safe"; it costs money and
 #     pins the service to a single instance.
 #
 #   * Mail does not work here yet. See the SMTP note at the foot of this file
 #     before relying on anything that sends email.
 #
-# The client (client/, Vite + React) is not described here — it is static and
+# The client (client/, Vite + React) is not described here, it is static and
 # belongs on Vercel next to the marketing site.
 services:
   - type: web
@@ -20,7 +20,7 @@ services:
     runtime: node
     # Singapore for the same reason menler-lms is: the Atlas cluster and the
     # students are both in India. A US region puts ~335ms on the wire for every
-    # call, and Render cannot move a service between regions after creation —
+    # call, and Render cannot move a service between regions after creation,
     # this is the one setting here that is genuinely irreversible.
     region: singapore
     # Paid, and it has to stay paid now that students are on it.
@@ -34,14 +34,14 @@ services:
     # `starter` does not sleep. It costs about $7 a month, and it is the
     # cheapest speed improvement available to this product by a wide margin.
     #
-    # Changing this file does not move the service on its own — Render applies
+    # Changing this file does not move the service on its own, Render applies
     # a plan change when the blueprint is synced, or you can click it in the
     # dashboard. Check the dashboard says `starter` after deploying.
     plan: starter
     branch: main
     # Two independent npm projects live in this repo; only server/ is deployed.
     rootDir: server
-    # `npm ci` not `npm install` — the lockfile is the point of a reproducible
+    # `npm ci` not `npm install`, the lockfile is the point of a reproducible
     # deploy. @node-rs/bcrypt is a native module and resolves to a prebuilt
     # linux-x64 binary here; no build toolchain is needed for it.
     buildCommand: npm ci
@@ -89,7 +89,7 @@ services:
       - key: JWT_SECRET
         sync: false
 
-      # Video and document integrations. Both are optional — the app starts
+      # Video and document integrations. Both are optional, the app starts
       # without them and the features that need them fail closed rather than
       # taking the process down.
       - key: VDOCIPHER_API_SECRET
@@ -110,7 +110,7 @@ services:
       #
       # MAIL_FROM must be on a domain verified in the Resend dashboard. Leave
       # it unset and the fallback is onboarding@resend.dev, which only
-      # delivers to the Resend account owner's own address — it looks like it
+      # delivers to the Resend account owner's own address, it looks like it
       # works in testing and reaches nobody in production.
       #
       #   MAIL_FROM = Skeo <noreply@your-verified-domain>
@@ -134,13 +134,13 @@ services:
       # The shared secret skeoai.com's server sends to POST /api/skeo/provision
       # after Cashfree confirms a payment. The SAME value is set on the website
       # (Vercel) as SKEO_PROVISION_SECRET. At least 32 characters, or the route
-      # refuses everything — an endpoint that hands out accounts must not be
+      # refuses everything: an endpoint that hands out accounts must not be
       # open because someone forgot to set it.
       - key: PROVISION_SECRET
         sync: false
       # Deliberately absent:
-      #   PORT            — Render injects it; index.js reads process.env.PORT
+      #   PORT           : Render injects it; index.js reads process.env.PORT
       #                     and only falls back to 4200 for local dev. Setting
       #                     it here fights the platform's port detection.
-      #   SKEO_SEED_EMAIL — read only by scripts/seed.js, never by the running
+      #   SKEO_SEED_EMAIL: read only by scripts/seed.js, never by the running
       #   SKEO_SEED_PASSWORD  server. They belong on your laptop, not the host.
