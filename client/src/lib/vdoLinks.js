@@ -12,7 +12,7 @@
 
 /** "1.1 · What…" -> "1.1"; "Module 2" and untitled -> null. */
 export function lessonNumber(title) {
-  const m = /^\s*(\d+(?:\.\d+)+|\d+)(?=[\s.·:)\-–—_]|$)/.exec(String(title || ''));
+  const m = /^\s*(\d+(?:\.\d+)+|\d+)(?=[\s.·:)\-–\u2014_]|$)/.exec(String(title || ''));
   return m ? m[1].replace(/\.$/, '') : null;
 }
 

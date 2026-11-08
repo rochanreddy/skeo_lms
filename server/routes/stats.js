@@ -13,7 +13,7 @@ import { canManageBatch, myBatchIds } from '../utils/access.js';
 
 const router = Router();
 
-// GET /api/skeo/stats/admin-dashboard — everything the admin dashboard charts
+// GET /api/skeo/stats/admin-dashboard: everything the admin dashboard charts
 // need in one round trip: role/batch/submission distributions,
 // enrolment per batch, and student signups over the last 8 weeks.
 router.get('/admin-dashboard', requireAuth, requireRole('admin'), async (_req, res) => {
@@ -66,7 +66,7 @@ router.get('/admin-dashboard', requireAuth, requireRole('admin'), async (_req, r
       { label: 'graded', count: count(submissionAgg, 'graded') },
       { label: 'awaiting review', count: count(submissionAgg, 'submitted') },
     ],
-    perBatch: batchDocs.map((b) => ({ name: b.name.replace(/^Demo — /, ''), count: b.students })),
+    perBatch: batchDocs.map((b) => ({ name: b.name.replace(/^Demo (?:\u2014|·|:|,) /, ''), count: b.students })),
     signups,
   });
 });
@@ -78,7 +78,7 @@ const key = (studentId, scopeId) => `${studentId}:${scopeId}`;
 
 /**
  * Turn one student's engagement metrics into a risk score plus the reasons
- * behind it. Signals are independent and additive — a student failing on two
+ * behind it. Signals are independent and additive, a student failing on two
  * fronts outranks one who's merely quiet. Every signal carries a human-readable
  * reason so the admin sees WHAT to act on, not just a number.
  *
@@ -201,7 +201,7 @@ router.get('/at-risk', requireAuth, requireRole('admin'), async (req, res) => {
         id: sid,
         name: u.fullName || u.email,
         email: u.email,
-        batch: { id: bid, name: b.name.replace(/^Demo — /, '') },
+        batch: { id: bid, name: b.name.replace(/^Demo (?:\u2014|·|:|,) /, '') },
         level,
         score,
         reasons,

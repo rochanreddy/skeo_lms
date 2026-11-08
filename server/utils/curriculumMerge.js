@@ -12,13 +12,19 @@
 
 // Fields the curriculum source seeds on a brand-new lesson and then never
 // touches again: they belong to whoever attached the media. The VdoCipher id
-// matters most — it is minted by an admin's upload and stored nowhere else, so
+// matters most: it is minted by an admin's upload and stored nowhere else, so
 // overwriting it detaches that video permanently.
 export const ADMIN_FIELDS = ['contentUrl', 'videoSource', 'vdoVideoId', 'classLink', 'readingUrl', 'notesUrl'];
 // Fields the curriculum source owns outright and may overwrite freely.
 const LESSON_FIELDS = ['title', 'contentType', 'body', 'order'];
 const CHAPTER_FIELDS = ['title', 'description', 'pageLabel', 'order'];
 const MODULE_FIELDS = ['title', 'description', 'order'];
+
+// Titles that once used an em dash now use a colon ("Memory: What Claude
+// Remembers"). Punctuation alone is not a new node: it keeps its id and the
+// title updates in place.
+const titleKey = (t) => String(t ?? '').replace(/\s*(?:\u2014|:|,)\s*/g, ' ').trim();
+const sameTitle = (a, b) => a === b || titleKey(a) === titleKey(b);
 
 const plain = (doc) => (typeof doc?.toObject === 'function' ? doc.toObject() : { ...doc });
 const differs = (prev, next, fields) =>
@@ -27,7 +33,7 @@ const differs = (prev, next, fields) =>
 function mergeTopics(existing, desired, path, log) {
   return desired.map((d, i) => {
     const prev = existing[i];
-    if (!prev || prev.title !== d.title) {
+    if (!prev || !sameTitle(prev.title, d.title)) {
       log.push(`  + lesson   ${path} > [${i + 1}] ${d.title}`);
       return { ...d, order: i };
     }
@@ -47,7 +53,7 @@ function mergeChapters(existing, desired, path, log) {
   return desired.map((d, i) => {
     const prev = existing[i];
     const here = `${path} > ${d.title}`;
-    if (!prev || prev.title !== d.title) {
+    if (!prev || !sameTitle(prev.title, d.title)) {
       log.push(`  + chapter  ${here}`);
       return { ...d, order: i, topics: mergeTopics([], d.topics || [], here, log) };
     }
@@ -62,13 +68,13 @@ function mergeChapters(existing, desired, path, log) {
 }
 
 // Merge a freshly built module tree onto the stored one. Returns the tree to
-// save plus a human-readable log — empty when nothing changed, which is what
+// save plus a human-readable log, empty when nothing changed, which is what
 // makes "run it twice, the second run reports zero changes" a real check.
 export function mergeModules(existing, desired) {
   const log = [];
   const modules = desired.map((d, i) => {
     const prev = (existing || [])[i];
-    if (!prev || prev.title !== d.title) {
+    if (!prev || !sameTitle(prev.title, d.title)) {
       log.push(`  + module   ${d.title}`);
       return { ...d, order: i, chapters: mergeChapters([], d.chapters || [], d.title, log) };
     }

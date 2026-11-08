@@ -14,7 +14,7 @@ export function mediaOf(topic) {
 }
 
 // A module or chapter has no media of its own, so its page shows the first
-// non-empty value of each field among the lessons beneath it — a week's page
+// non-empty value of each field among the lessons beneath it, so a week's page
 // still offers the reading its sessions carry.
 export function mediaFrom(topics) {
   const out = { pdf: '', notes: '', klass: '' };
@@ -28,34 +28,34 @@ export function mediaFrom(topics) {
 // The module header sits directly above its chapter rows, so a chapter title
 // that repeats the module's own label ("S1 · Week 3: How Claude Thinks" under
 // "Week 3: …") spends one of the two lines we allow saying nothing. Strip the
-// repeated label for display only — the stored title and the page crumb keep
+// repeated label for display only; the stored title and the page crumb keep
 // the full name.
 export function stripParentContext(chapterTitle, moduleTitle) {
   if (!chapterTitle || !moduleTitle) return chapterTitle || '';
   // The module's leading label: the part before its first separator, and only
   // when it carries a number ("Week 3", "M01", "S02"). A prose module title has
   // no label to repeat, so nothing is stripped.
-  const label = (moduleTitle.split(/[:·—–-]/)[0] || '').trim();
+  const label = (moduleTitle.split(/[:·\u2014–-]/)[0] || '').trim();
   if (!label || !/\d/.test(label)) return chapterTitle;
   const esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const out = chapterTitle
-    .replace(new RegExp(`\\s*\\b${esc}\\b\\s*[:·—–-]?\\s*`, 'gi'), ' ')
+    .replace(new RegExp(`\\s*\\b${esc}\\b\\s*[:·\u2014–-]?\\s*`, 'gi'), ' ')
     .replace(/\s{2,}/g, ' ')
-    .replace(/^\s*[·:—–-]\s*/, '')
-    .replace(/\s*[·:—–-]\s*$/, '')
+    .replace(/^\s*[·:\u2014–-]\s*/, '')
+    .replace(/\s*[·:\u2014–-]\s*$/, '')
     .trim();
-  // Never strip a title down to nothing — a chapter named exactly after its
+  // Never strip a title down to nothing: a chapter named exactly after its
   // module keeps its name rather than becoming a blank row.
   return out || chapterTitle;
 }
 
 // The week strip has room for a number and a few words, so a module title
 // that opens with its own label ("Week 3: How Claude Thinks", "M02 · Prompts")
-// drops the label — the card already shows the number. A title with no
+// drops the label, since the card already shows the number. A title with no
 // numbered label is returned untouched.
 export function moduleShortTitle(title) {
   if (!title) return '';
-  const m = title.match(/^\s*([^:·—–-]*\d[^:·—–-]*)\s*[:·—–-]\s*(.+)$/);
+  const m = title.match(/^\s*([^:·\u2014–-]*\d[^:·\u2014–-]*)\s*[:·\u2014–-]\s*(.+)$/);
   return m && m[2].trim() ? m[2].trim() : title.trim();
 }
 
@@ -77,6 +77,6 @@ export function writeLastLesson(programId, topicId) {
 // by the line underneath ("Module 1 · Lesson 2 of 54"), so saying it twice
 // just costs a phone its one short line.
 export function lessonWords(title) {
-  const t = (title || '').replace(/^\s*[A-Za-z]?\d+(?:\.\d+)*\s*[·:.\-–—]\s*/, '').trim();
+  const t = (title || '').replace(/^\s*[A-Za-z]?\d+(?:\.\d+)*\s*[·:.\-–\u2014]\s*/, '').trim();
   return t || title || '';
 }
