@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { JobPosting } from '../models/JobPosting.js';
+import { JobClick } from '../models/JobClick.js';
 import { ScrapedJob } from '../models/ScrapedJob.js';
 import { jobsDbConfigured } from '../db.js';
 import {
@@ -450,6 +451,24 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   });
 
   res.status(201).json({ job: shapeManual(job.toObject()) });
+});
+
+// GET /api/skeo/jobs/clicks/mine: how many different jobs this user opened.
+router.get('/clicks/mine', requireAuth, async (req, res) => {
+  res.json({ count: await JobClick.countDocuments({ userId: req.user._id }) });
+});
+
+// POST /api/skeo/jobs/:id/click { title?, company? }: the user opened a
+// listing. Recorded once per job; a second click only touches updatedAt.
+router.post('/:id/click', requireAuth, async (req, res) => {
+  const jobId = String(req.params.id).slice(0, 100);
+  const { title, company } = req.body || {};
+  await JobClick.updateOne(
+    { userId: req.user._id, jobId },
+    { $set: { title: String(title || '').slice(0, 200), company: String(company || '').slice(0, 200) } },
+    { upsert: true },
+  ).catch(() => {});
+  res.json({ ok: true });
 });
 
 // DELETE /api/skeo/jobs/:id, removes a hand-posted opening.

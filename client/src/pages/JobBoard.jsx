@@ -492,6 +492,12 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
   const level = job.experienceLevel !== 'unspecified' ? job.experienceLevel : '';
   const applyHref = httpUrl(job.url);
   const canRemove = isAdmin && job.origin === 'manual';
+  // Counted on the student home as "Jobs opened". Fire and forget: the link
+  // opens in a new tab, so this page stays and the request finishes.
+  const recordClick = () => {
+    if (!job.id) return;
+    api(`/jobs/${encodeURIComponent(job.id)}/click`, { method: 'POST', body: { title: job.title, company: job.company } }).catch(() => {});
+  };
 
   return (
     <article className="job-card">
@@ -503,7 +509,7 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
             {/* The link stretches over the card, so the whole listing opens the
                 posting while the accessible name stays the role itself. */}
             {applyHref ? (
-              <a href={applyHref} target="_blank" rel="noreferrer noopener">
+              <a href={applyHref} target="_blank" rel="noreferrer noopener" onClick={recordClick}>
                 {job.title || 'Untitled posting'}
               </a>
             ) : (
@@ -537,6 +543,7 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
             <a
               className="btn job-apply"
               href={applyHref}
+              onClick={recordClick}
               target="_blank"
               rel="noreferrer noopener"
               aria-label={`Apply for ${job.title || 'this role'}${job.company ? ` at ${job.company}` : ''} (opens in a new tab)`}
