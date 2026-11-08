@@ -90,4 +90,19 @@ describe('the curriculum editor and its videos', () => {
     fireEvent.click(await screen.findByText('1.3 · Hallucinations'));
     expect(screen.getByText('Video hosting is not set up on the server.')).toBeTruthy();
   });
+
+  it('adds the missing module intro and recap in one click, then wants a save', async () => {
+    render(<CurriculumEditor programId="p1" onClose={() => {}} />);
+    const add = await screen.findByRole('button', { name: 'Add 2 lessons' });
+    expect(document.querySelector('.ce-frame').textContent).toContain('1.0 Module Intro');
+    fireEvent.click(add);
+    expect(screen.getByText('1.0 · Module Intro')).toBeTruthy();
+    expect(screen.getByText('Module 1 Recap')).toBeTruthy();
+    expect(document.querySelector('.ce-frame')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeTruthy();
+    const rows = [...document.querySelectorAll('.ce-tree .ce-topic-title')].map((e) => e.textContent);
+    expect(rows[0]).toBe('1.0 · Module Intro');
+    expect(rows[1]).toBe('1.1 · What Generative AI Actually Is');
+    expect(rows.at(-1)).toBe('Module 1 Recap');
+  });
 });

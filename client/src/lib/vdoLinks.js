@@ -10,8 +10,11 @@
  * guessing between them is how the wrong video ends up on a lesson.
  */
 
-/** "1.1 · What…" -> "1.1"; "Module 2" and untitled -> null. */
+/** "1.1 · What…" -> "1.1"; "Module 3 Recap" (or "M03 Recap") -> "3.recap";
+ * "Module 2" and untitled -> null. */
 export function lessonNumber(title) {
+  const r = /^\s*(?:module\s*|m)0*(\d+)\s*[·:\-–—_]?\s*recap\b/i.exec(String(title || ''));
+  if (r) return `${r[1]}.recap`;
   const m = /^\s*(\d+(?:\.\d+)+|\d+)(?=[\s.·:)\-–\u2014_]|$)/.exec(String(title || ''));
   return m ? m[1].replace(/\.$/, '') : null;
 }

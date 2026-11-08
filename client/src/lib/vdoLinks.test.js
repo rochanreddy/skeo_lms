@@ -24,6 +24,10 @@ describe('lesson numbers', () => {
     expect(lessonNumber('1.10 Wrap up')).toBe('1.10');
     expect(lessonNumber('Sample Video')).toBeNull();
     expect(lessonNumber('Module 2')).toBeNull();
+    expect(lessonNumber('Module 3 Recap')).toBe('3.recap');
+    expect(lessonNumber('Module 3 Recap.mp4')).toBe('3.recap');
+    expect(lessonNumber('M03 Recap.mp4')).toBe('3.recap');
+    expect(lessonNumber('3.0 · Module Intro')).toBe('3.0');
     expect(lessonNumber('2026report.mp4')).toBeNull();
     expect(lessonNumber('')).toBeNull();
     expect(lessonNumber(undefined)).toBeNull();

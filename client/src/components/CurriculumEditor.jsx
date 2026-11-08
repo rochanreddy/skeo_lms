@@ -5,6 +5,7 @@ import { ProjectsManager, QuizzesManager } from './CourseWork.jsx';
 import VdoLibrary from './VdoLibrary.jsx';
 import VdoCheck from './VdoCheck.jsx';
 import { isReady, loadLibrary } from '../lib/vdoLinks.js';
+import { addFrame, missingFrame } from '../lib/courseFrame.js';
 
 // Admin curriculum builder for one program. Upload a doc to auto-structure it,
 // then review/edit the Module → Chapter → Topic tree and publish.
@@ -64,6 +65,15 @@ export default function CurriculumEditor({ programId, onClose }) {
     }
     return { modules: modules.length, topics, videos, linked };
   }, [modules]);
+
+  // Module intros and recaps the course does not have yet.
+  const frame = useMemo(() => missingFrame(modules), [modules]);
+  const addIntrosAndRecaps = () => {
+    const n = frame.count;
+    touch((m) => { addFrame(m); });
+    setSel(null); // lessons moved down a slot; the open one may be another now
+    flash(`Added ${n} lesson${n === 1 ? '' : 's'}. Save to show ${n === 1 ? 'it' : 'them'} to students.`);
+  };
 
   // ── Tree mutators ──
   const addModule = () => touch((m) => m.push({ title: 'New module', order: m.length, chapters: [] }));
@@ -166,6 +176,22 @@ export default function CurriculumEditor({ programId, onClose }) {
 
       {view === 'curriculum' && (
       <>
+
+      {frame.count > 0 && (
+        <div className="vc vc-note ce-frame" role="note">
+          <div className="vc-head">
+            <div>
+              <strong>{frame.intros.length && frame.recaps.length ? 'Add the module intros and recaps' : frame.intros.length ? 'Add the module intros' : 'Add the module recaps'}</strong>
+              <p className="vc-sub">
+                {frame.intros.length > 0 && <>{frame.intros.map((mi) => `${mi + 1}.0`).join(', ')} Module Intro at the start of {frame.intros.length === 1 ? 'its module' : 'their modules'}. </>}
+                {frame.recaps.length > 0 && <>{frame.recaps.length === 1 ? `Module ${frame.recaps[0] + 1} Recap at its end` : `A Module N Recap at the end of ${frame.recaps.length === modules.length ? `all ${modules.length} modules` : `modules ${frame.recaps.map((mi) => mi + 1).join(', ')}`}`}. </>}
+                Every lesson already here keeps its place in order, its video and its students’ progress. Save afterwards.
+              </p>
+            </div>
+            <div className="vc-actions"><button className="btn sm" onClick={addIntrosAndRecaps}>Add {frame.count} lesson{frame.count === 1 ? '' : 's'}</button></div>
+          </div>
+        </div>
+      )}
 
       {vdoReady && <VdoCheck modules={modules} onLink={linkVideos} onOpen={(p) => select({ mi: p.mi, ci: p.ci, ti: p.ti })} />}
 
