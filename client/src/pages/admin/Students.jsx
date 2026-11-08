@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
 
-const PAGE = 50; // rows drawn per batch — see shownCount below
+const PAGE = 50; // rows drawn per batch, see shownCount below
 
 // Admin: add students and see everyone. Add a student here (creates the account),
 // or enrol them straight into a cohort under Batches (which also auto-creates).
@@ -18,7 +18,7 @@ export default function AdminStudents() {
   const [loading, setLoading] = useState(true);
   // The roll only grows, and every row is a panel with nested elements. Render
   // a page of them and extend on demand rather than committing the whole list
-  // to the DOM on arrival — the data is all here either way, so search, counts
+  // to the DOM on arrival, the data is all here either way, so search, counts
   // and the empty states are unaffected.
   const [shownCount, setShownCount] = useState(PAGE);
 
@@ -58,14 +58,14 @@ export default function AdminStudents() {
         <div className="inline-form">
           <input placeholder="Full name" value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
           <input type="email" placeholder="Email (the one they enrolled with)" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required />
-          <input placeholder="Password (optional — auto if blank)" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
+          <input placeholder="Password (optional: auto if blank)" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
           <button className="btn sm" disabled={busy}>{busy ? 'Adding…' : 'Add student'}</button>
         </div>
         <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>They must change the password on first login. To also put them in a cohort, use Batches → Enrol student.</p>
         {err && <span className="error" role="alert">{err}</span>}
         {temp && (
           <div className="tempbox">
-            ✅ Created <strong>{temp.email}</strong> — {temp.custom ? 'password' : 'temp password'}: <code>{temp.password}</code>
+            ✅ Created <strong>{temp.email}</strong>, {temp.custom ? 'password' : 'temp password'}: <code>{temp.password}</code>
             <div className="muted">Share it; they'll set their own password on first login.</div>
           </div>
         )}
@@ -81,7 +81,7 @@ export default function AdminStudents() {
         {!loading && students.slice(0, shownCount).map((s) => (
           <div className="panel list-row row-click" key={s.id} onClick={() => navigate(`/app/students/${s.id}`)}>
             <div>
-              <strong>{s.full_name || '—'}</strong>
+              <strong>{s.full_name || '-'}</strong>
               {s.blocked?.lms && <span className="badge badge-blocked" style={{ marginLeft: 8 }}>blocked</span>}
               <div className="muted">{s.email}</div>
             </div>
@@ -93,7 +93,7 @@ export default function AdminStudents() {
         ))}
         {!loading && students.length > shownCount && (
           <button className="btn sm ghost" onClick={() => setShownCount((n) => n + PAGE)}>
-            Show more — {students.length - shownCount} remaining
+            Show more: {students.length - shownCount} remaining
           </button>
         )}
         {!loading && students.length === 0 && (

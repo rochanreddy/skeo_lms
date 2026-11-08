@@ -6,7 +6,7 @@ import SupportThread, { StatusBadge } from '../../components/SupportThread.jsx';
 // Admin: the queue of everything students have raised about the LMS.
 //
 // It opens on "Needs a reply" rather than on everything, because that is the
-// only view with work in it — the rest is archive. Threads expand in place;
+// only view with work in it, the rest is archive. Threads expand in place;
 // answering never leaves the queue.
 
 const FILTERS = [
@@ -37,7 +37,7 @@ export default function AdminSupport() {
 
   useEffect(() => { load(); }, []);
 
-  // From the counts, not from `tickets` — the list stops at 100, the totals don't.
+  // From the counts, not from `tickets`, the list stops at 100, the totals don't.
   const total = (counts.open || 0) + (counts.answered || 0) + (counts.resolved || 0);
 
   const shown = useMemo(() => {
@@ -52,7 +52,7 @@ export default function AdminSupport() {
   }, [tickets, filter, q]);
 
   // Replying changes a ticket's status, which can move the ticket out from
-  // under the current tab — so the tab counts move with it. They're adjusted by
+  // under the current tab, so the tab counts move with it. They're adjusted by
   // the delta rather than recounted from `tickets`: the list is capped at 100
   // and the counts aren't, so a recount would quietly understate a long queue.
   const replace = (updated) => {
@@ -113,7 +113,7 @@ export default function AdminSupport() {
       {loading && [0, 1, 2].map((n) => <div key={n} className="panel skeleton-row" style={{ height: 92, marginBottom: 12 }} />)}
       {!loading && shown.length === 0 && (
         <p className="muted">
-          {filter === 'open' ? 'Nothing waiting on us — the queue is clear.' : 'Nothing here.'}
+          {filter === 'open' ? 'Nothing waiting on us. The queue is clear.' : 'Nothing here.'}
         </p>
       )}
 
@@ -140,7 +140,7 @@ export default function AdminSupport() {
 
               {expanded && (
                 <>
-                  {/* Straight through to the record of whoever is asking —
+                  {/* Straight through to the record of whoever is asking,
                       half of answering these is knowing where they're up to. */}
                   {t.userId?._id && (
                     <div className="support-who-link">

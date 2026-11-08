@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import BatchWorkspace from '../../components/BatchWorkspace.jsx';
 
-// Admin: the course workspace — roster, announcements, assignments/projects,
+// Admin: the course workspace, roster, announcements, assignments/projects,
 // quizzes and the gradebook.
 //
 // There are no cohorts in this product: one course, one roster. A single Batch
 // record still backs it server-side (assignments, quizzes and announcements all
-// hang off a batchId), but that's plumbing — it is never surfaced as a choice.
+// hang off a batchId), but that's plumbing, it is never surfaced as a choice.
 // This page opens that one record directly, and creates it if it's missing.
 export default function AdminCourse() {
   const [batchId, setBatchId] = useState(null);
@@ -29,7 +29,7 @@ export default function AdminCourse() {
     try {
       const { programs } = await api('/programs');
       const program = (programs || [])[0];
-      if (!program) return setErr('Publish a programme first — the course attaches to it.');
+      if (!program) return setErr('Publish a programme first, since the course attaches to it.');
       await api('/batches', { method: 'POST', body: { programId: program._id, name: program.title, status: 'ongoing' } });
       load();
     } catch (e) { setErr(e.message); }

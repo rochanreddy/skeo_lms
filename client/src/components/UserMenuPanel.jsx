@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu.jsx';
 
-// Everything about the account menu that needs Radix — and, through it,
+// Everything about the account menu that needs Radix, and, through it,
 // floating-ui. Split out of UserMenu so none of it sits on the critical path:
 // the shell paints a plain button, and this arrives on the first interaction.
 //
@@ -23,7 +23,7 @@ export default function UserMenuPanel({ user, logout, open, onOpenChange }) {
 
   const name = user.full_name || user.email;
   const initial = (name || '?')[0].toUpperCase();
-  // Admins get "Account" instead of "Profile" in the dock — match the route.
+  // Admins get "Account" instead of "Profile" in the dock: match the route.
   const profilePath = user.role === 'admin' ? '/app/account' : '/app/profile';
 
   return (
@@ -57,7 +57,7 @@ export default function UserMenuPanel({ user, logout, open, onOpenChange }) {
           </DropdownMenuItem>
 
           {/* Where a student goes when the LMS itself is the problem. Admins
-              don't get it here — Support is a dock tab for them, because for
+              don't get it here, Support is a dock tab for them, because for
               them it's a queue to work rather than a way out of a dead end. */}
           {user.role !== 'admin' && (
             <>

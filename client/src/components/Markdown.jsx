@@ -1,11 +1,11 @@
-// A small, safe Markdown renderer — no deps, no dangerouslySetInnerHTML.
+// A small, safe Markdown renderer, no deps, no dangerouslySetInnerHTML.
 // Supports: #/##/### headings, **bold**, *italic*, `code`, ```code blocks```,
 // [links](url), - / * / 1. lists, > quotes, --- rules, and paragraphs.
 import { useMemo } from 'react';
 
 // Keys are positional, never a counter. A module-level seed used to hand every
 // render a fresh set of keys, so React could match nothing against the previous
-// tree and tore down the whole rendered document on each parent state change —
+// tree and tore down the whole rendered document on each parent state change,
 // taking the reader's text selection with it. Position is stable across renders
 // of the same text, which is exactly what reconciliation wants.
 
@@ -36,7 +36,7 @@ function render(text) {
     .split('\n');
   const out = [];
   let i = 0;
-  // Block index doubles as the key — the nth block of a given text is always
+  // Block index doubles as the key, the nth block of a given text is always
   // the nth block, so nothing moves under React between renders.
   const k = () => `b${out.length}`;
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-// One support conversation, rendered the same way for both sides of it — the
+// One support conversation, rendered the same way for both sides of it, the
 // student who raised it and the admin working the queue see the same thread,
 // the same replies and the same status. Only the labels differ, and those come
 // from who is looking.
@@ -8,7 +8,7 @@ import { useState } from 'react';
 const fmt = (d) => new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
 // Status is the one thing a support thread has to say at a glance: who it is
-// waiting on. The wording is written from the reader's side — "waiting on us"
+// waiting on. The wording is written from the reader's side, "waiting on us"
 // means something different to a student than to the admin answering them.
 export const STATUS_LABEL = {
   open: { admin: 'Needs a reply', student: 'With support', tone: 'wait' },

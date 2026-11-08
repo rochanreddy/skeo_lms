@@ -36,7 +36,7 @@ export default function ProgramsManage() {
         <div>
           <div className="eyebrow">{isAdmin ? 'Admin board' : 'Programs'}</div>
           <h1>Programs</h1>
-          <p>Every program and its curriculum — the lessons students see in Learning.</p>
+          <p>Every program and its curriculum: the lessons students see in Learning.</p>
         </div>
       </div>
 

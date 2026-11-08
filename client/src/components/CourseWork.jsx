@@ -7,13 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 // Authoring for the two things students hand in against: projects/assignments
 // and quizzes. Both live under Programs → Manage curriculum, next to the
-// lessons they belong to — writing a module and writing its work is one job.
+// lessons they belong to, writing a module and writing its work is one job.
 // Grading what comes back stays on the Course page.
 
 const dueLabel = (d) => new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 // What an admin can demand inside the student's Drive folder. Written
-// deliverables only — no video or photo requirements. Ticking 'html' also
+// deliverables only: no video or photo requirements. Ticking 'html' also
 // lifts the default block on HTML files for this assignment.
 export const DRIVE_TYPES = [
   { key: 'doc', label: 'Document', hint: 'PDF, Word, text file' },
@@ -38,7 +38,7 @@ export function ProjectsManager({ batchId }) {
     act(() => api(`/assignments/${a._id}`, { method: 'DELETE' }).then(load), 'Deleted');
   };
 
-  if (!batchId) return <p className="muted">No course to attach work to yet — create it on the Course page first.</p>;
+  if (!batchId) return <p className="muted">No course to attach work to yet. Create it on the Course page first.</p>;
 
   return (
     <div>
@@ -113,7 +113,7 @@ const toPickerValue = (iso) => {
 };
 
 // One form, two jobs: posting new work and editing existing work. Pass
-// `initial` to edit — it opens prefilled and stays open.
+// `initial` to edit: it opens prefilled and stays open.
 export function AssignmentForm({ onAdd, initial, onCancel }) {
   const editing = Boolean(initial);
   const [open, setOpen] = useState(editing);
@@ -172,15 +172,15 @@ export function AssignmentForm({ onAdd, initial, onCancel }) {
       <textarea
         className="af-desc"
         rows={6}
-        placeholder={"Explain the task clearly:\n• What students need to do\n• Deliverables to submit\n• How it will be graded\n\nMarkdown supported — **bold**, - lists, `code`."}
+        placeholder={"Explain the task clearly:\n• What students need to do\n• Deliverables to submit\n• How it will be graded\n\nMarkdown supported: **bold**, - lists, `code`."}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
 
       <label className="af-label">Content <span className="muted">(shown beside the submission form)</span></label>
       <div className="af-content">
-        <input className="af-content-field" placeholder="Video URL (https://… .mp4) — plays inline" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
-        <input className="af-content-field" placeholder="PDF URL (https://… .pdf) — opens in the viewer" value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)} />
+        <input className="af-content-field" placeholder="Video URL (https://… .mp4), plays inline" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+        <input className="af-content-field" placeholder="PDF URL (https://… .pdf), opens in the viewer" value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)} />
       </div>
 
       <label className="af-label">Required in the Drive folder</label>
@@ -344,7 +344,7 @@ export function QuizzesManager({ programId, modules, batchId }) {
 }
 
 // Author or edit one quiz. Editing the questions of a quiz students have
-// already sat is refused server-side — the error surfaces in the flash line.
+// already sat is refused server-side, the error surfaces in the flash line.
 function QuizEditor({ initial, onSave, onCancel }) {
   const blank = () => ({ text: '', options: ['', ''], correctIndex: 0, explanation: '' });
   const [title, setTitle] = useState(initial?.title || '');
@@ -406,7 +406,7 @@ function QuizEditor({ initial, onSave, onCancel }) {
           <textarea
             className="quiz-why-input"
             rows={2}
-            placeholder="Explanation (optional) — shown to students after they answer"
+            placeholder="Explanation (optional): shown to students after they answer"
             value={q.explanation}
             onChange={(e) => setQ(qi, { explanation: e.target.value })}
           />

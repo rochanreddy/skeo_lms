@@ -7,7 +7,7 @@ import SkeoWordmark from './components/SkeoWordmark.jsx';
 import Login from './pages/Login.jsx';
 import { forgetDevice } from './pwa.js';
 
-// The signed-in frame — topbar, dock, notification bell, avatar menu, ⌘K entry
+// The signed-in frame: topbar, dock, notification bell, avatar menu, ⌘K entry
 // point. Nobody signed out can see any of it, so it does not belong in the
 // bundle a first-time visitor downloads to reach the sign-in screen.
 //
@@ -15,8 +15,8 @@ import { forgetDevice } from './pwa.js';
 // them nothing: the chunk is fetched while /me is in flight rather than after
 // it answers, and /me is a cross-origin round trip while this is a same-origin
 // file the service worker has usually already precached. The screen shown
-// during that wait is AppSkeleton either way — the same one /me already waits
-// behind — so there is no new loading state anywhere.
+// during that wait is AppSkeleton either way, the same one /me already waits
+// behind: so there is no new loading state anywhere.
 const AppShell = lazy(() => import('./components/AppShell.jsx'));
 
 // Read once, at module scope, before React starts: the answer cannot change
@@ -24,7 +24,7 @@ const AppShell = lazy(() => import('./components/AppShell.jsx'));
 // whole point.
 if (getToken()) import('./components/AppShell.jsx');
 
-// Login stays eager — it's the first paint for anyone signed out. The other
+// Login stays eager: it's the first paint for anyone signed out. The other
 // three are one-off detours (sign-up, a forced reset, a blocked account), so
 // they cost a chunk fetch on the rare visit instead of bytes on every visit.
 const Register = lazy(() => import('./pages/Register.jsx'));
@@ -40,7 +40,7 @@ const Install = lazy(() => import('./pages/Install.jsx'));
 
 // What's on screen while /me is in flight. The topbar and the page frame don't
 // depend on the answer, so they paint immediately rather than after a round
-// trip — only the dock does, because its tabs come from the role.
+// trip: only the dock does, because its tabs come from the role.
 function AppSkeleton() {
   return (
     <div className="app">
@@ -65,8 +65,8 @@ function AppSkeleton() {
 export default function App() {
   // Start from the session this device remembers, so a returning student gets
   // their dashboard on the first paint instead of a skeleton held up by a
-  // round trip to Singapore. /me still runs below and still has the last word
-  // — see the note on getCachedUser() in api.js for why this is safe.
+  // round trip to Singapore. /me still runs below and still has the last word;
+  // see the note on getCachedUser() in api.js for why this is safe.
   const remembered = getCachedUser();
   const [user, setUser] = useState(remembered);
   // Nothing to show yet only when there is a session we know nothing about:
@@ -105,7 +105,7 @@ export default function App() {
   // Remember whoever we end up as, for the next launch.
   useEffect(() => { setCachedUser(user); }, [user]);
 
-  // An admin block takes effect on the next API call — api() broadcasts it so
+  // An admin block takes effect on the next API call, api() broadcasts it so
   // the whole app swaps to the stop page immediately.
   useEffect(() => {
     const onBlocked = (e) => setBlocked(e.detail?.message || '');
@@ -169,7 +169,7 @@ export default function App() {
       {/* Where the emailed reset link lands. Reachable while signed in too: the
           link may be opened in a browser that still holds someone's session. */}
       <Route path="/reset" element={<Suspense fallback={<AppSkeleton />}><ResetPassword /></Suspense>} />
-      {/* PUBLIC, and it has to stay that way — it is printed on paper as a QR
+      {/* PUBLIC, and it has to stay that way, it is printed on paper as a QR
           code and opened by recruiters who have no account. Declared above the
           catch-all so a signed-out visitor is not bounced to /login, and it
           never redirects a signed-in one either: the person checking a

@@ -5,7 +5,7 @@ import LineIcon from '../components/LineIcon.jsx';
 import LessonIcon from '../components/LessonIcon.jsx';
 import { lessonWords } from '../lib/syllabus.js';
 
-// THE STUDENT HOME — four movements, in the order a student actually needs them.
+// THE STUDENT HOME: four movements, in the order a student actually needs them.
 //
 //   01 Progress   where you are in the programme
 //   02 Projects   what you owe
@@ -39,12 +39,12 @@ export default function StudentHome() {
       api('/announcements').catch(() => ({ announcements: [] })),
       api('/notifications').catch(() => ({ items: [] })),
       // Progress goes out with the rest, not behind them. It is keyed on a
-      // programme id this screen does not know until /batches answers — so
+      // programme id this screen does not know until /batches answers, so
       // asking for it used to mean a second round trip, which on a phone in
       // India talking to Singapore made the Progress card, the first thing on
       // the screen, reliably the last thing to fill in. Asked with no id, the
-      // server resolves the programme the student's newest cohort teaches —
-      // the same rule used below — and says which one it picked, so the answer
+      // server resolves the programme the student's newest cohort teaches,
+      // the same rule used below, and says which one it picked, so the answer
       // can be checked rather than assumed.
       api('/progress/me').catch(() => null),
     ]).then(async ([bd, pd, ad, nd, nt, pg]) => {
@@ -62,7 +62,7 @@ export default function StudentHome() {
         if (pg && String(pg.programId) === String(p._id)) {
           setProgress(pg);
         } else {
-          // The two disagreed — the fallback above picked a different
+          // The two disagreed: the fallback above picked a different
           // programme, or this student has no cohort. Ask again, by id.
           api(`/progress/me?programId=${p._id}`).then((d) => { if (alive) setProgress(d); }).catch(() => {});
         }
@@ -78,7 +78,7 @@ export default function StudentHome() {
   const done = useMemo(() => new Set(progress.completedTopics || []), [progress]);
 
   // Each module becomes a station, carrying its own completion.
-  // Titles arrive as "S01 · AI Foundations" — the code is the station number and
+  // Titles arrive as "S01 · AI Foundations", the code is the station number and
   // the name is the label. Keep the whole string when there's no code.
   const stations = useMemo(() => (program?.modules || []).map((m, i) => {
     const topics = (m.chapters || []).flatMap((c) => c.topics || []);
@@ -182,7 +182,7 @@ export default function StudentHome() {
                     className={`sp-seg ${state}`}
                     style={{ '--fill': fill }}
                     onClick={() => navigate('/app/learning')}
-                    title={`${s.code} · ${s.title} — ${s.done} of ${s.total} lessons`}
+                    title={`${s.code} · ${s.title}, ${s.done} of ${s.total} lessons`}
                     aria-label={`${s.title}, ${s.done} of ${s.total} lessons`}
                   >
                     <span className="sp-seg-fill" />
@@ -219,7 +219,7 @@ export default function StudentHome() {
             )}
           </div>
 
-          {/* The one next thing — its own card under the progress, so the
+          {/* The one next thing, its own card under the progress, so the
               thing to do next is never buried inside a diagram. */}
           {nextLesson ? (
             <div className="sh-next">
@@ -249,12 +249,12 @@ export default function StudentHome() {
       {/* ═══ 02 · AT A GLANCE ════════════════════════════════════════════
           Projects, Updates and the standing numbers, three abreast. Each card
           shows the top of its list and hands off to the page that holds the
-          rest — Home answers "where am I", not "show me everything". */}
+          rest: Home answers "where am I", not "show me everything". */}
       <section className="sh-sec">
         <SecHead n="02" title="At a glance" />
         <div className="hg">
 
-          {/* Projects — most urgent first. */}
+          {/* Projects: most urgent first. */}
           <div className="hg-card">
             <div className="hg-head">
               <h3>Projects</h3>
@@ -288,7 +288,7 @@ export default function StudentHome() {
             )}
           </div>
 
-          {/* Updates — announcements and notifications, one feed. */}
+          {/* Updates: announcements and notifications, one feed. */}
           <div className="hg-card">
             <div className="hg-head">
               <h3>Updates</h3>
@@ -314,7 +314,7 @@ export default function StudentHome() {
             )}
           </div>
 
-          {/* Your standing — only figures we actually hold. */}
+          {/* Your standing: only figures we actually hold. */}
           <div className="hg-card hg-standing">
             <div className="hg-head"><h3>Your standing</h3></div>
             <div className="hg-stats">
@@ -355,7 +355,7 @@ export default function StudentHome() {
 
 // One Menler promo slot.
 //
-// Empty by default, and empty is a valid state — an unfilled slot renders a
+// Empty by default, and empty is a valid state, an unfilled slot renders a
 // quiet placeholder rather than collapsing, so the row keeps its shape while
 // creatives are still being written. Fill one by passing `image` (+ `alt`) for
 // a plain creative, or `href` as well to make it a link; `title`/`body` render
@@ -386,7 +386,7 @@ function MenlerAd({ slot, href, image, alt = '', title, body, cta = 'Learn more 
   );
 }
 
-// The numbered section header — the number, the ruled title, a hairline out to
+// The numbered section header, the number, the ruled title, a hairline out to
 // whatever the section wants to put on the right.
 function SecHead({ n, title, children }) {
   return (

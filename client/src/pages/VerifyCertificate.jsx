@@ -5,14 +5,14 @@ import SkeoWordmark from '../components/SkeoWordmark.jsx';
 /**
  * The page behind the QR code on a certificate.
  *
- * PUBLIC. Whoever opens this has no account and no reason to trust us — they
+ * PUBLIC. Whoever opens this has no account and no reason to trust us, they
  * are a recruiter holding a printout, checking whether the person in front of
  * them really did the thing. So it does not use api.js: that helper attaches a
  * Bearer token and, on a 401, tries to refresh and bounces to /login. Here a
  * bare fetch is the right tool, because there is nothing to authenticate and
  * nowhere to send someone who has not signed in.
  *
- * The answer is deliberately small — a name, a programme, a cohort, a date.
+ * The answer is deliberately small, a name, a programme, a cohort, a date.
  * That is what verifying needs, and the server's publicView() is an allowlist
  * rather than the document with fields deleted. See utils/certificates.js.
  */
@@ -36,7 +36,7 @@ export default function VerifyCertificate() {
         const body = await res.json().catch(() => ({}));
         if (cancelled) return;
         // 404 is the honest answer for a code that does not exist, and the
-        // rate limiter's 429 has to be told apart from it — "no such
+        // rate limiter's 429 has to be told apart from it, "no such
         // certificate" would be a lie when we simply refused to look.
         if (res.ok) setState({ status: 'found', cert: body });
         else if (res.status === 429) setState({ status: 'throttled', error: body.error });
@@ -78,7 +78,7 @@ export default function VerifyCertificate() {
             <div className="verify-badge verify-badge--missing">Not found</div>
             <p className="verify-status">
               {state.error || 'No certificate with that ID.'} Check the ID printed under the QR
-              code — it reads SKEO-XXXXX-MMYY-NNNN.
+              code: it reads SKEO-XXXXX-MMYY-NNNN.
             </p>
             <div className="verify-facts"><Fact label="ID checked" value={String(code).toUpperCase()} mono /></div>
           </>
@@ -99,7 +99,7 @@ export default function VerifyCertificate() {
                 recruiter otherwise is the worst thing this page could do. */}
             <p className="verify-status">
               We couldn’t reach the certificate service just now. That says nothing about this
-              certificate — please try again shortly.
+              certificate: please try again shortly.
             </p>
           </>
         )}

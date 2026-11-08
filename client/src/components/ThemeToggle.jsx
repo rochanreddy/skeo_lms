@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Day / night — the website's toggle (skeo_web src/components/ThemeToggle.tsx),
+ * Day / night: the website's toggle (skeo_web src/components/ThemeToggle.tsx),
  * with the same two palettes: Claude by day, Charcoal by night. It writes
  * `data-palette` on <html>, which is what every palette block in styles.css
  * keys off, so switching is a repaint and nothing re-renders.

@@ -9,14 +9,14 @@ import DateTimePicker from '../components/DateTimePicker.jsx';
 // The card is deliberately a signpost, not a copy of the landing page. The
 // speaker, the agenda and the registration form all live on the other side of
 // that link, and duplicating them here would only produce a second version to
-// keep in sync — the stale one being ours.
+// keep in sync: the stale one being ours.
 
 const BLANK = { title: '', landingUrl: '', startsAt: '', note: '' };
 
 const fmtDay = (d) => new Date(d).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
 const fmtTime = (d) => new Date(d).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-// "in 3 days" / "in 2 hours" — the distance is what tells you whether to act
+// "in 3 days" / "in 2 hours", the distance is what tells you whether to act
 // now, and an absolute date on its own never does.
 function countdown(startsAt) {
   const ms = new Date(startsAt) - Date.now();
@@ -43,7 +43,7 @@ function Card({ w, past, canPost, onEdit, onRemove }) {
   const when = startedAt(w);
   return (
     <div className={`panel webinar ${past ? 'past' : ''}`}>
-      {/* The rail only exists when there's a date to put in it — an undated
+      {/* The rail only exists when there's a date to put in it, an undated
           link is an open invitation, and an empty column would just look like
           something failed to load. */}
       {when && (
@@ -90,7 +90,7 @@ export default function Webinars() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   // Ticked so a session that starts while the page is open moves itself out of
-  // "Coming up" — and so "in 40 min" isn't still saying it an hour later.
+  // "Coming up", and so "in 40 min" isn't still saying it an hour later.
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -107,7 +107,7 @@ export default function Webinars() {
 
   // Two lists, sorted in opposite directions on purpose: what's next comes
   // first in a schedule, what's newest comes first in an archive. An undated
-  // masterclass never becomes past — it's an open invitation, so it sits at
+  // masterclass never becomes past, it's an open invitation, so it sits at
   // the end of "Coming up" until an admin takes it down.
   const { upcoming, past } = useMemo(() => {
     const groups = { upcoming: [], past: [] };
@@ -144,7 +144,7 @@ export default function Webinars() {
 
   function edit(w) {
     // The picker speaks 'YYYY-MM-DDTHH:mm' in local time, which is what the
-    // admin typed in the first place — so convert back the same way.
+    // admin typed in the first place, so convert back the same way.
     const pad = (n) => String(n).padStart(2, '0');
     let startsAt = '';
     if (w.startsAt) {
@@ -185,7 +185,7 @@ export default function Webinars() {
           <label>
             Masterclass link
             <input
-              placeholder="lu.ma/… — the landing page students register on"
+              placeholder="lu.ma/…, the landing page students register on"
               value={form.landingUrl}
               onChange={(e) => set('landingUrl')(e.target.value)}
             />
@@ -205,7 +205,7 @@ export default function Webinars() {
             </label>
           </div>
           <label>
-            Note <span className="muted">(optional — anything the landing page doesn't say)</span>
+            Note <span className="muted">(optional: anything the landing page doesn't say)</span>
             <input placeholder="e.g. Open to all cohorts" value={form.note} onChange={(e) => set('note')(e.target.value)} />
           </label>
 
@@ -227,7 +227,7 @@ export default function Webinars() {
 
       {!loading && webinars.length === 0 && (
         <p className="muted">
-          {canPost ? 'No masterclasses pushed yet.' : 'No masterclasses right now — you\'ll be notified when one is announced.'}
+          {canPost ? 'No masterclasses pushed yet.' : 'No masterclasses right now. You\'ll be notified when one is announced.'}
         </p>
       )}
 

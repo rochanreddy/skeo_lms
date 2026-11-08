@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog.jsx';
-// `?url` emits the worker as its own asset and hands us a string — the 1.3 MB
+// `?url` emits the worker as its own asset and hands us a string, the 1.3 MB
 // never enters the bundle, and is only fetched when a PDF is actually opened.
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// A panel over the page — never a navigation, so closing it returns you to the
+// A panel over the page, never a navigation, so closing it returns you to the
 // exact scroll position you left. PDFs render through the custom reader below
 // (paged, zoomable, searchable); Office formats go through Microsoft's embed.
 //
 // `allowNewTab` exists because the same reader can serve opposite purposes.
 // For course material the whole point is to withhold the browser's native
-// viewer, download and print included — so it stays off by default; callers
+// viewer, download and print included, so it stays off by default; callers
 // with nothing to protect can opt in.
 function FileViewer({ label, subtitle, url, onClose, allowNewTab = false, loadBytes }) {
   const ext = (url.split(/[?#]/)[0].split('.').pop() || '').toLowerCase();
@@ -21,7 +21,7 @@ function FileViewer({ label, subtitle, url, onClose, allowNewTab = false, loadBy
 
   // Radix portals this to <body>, which matters here: `.main` carries the
   // page-enter animation, and a filling transform/opacity animation makes that
-  // element a stacking context — an in-place overlay would be trapped inside
+  // element a stacking context, an in-place overlay would be trapped inside
   // it, letting the topbar and the dock paint over the reader at any z-index.
   // Escape, the focus trap and returning focus to the opener are Radix's too;
   // the hand-rolled versions below it only moved focus, they never trapped it,
@@ -34,23 +34,23 @@ function FileViewer({ label, subtitle, url, onClose, allowNewTab = false, loadBy
         className="fv"
         aria-describedby={undefined}
       >
-        <DialogTitle className="sr-only">{`${label} — ${subtitle}`}</DialogTitle>
+        <DialogTitle className="sr-only">{`${label}: ${subtitle}`}</DialogTitle>
         <div className="fv-head">
           <div className="fv-head-copy">
             <div className="fv-kicker">{label}</div>
             <div className="fv-title">{subtitle}</div>
           </div>
           {/* Off for course PDFs (see the note on allowNewTab). Office files
-              always keep it — their embed can fail and there's no other way in. */}
+              always keep it: their embed can fail and there's no other way in. */}
           {(!isPdf || allowNewTab) && <a className="fv-escape" href={url} target="_blank" rel="noreferrer">Open in new tab</a>}
           <button className="fv-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
         {isPdf
           ? <PdfReader url={url} loadBytes={loadBytes} />
-          : <iframe className="fv-frame" src={src} title={`${label} — ${subtitle}`} />}
+          : <iframe className="fv-frame" src={src} title={`${label}: ${subtitle}`} />}
         {isOffice && isLocal && (
           <div className="fv-note">
-            This deck is on a local address, which Microsoft's viewer can't reach — put it on a
+            This deck is on a local address, which Microsoft's viewer can't reach. Put it on a
             public URL to preview it here, or use “Open in new tab”.
           </div>
         )}
@@ -61,7 +61,7 @@ function FileViewer({ label, subtitle, url, onClose, allowNewTab = false, loadBy
 
 // Wrap every occurrence of `q` inside an already-rendered text layer in a
 // <mark>. Works per text node, so a match split across two pdf.js spans (rare,
-// but it happens mid-word) won't light up — the search index below still counts
+// but it happens mid-word) won't light up, the search index below still counts
 // it, so navigation stays correct even when the highlight misses.
 function highlightMatches(container, q) {
   const needle = q.toLowerCase();
@@ -93,7 +93,7 @@ function highlightMatches(container, q) {
 
 // One page of the document. Mounted for every page in the PDF so the scrollbar
 // tells the truth about length, but only PAINTED when it comes near the
-// viewport — a 200-page deck would otherwise hold 200 canvases of bitmap.
+// viewport: a 200-page deck would otherwise hold 200 canvases of bitmap.
 // Leaving the neighbourhood frees the canvas again.
 function PdfPage({ doc, lib, num, zoom, term, base, root, onCurrent, bind }) {
   const hostRef = useRef(null);
@@ -118,7 +118,7 @@ function PdfPage({ doc, lib, num, zoom, term, base, root, onCurrent, bind }) {
   }, [root]);
 
   // Whichever page is crossing the middle of the viewport is "the page you're
-  // on" — that's what the toolbar counter reports.
+  // on", that's what the toolbar counter reports.
   useEffect(() => {
     const el = hostRef.current;
     if (!el || !root) return;
@@ -145,7 +145,7 @@ function PdfPage({ doc, lib, num, zoom, term, base, root, onCurrent, bind }) {
       if (cancelled || !canvasRef.current) return;
 
       // Two viewports: CSS scale for the DOM layers, times device pixel ratio
-      // for the canvas — otherwise glyphs are soft on retina screens.
+      // for the canvas: otherwise glyphs are soft on retina screens.
       const viewport = p.getViewport({ scale: zoom });
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const canvasVp = p.getViewport({ scale: zoom * dpr });
@@ -204,14 +204,14 @@ function PdfPage({ doc, lib, num, zoom, term, base, root, onCurrent, bind }) {
             try {
               const d = typeof a.dest === 'string' ? await doc.getDestination(a.dest) : a.dest;
               if (d) window.dispatchEvent(new CustomEvent('pdfr:goto', { detail: (await doc.getPageIndex(d[0])) + 1 }));
-            } catch { /* broken internal link — stay put */ }
+            } catch { /* broken internal link: stay put */ }
           });
         }
         box.append(el);
       }
       } catch {
         // The document was closed (or destroyed) while this page was still
-        // painting. Nothing to recover — just don't let the rejection escape.
+        // painting. Nothing to recover, just don't let the rejection escape.
       }
     })();
     return () => {
@@ -241,17 +241,17 @@ function PdfPage({ doc, lib, num, zoom, term, base, root, onCurrent, bind }) {
 // our own chrome around the whole thing. Owning the chrome is the point: no
 // download, no print, no Save As.
 //
-// Pages scroll continuously, the way a document wants to be read — the toolbar
+// Pages scroll continuously, the way a document wants to be read, the toolbar
 // counter follows the scroll rather than driving it.
 //
 // The text layer is transparent DOM text positioned exactly over the painted
-// glyphs. That is what makes selection, copy, find and links work at all — the
+// glyphs. That is what makes selection, copy, find and links work at all, the
 // canvas alone is just pixels.
 //
 // The library is imported lazily, so a student who never opens a document never
 // pays for it.
 //
-// `loadBytes`, when given, supplies the document instead of `url` — for files
+// `loadBytes`, when given, supplies the document instead of `url`, for files
 // behind the API's auth (the paid playbooks), which pdf.js cannot fetch itself.
 // It is read through a ref so a fresh closure each render doesn't reopen it.
 function PdfReader({ url, loadBytes }) {
@@ -272,7 +272,7 @@ function PdfReader({ url, loadBytes }) {
   const [pageBox, setPageBox] = useState('1');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [term, setTerm] = useState('');   // debounced — drives search AND repaint
+  const [term, setTerm] = useState('');   // debounced, drives search AND repaint
   const [hits, setHits] = useState([]);   // page number per match, in reading order
   const [hitIdx, setHitIdx] = useState(0);
   const [reloadKey, setReloadKey] = useState(0); // bump to retry a failed load
@@ -299,7 +299,7 @@ function PdfReader({ url, loadBytes }) {
         docRef.current = doc;
         setBase({ w: unit.width, h: unit.height });
         setPages(doc.numPages);
-        // Open at the width of the panel — the default a reader expects,
+        // Open at the width of the panel, the default a reader expects,
         // rather than an arbitrary percentage.
         const room = (stageRef.current?.clientWidth || unit.width) - 56;
         setZoom(Math.min(2, Math.max(0.5, +(room / unit.width).toFixed(2))));
@@ -312,7 +312,7 @@ function PdfReader({ url, loadBytes }) {
     })();
     // Closing the panel unmounts this. destroy() can throw or reject while a
     // page is mid-render, and an exception escaping a cleanup takes the whole
-    // React tree down with it — which showed up as a blank screen on ✕.
+    // React tree down with it, which showed up as a blank screen on ✕.
     return () => {
       dead = true;
       const d = docRef.current;
@@ -402,7 +402,7 @@ function PdfReader({ url, loadBytes }) {
   };
 
   // Up/Down scroll the stage natively. Left/Right jump a whole page, which
-  // vertical scrolling can't express — unless you're typing in the find box.
+  // vertical scrolling can't express, unless you're typing in the find box.
   useEffect(() => {
     const onKey = (e) => {
       const t = e.target;

@@ -5,7 +5,7 @@ import SkeoWordmark from '../components/SkeoWordmark.jsx';
 import LoginArt from '../components/LoginArt.jsx';
 import GetSkeo, { PRICING_URL } from '../components/GetSkeo.jsx';
 
-// The demo accounts, as data — the box below fills the form from these instead
+// The demo accounts, as data, the box below fills the form from these instead
 // of asking whoever's driving to retype a password from the screen.
 // The admin password here is seed.js's fallback: if SKEO_SEED_PASSWORD is set
 // in the server .env, that wins and this row will not open the door.
@@ -24,7 +24,7 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [err, setErr] = useState('');
-  // Set when the server says this person has no skeo plan — no account for the
+  // Set when the server says this person has no skeo plan, no account for the
   // address, or an account with nothing paid for. They get the way to buy one
   // instead of a red "invalid" they cannot fix.
   const [notPurchased, setNotPurchased] = useState('');
@@ -58,7 +58,7 @@ export default function Login({ onLogin }) {
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
           <h2><span>Build.</span><span>Learn.</span><span>Monetize.</span></h2>
-          <p>skeo is where you learn AI by doing it — lessons, hands-on projects and live masterclasses that leave you with real work to show, a certificate to prove it, and a job board to take it to.</p>
+          <p>skeo is where you learn AI by doing it: lessons, hands-on projects and live masterclasses that leave you with real work to show, a certificate to prove it, and a job board to take it to.</p>
         </div>
         <LoginArt />
       </div>
@@ -76,7 +76,7 @@ export default function Login({ onLogin }) {
           </div>
           <div className="field">
             <label htmlFor="login-password">Password</label>
-            {/* Reveal toggle — mistyping a password you can't see is the single
+            {/* Reveal toggle: mistyping a password you can't see is the single
                 most common reason a sign-in fails twice in a row. */}
             <div className="field-with-action">
               <input id="login-password" type={show ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required aria-describedby={err ? 'login-error' : undefined} />
@@ -105,7 +105,7 @@ export default function Login({ onLogin }) {
 
           {SHOW_DEMOS && (
             <div className="demo-box">
-              <div className="eyebrow">Demo accounts — click to fill</div>
+              <div className="eyebrow">Demo accounts: click to fill</div>
               {DEMOS.map((d) => (
                 <button
                   type="button"

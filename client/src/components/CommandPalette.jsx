@@ -4,12 +4,12 @@ import { api } from '../api.js';
 import Icon from './Icon.jsx';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog.jsx';
 
-// ⌘K — navigation AND search.
+// ⌘K: navigation AND search.
 //
 // It used to list nav destinations only, which meant finding one lesson still
 // took three clicks through the curriculum tree. Now the same box queries
 // /search: lessons (by title AND by body text), assignments, sessions, library
-// resources and — for staff — people. Enter lands you *inside* the lesson, not
+// resources and: for staff, people. Enter lands you *inside* the lesson, not
 // on the page that contains it.
 //
 // Empty query still shows the destinations, so the old muscle memory is intact.
@@ -48,7 +48,7 @@ export default function CommandPalette({ open, onClose, tabs, user, onLogout }) 
   const listRef = useRef(null);
   const navigate = useNavigate();
 
-  // Destinations — always available, and the whole list when the box is empty.
+  // Destinations: always available, and the whole list when the box is empty.
   const navItems = useMemo(() => {
     const go = tabs.map((t) => ({
       id: `go:${t.path}`,
@@ -57,7 +57,7 @@ export default function CommandPalette({ open, onClose, tabs, user, onLogout }) 
       icon: t.label,
       run: () => navigate(t.path ? `/app/${t.path}` : '/app'),
     }));
-    // Support has no dock tab for a student, so ⌘K is the other way in —
+    // Support has no dock tab for a student, so ⌘K is the other way in,
     // reachable by name from anywhere, which is the point of it.
     const help = user?.role === 'admin'
       ? []
@@ -104,7 +104,7 @@ export default function CommandPalette({ open, onClose, tabs, user, onLogout }) 
       icon: KIND[r.type]?.icon || 'home',
       run: () => navigate(r.to),
     }));
-    // Content leads once you're actually searching — destinations are a short
+    // Content leads once you're actually searching, destinations are a short
     // known list you can also just reach from the dock.
     return q.trim().length >= 2 ? [...content, ...localHits] : localHits;
   }, [remote, localHits, q, navigate]);
@@ -139,7 +139,7 @@ export default function CommandPalette({ open, onClose, tabs, user, onLogout }) 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       {/* The Skeo palette sits high on the page rather than dead-centre, and
-          carries no close button — `esc` is in the footer hint. The utilities
+          carries no close button, `esc` is in the footer hint. The utilities
           here only undo shadcn's centring, padding and border; `.cmd` itself
           still supplies the box. */}
       <DialogContent

@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover.jsx';
 // The Radix half of the bell: the popover supplies Escape, focus movement into
 // the list and aria-expanded, none of which the hand-rolled overlay ever did.
 // Split out of NotificationBell so floating-ui and the popper stack stay off
-// the critical path — the polling and the unread count live in the parent.
+// the critical path: the polling and the unread count live in the parent.
 export default function NotificationPanel({ items, unread, open, onOpenChange, onPick }) {
   return (
     <div className="notif">

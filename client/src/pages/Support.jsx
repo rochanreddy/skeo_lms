@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import SupportThread, { StatusBadge } from '../components/SupportThread.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 
-// Where a student goes when the LMS itself is the problem — a video that won't
+// Where a student goes when the LMS itself is the problem, a video that won't
 // play, a lesson that's locked, a grade that looks wrong. It isn't in the dock:
 // you reach it from the account menu or ⌘K, on the day you need it.
 //
@@ -77,7 +77,7 @@ export default function Support() {
           <label>
             Subject
             <input
-              placeholder="A short summary — e.g. “Module 3 video won't load”"
+              placeholder="A short summary: e.g. “Module 3 video won't load”"
               value={form.subject}
               maxLength={140}
               onChange={(e) => { setSent(false); setForm((f) => ({ ...f, subject: e.target.value })); }}
@@ -97,7 +97,7 @@ export default function Support() {
           Details
           <textarea
             rows={5}
-            placeholder="What were you doing, what did you expect, and what happened instead? Anything you can add — the lesson name, the time it happened — gets this fixed faster."
+            placeholder="What were you doing, what did you expect, and what happened instead? Anything you can add (the lesson name, the time it happened) gets this fixed faster."
             value={form.message}
             maxLength={4000}
             onChange={(e) => { setSent(false); setForm((f) => ({ ...f, message: e.target.value })); }}
@@ -107,7 +107,7 @@ export default function Support() {
           <button className="btn" disabled={busy || !form.subject.trim() || !form.message.trim()}>
             {busy ? 'Sending…' : 'Send to support'}
           </button>
-          {sent && <span className="support-sent">Sent — we'll reply in this thread.</span>}
+          {sent && <span className="support-sent">Sent: we'll reply in this thread.</span>}
           {err && <span className="error" role="alert">{err}</span>}
         </div>
       </form>
@@ -115,7 +115,7 @@ export default function Support() {
       <section>
         <h3 className="ruled-head">Your requests</h3>
         {loading && [0, 1].map((n) => <div key={n} className="panel skeleton-row" style={{ height: 92, marginBottom: 12 }} />)}
-        {!loading && tickets.length === 0 && <p className="muted">Nothing raised yet — anything you send lands here.</p>}
+        {!loading && tickets.length === 0 && <p className="muted">Nothing raised yet: anything you send lands here.</p>}
 
         <div className="list">
           {tickets.map((t) => {

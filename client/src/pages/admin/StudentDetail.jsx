@@ -4,7 +4,7 @@ import { api, downloadFile } from '../../api.js';
 import { Donut, Meter, SEQ, SEQ_AQUA } from '../../components/Charts.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../../components/SubmissionCheck.jsx';
 
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '-');
 
 // Drill-down into one student: profile, every batch, every
 // assignment/project with submission state, quiz attempts, lesson progress.
@@ -112,7 +112,7 @@ export default function StudentDetail() {
       {err && <p className="error">{err}</p>}
       {isAdmin && lmsBlocked && (
         <div className="blockbox">
-          This student is blocked from the entire LMS{u.blocked.reason ? ` — “${u.blocked.reason}”` : ''}. They cannot log in or use any feature until unblocked.
+          This student is blocked from the entire LMS{u.blocked.reason ? `: “${u.blocked.reason}”` : ''}. They cannot log in or use any feature until unblocked.
         </div>
       )}
 
@@ -133,8 +133,8 @@ export default function StudentDetail() {
         <div className="panel chart-card">
           <div className="eyebrow">Performance</div>
           <div className="perf-stats">
-            <div><div className="stat-label">Avg assignment score</div><div className="perf-num">{avgScore ?? '—'}{avgScore != null && <span className="perf-sub">/10</span>}</div></div>
-            <div><div className="stat-label">Quiz average</div><div className="perf-num">{quizAvg == null ? '—' : `${quizAvg}%`}</div></div>
+            <div><div className="stat-label">Avg assignment score</div><div className="perf-num">{avgScore ?? '-'}{avgScore != null && <span className="perf-sub">/10</span>}</div></div>
+            <div><div className="stat-label">Quiz average</div><div className="perf-num">{quizAvg == null ? '-' : `${quizAvg}%`}</div></div>
             <div><div className="stat-label">Quizzes taken</div><div className="perf-num">{data.quizAttempts.length}</div></div>
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function StudentDetail() {
         </section>
       )}
 
-      {/* Course — with a per-student block */}
+      {/* Course: with a per-student block */}
       <section className="panel" style={{ marginTop: 18 }}>
         <h3>Course</h3>
         {data.batches.length === 0 && <p className="muted">Not enrolled yet.</p>}
@@ -173,7 +173,7 @@ export default function StudentDetail() {
         ))}
       </section>
 
-      {/* Curriculum modules — with per-module block (admin only) */}
+      {/* Curriculum modules: with per-module block (admin only) */}
       {isAdmin && (data.modules || []).length > 0 && (
         <section className="panel" style={{ marginTop: 18 }}>
           <h3>Curriculum modules</h3>
@@ -192,7 +192,7 @@ export default function StudentDetail() {
         </section>
       )}
 
-      {/* Assignments & projects — with per-item block */}
+      {/* Assignments & projects: with per-item block */}
       <section className="panel" style={{ marginTop: 18 }}>
         <h3>Assignments &amp; projects</h3>
         {data.assignments.length === 0 && <p className="muted">No assignments in their batches yet.</p>}
@@ -212,12 +212,12 @@ export default function StudentDetail() {
                       <td>{a.title} {a.blocked && isAdmin && <span className="badge badge-blocked">blocked</span>}</td>
                       <td><span className={`badge ${a.type === 'project' ? 'badge-accent' : ''}`}>{a.type}</span></td>
                       <td>{a.batchName}</td>
-                      <td>{a.dueDate ? fmtDate(a.dueDate) : '—'}</td>
+                      <td>{a.dueDate ? fmtDate(a.dueDate) : '-'}</td>
                       <td>{s ? s.status : 'not submitted'}</td>
                       <td>
                         {s ? (
                           <div className="sub-cell">
-                            {/* Always clickable, whatever the check said — an admin
+                            {/* Always clickable, whatever the check said, an admin
                                 must be able to open the folder and judge for themselves. */}
                             {s.driveLink
                               ? <a href={s.driveLink} target="_blank" rel="noreferrer">Drive folder</a>
@@ -229,9 +229,9 @@ export default function StudentDetail() {
                               </button>
                             )}
                           </div>
-                        ) : '—'}
+                        ) : '-'}
                       </td>
-                      <td>{s?.score ?? '—'}</td>
+                      <td>{s?.score ?? '-'}</td>
                       {isAdmin && (
                         <td>
                           <button className="btn sm ghost" onClick={() => toggleAssignment(a.id, a.blocked)}>

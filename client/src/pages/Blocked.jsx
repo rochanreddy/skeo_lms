@@ -1,4 +1,4 @@
-// Full-screen stop page shown when the admin has blocked this account —
+// Full-screen stop page shown when the admin has blocked this account,
 // either discovered at login/refresh or pushed mid-session via the api()
 // 'skeo:blocked' event.
 export default function Blocked({ message, onLogout }) {

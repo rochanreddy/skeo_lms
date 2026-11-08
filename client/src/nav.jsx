@@ -28,7 +28,7 @@ const AdminUsage = lazy(() => import('./pages/admin/Usage.jsx'));
 // Support is here for the same reason, from the other direction: a student only
 // wants it on the day something is broken, so it sits in the avatar menu (and
 // in ⌘K) rather than taking a permanent seat in the dock. For an admin it IS a
-// section of the product — a queue to work — so there it's a tab.
+// section of the product, a queue to work, so there it's a tab.
 export function extraRoutesFor(role) {
   if (role === 'admin') {
     return [
@@ -69,7 +69,7 @@ export function navFor(role) {
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Job Board', path: 'jobs', Component: JobBoard, featured: true },
       ];
-    // Unknown/retired roles (legacy 'mentor' or 'partner' accounts) get no tabs — App
+    // Unknown/retired roles (legacy 'mentor' or 'partner' accounts) get no tabs, App
     // treats an empty nav as "no access" rather than rendering a blank shell.
     default:
       return [];

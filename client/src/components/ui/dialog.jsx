@@ -48,7 +48,7 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
-  // Skeo addition: the scrim differs per surface — the file reader wants a
+  // Skeo addition: the scrim differs per surface, the file reader wants a
   // heavier blur and a higher stacking order than a run-of-the-mill dialog.
   overlayClassName,
   ...props

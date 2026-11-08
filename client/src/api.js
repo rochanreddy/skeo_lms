@@ -1,4 +1,4 @@
-// Thin fetch wrapper — this is the ENTIRE link between the frontend and the
+// Thin fetch wrapper: this is the ENTIRE link between the frontend and the
 // backend: it sends requests to VITE_API_URL with the stored Bearer token.
 // 4200 is Skeo's own port. It used to fall back to 4100, which is menler-lms:
 // with VITE_API_URL unset the app pointed at a different product's API, and the
@@ -20,7 +20,7 @@ export function getRefreshToken() {
  *
  * The app's first act is to ask /me, because the answer decides which
  * dashboard to render. That is one cross-origin round trip to Singapore
- * before a single pixel of the real app can appear — and if the API instance
+ * before a single pixel of the real app can appear, and if the API instance
  * happens to be asleep, considerably more than one round trip's worth.
  * Everything behind it waits on it.
  *
@@ -59,9 +59,9 @@ export function setCachedUser(user) {
 
 /**
  * Store the session. Three shapes, deliberately:
- *   setToken(access, refresh) — signing in, both are new
- *   setToken(access)          — after a refresh, keep the refresh token we have
- *   setToken('')              — signing out, drop both
+ *   setToken(access, refresh), signing in, both are new
+ *   setToken(access)         : after a refresh, keep the refresh token we have
+ *   setToken('')             : signing out, drop both
  */
 export function setToken(t, refreshToken) {
   if (t) {
@@ -77,18 +77,18 @@ export function setToken(t, refreshToken) {
     window.dispatchEvent(new Event('skeo:signed-out'));
   }
   if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
-  // Whoever we were, we aren't any more — nothing read as them may be reused.
+  // Whoever we were, we aren't any more, nothing read as them may be reused.
   clearApiCache();
 }
 
 // GET de-duplication + a very short freshness window.
 //
-// Several screens legitimately want the same data at the same moment — the
+// Several screens legitimately want the same data at the same moment, the
 // notification bell and the student home both read /notifications, Learning
 // and the home both read /programs. Without this each mount paid for its own
 // round trip. Two rules, both deliberately conservative:
 //
-//   · one in-flight GET per URL — concurrent callers share the same promise
+//   · one in-flight GET per URL, concurrent callers share the same promise
 //   · a resolved GET is reused for TTL ms, then forgotten
 //
 // Anything that isn't a GET clears the cache, so a write is always followed by
@@ -106,7 +106,7 @@ export function clearApiCache() {
 // ── Silent access-token renewal ──────────────────────────────────────────
 //
 // Access tokens last 2h; the refresh token issued alongside them lasts 30d.
-// Without this the 2h expiry was a hard logout — the user was bounced to the
+// Without this the 2h expiry was a hard logout, the user was bounced to the
 // sign-in screen and paid another bcrypt hash, which on a one-core box is the
 // most expensive thing the API does.
 //
@@ -125,7 +125,7 @@ async function renewAccessToken() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.accessToken) {
-        // The refresh token itself is rejected — expired, or the account was
+        // The refresh token itself is rejected, expired, or the account was
         // blocked or retired. The session is genuinely over; don't loop.
         if (data.code === 'blocked') {
           window.dispatchEvent(new CustomEvent('skeo:blocked', { detail: { message: data.error } }));
@@ -155,7 +155,7 @@ async function request(path, { method = 'GET', body, retriedAuth = false } = {})
   //
   // GETs only. A write that never came back may still have been applied, and
   // the create endpoints (/batches, /programs, /announcements, /jobs, /library)
-  // carry no uniqueness constraint — replaying one duplicates the record.
+  // carry no uniqueness constraint, replaying one duplicates the record.
   const attempts = method === 'GET' ? 3 : 1;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
@@ -194,7 +194,7 @@ async function request(path, { method = 'GET', body, retriedAuth = false } = {})
       return data;
     } catch (e) {
       // An HTTP error we generated above → don't retry, surface it. This used
-      // to sniff the message text, which only matched the fallback string —
+      // to sniff the message text, which only matched the fallback string,
       // any error the server supplied a message for looked like a network
       // failure and was retried three times with backoff.
       if (e.http) throw e;
@@ -208,7 +208,7 @@ async function request(path, { method = 'GET', body, retriedAuth = false } = {})
 export function api(path, opts = {}) {
   const method = opts.method || 'GET';
   if (method !== 'GET') {
-    // A write invalidates everything — the next read of any list re-fetches.
+    // A write invalidates everything, the next read of any list re-fetches.
     return request(path, opts).finally(clearApiCache);
   }
 
@@ -230,7 +230,7 @@ export function api(path, opts = {}) {
 
 // POST a File (multipart, field "file") to any endpoint → parsed JSON.
 // These two bypass request() because their bodies aren't JSON, so they renew an
-// expired token themselves — otherwise an upload begun after the 2h mark fails
+// expired token themselves: otherwise an upload begun after the 2h mark fails
 // on a session that is actually still good.
 export async function postFile(path, file) {
   const send = () => {
@@ -250,7 +250,7 @@ export async function postFile(path, file) {
   return data;
 }
 
-// Fetch an authenticated file's bytes — the paid playbooks, which are never a
+// Fetch an authenticated file's bytes, the paid playbooks, which are never a
 // public link, so the reader has to be handed them rather than a URL.
 export async function fetchFileBytes(path) {
   const send = () => fetch(`${API}${path}`, {

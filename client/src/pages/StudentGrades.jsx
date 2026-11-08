@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
 // Student gradebook: one consolidated view of every assignment/quiz/exam and
-// the grade received — the single place a student checks "how am I doing".
+// the grade received: the single place a student checks "how am I doing".
 export default function StudentGrades() {
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({ total: 0, graded: 0, avgPct: null });
@@ -13,7 +13,7 @@ export default function StudentGrades() {
   }, []);
 
   // The right-hand column: a score once graded, a waiting pill once handed
-  // in, and nothing at all before that — a dash is not information.
+  // in, and nothing at all before that, a dash is not information.
   const score = (r) => {
     if (r.status === 'graded' && r.score != null) {
       return r.max
@@ -48,7 +48,7 @@ export default function StudentGrades() {
 
       <div className="panel gr-panel">
         {loading ? <p className="muted gr-note">Loading…</p> : rows.length === 0 ? (
-          <p className="muted gr-note">No assessments yet — assignments and quizzes appear here once they're posted.</p>
+          <p className="muted gr-note">No assessments yet: assignments and quizzes appear here once they're posted.</p>
         ) : (
           <ul className="gr-list">
             {rows.map((r) => (

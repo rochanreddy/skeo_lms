@@ -19,7 +19,7 @@ export default function Library() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   // Until the first load lands, an empty list means "not known yet", not
-  // "nothing here" — saying the latter reads as broken rather than slow.
+  // "nothing here", saying the latter reads as broken rather than slow.
   const [loading, setLoading] = useState(true);
   const [reading, setReading] = useState(null); // the paid playbook open in the reader
 
@@ -47,7 +47,7 @@ export default function Library() {
         <div>
           <div className="eyebrow">Library</div>
           <h1>Resources</h1>
-          <p>Slides, eBooks and notes — everything to go deeper.</p>
+          <p>Slides, eBooks and notes: everything to go deeper.</p>
         </div>
       </div>
 

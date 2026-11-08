@@ -80,7 +80,7 @@ export default function CurriculumEditor({ programId, onClose }) {
   async function save() {
     try {
       await api(`/programs/${programId}`, { method: 'PATCH', body: { modules, published } });
-      setDirty(false); flash('Curriculum saved — students see it now.');
+      setDirty(false); flash('Curriculum saved: students see it now.');
     } catch (err) { flash(err.message); }
   }
 
@@ -120,7 +120,7 @@ export default function CurriculumEditor({ programId, onClose }) {
       <div className="ce-import">
         <div>
           <strong>📥 Import from a document</strong>
-          <p className="muted" style={{ margin: '2px 0 0' }}>Upload a <b>.docx</b>, <b>.pdf</b>, <b>.md</b> or <b>.txt</b> — headings become modules & lessons automatically. Review below, then Save.</p>
+          <p className="muted" style={{ margin: '2px 0 0' }}>Upload a <b>.docx</b>, <b>.pdf</b>, <b>.md</b> or <b>.txt</b> and headings become modules & lessons automatically. Review below, then Save.</p>
         </div>
         <div>
           <input ref={fileRef} type="file" accept=".docx,.pdf,.md,.txt,.markdown" onChange={onImport} hidden />
@@ -130,7 +130,7 @@ export default function CurriculumEditor({ programId, onClose }) {
 
       <div className="ce-grid">
         <aside className="ce-tree">
-          {modules.length === 0 && <p className="muted" style={{ padding: 12 }}>No content yet — import a doc or add a module.</p>}
+          {modules.length === 0 && <p className="muted" style={{ padding: 12 }}>No content yet: import a doc or add a module.</p>}
           {modules.map((m, mi) => (
             <div key={mi} className="ce-mod">
               <div className="ce-mod-head">
@@ -207,7 +207,7 @@ export default function CurriculumEditor({ programId, onClose }) {
                   <div className="row">
                     <input
                       className="ce-field"
-                      placeholder="Video ID — or pick one from the library"
+                      placeholder="Video ID, or pick one from the library"
                       value={selTopic.vdoVideoId || ''}
                       onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { vdoVideoId: e.target.value.trim() })}
                     />
@@ -221,9 +221,9 @@ export default function CurriculumEditor({ programId, onClose }) {
                 </>
               )}
 
-              {/* Independent of content type — a reading lesson can still have
+              {/* Independent of content type, a reading lesson can still have
                   had a live class about it. */}
-              <label className="ce-label">Class link <span className="muted">(the meeting link while it's live, YouTube once recorded — leave empty and students see "Not available yet")</span></label>
+              <label className="ce-label">Class link <span className="muted">(the meeting link while it's live, YouTube once recorded; leave empty and students see "Not available yet")</span></label>
               <input
                 className="ce-field"
                 placeholder="https://meet.google.com/… or https://youtube.com/watch?v=…"
@@ -231,7 +231,7 @@ export default function CurriculumEditor({ programId, onClose }) {
                 onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { classLink: e.target.value })}
               />
 
-              <label className="ce-label">Content <span className="muted">(Markdown — # headings, **bold**, - lists, `code`)</span></label>
+              <label className="ce-label">Content <span className="muted">(Markdown: # headings, **bold**, - lists, `code`)</span></label>
               <textarea className="ce-body" rows={16} value={selTopic.body} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { body: e.target.value })} placeholder="Write the lesson content here…" />
             </>
           )}

@@ -6,7 +6,7 @@ import CertificateModal from '../../components/CertificateModal.jsx';
  * Admin: issue a cohort's certificates, and see what has been issued.
  *
  * The order of the screen is the order of the decision. Pick a cohort, look at
- * a sample with a real name on it, and only then issue — because issuing is
+ * a sample with a real name on it, and only then issue, because issuing is
  * the step that mints codes people will put on a CV, and the cheapest moment to
  * notice a wrong programme title is before that and not after.
  *
@@ -62,7 +62,7 @@ export default function AdminCertificates() {
     setErr(''); setNote(''); setBusy('issue');
     try {
       const d = await api('/certificates/issue', { method: 'POST', body: { batchId } });
-      setNote(`${d.issued} issued, ${d.existing} already had one — ${d.batch}.`);
+      setNote(`${d.issued} issued, ${d.existing} already had one (${d.batch}).`);
       loadCerts(batchId);
     } catch (e) { setErr(e.message); } finally { setBusy(''); }
   }
@@ -128,7 +128,7 @@ export default function AdminCertificates() {
               </button>
             </div>
             <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>
-              Issuing mints a certificate for every student in the cohort. It is safe to run twice —
+              Issuing mints a certificate for every student in the cohort. It is safe to run twice,
               anyone who already has one keeps the code they have.
             </p>
           </div>

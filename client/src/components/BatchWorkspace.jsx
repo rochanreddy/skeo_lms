@@ -138,7 +138,7 @@ export default function BatchWorkspace({ batchId }) {
 
           {newStudent && (
             <div className="tempbox">
-              <div className="tempbox-line"><span className="tempbox-ic"><LineIcon name="check" size={16} /></span><span>New student account created for <strong>{newStudent.email}</strong> — temp password: <code>{newStudent.password}</code></span></div>
+              <div className="tempbox-line"><span className="tempbox-ic"><LineIcon name="check" size={16} /></span><span>New student account created for <strong>{newStudent.email}</strong>, temp password: <code>{newStudent.password}</code></span></div>
               <div className="muted">Share these; they'll set their own password on first login.</div>
             </div>
           )}
@@ -148,7 +148,7 @@ export default function BatchWorkspace({ batchId }) {
       {/* Announcements */}
       <section className="panel">
         <h3 className="h3-ic"><LineIcon name="megaphone" size={17} /> Announcements</h3>
-        <AnnouncementForm onPost={(body) => act(() => api('/announcements', { method: 'POST', body: { batchId, ...body } }).then(loadAnnouncements), 'Announcement posted — students notified')} />
+        <AnnouncementForm onPost={(body) => act(() => api('/announcements', { method: 'POST', body: { batchId, ...body } }).then(loadAnnouncements), 'Announcement posted: students notified')} />
         {announcements.map((a) => (
           <div key={a._id} className="assignment">
             <div className="row"><strong>{a.title}</strong><span className="muted">{new Date(a.createdAt).toLocaleDateString()}</span></div>
@@ -202,13 +202,13 @@ export default function BatchWorkspace({ batchId }) {
         {quizzes.length === 0 && <p className="muted">No quizzes yet.</p>}
       </section>
 
-      {/* Gradebook — students × assessments matrix */}
+      {/* Gradebook: students × assessments matrix */}
       <section className="panel">
         <h3>Gradebook</h3>
         {!gradebook || gradebook.rows.length === 0 ? (
           <p className="muted">No students to grade yet.</p>
         ) : gradebook.columns.length === 0 ? (
-          <p className="muted">No assignments or quizzes yet — add some above and grades will appear here.</p>
+          <p className="muted">No assignments or quizzes yet. Add some above and grades will appear here.</p>
         ) : (
           <div className="table-wrap">
             <table className="grade-table">
@@ -226,11 +226,11 @@ export default function BatchWorkspace({ batchId }) {
                     {r.cells.map((cv, i) => (
                       <td key={gradebook.columns[i].id} className={`gb-cell gb-${cv.status}`}>
                         {cv.score == null
-                          ? (cv.status === 'submitted' ? '•' : '—')
+                          ? (cv.status === 'submitted' ? '•' : '-')
                           : (gradebook.columns[i].max ? `${cv.score}/${gradebook.columns[i].max}` : cv.score)}
                       </td>
                     ))}
-                    <td><strong>{r.avgPct != null ? `${r.avgPct}%` : '—'}</strong></td>
+                    <td><strong>{r.avgPct != null ? `${r.avgPct}%` : '-'}</strong></td>
                   </tr>
                 ))}
               </tbody>
@@ -287,7 +287,7 @@ function QuizResults({ quizId }) {
   const [open, setOpen] = useState(false);
   const load = () => api(`/quizzes/${quizId}/results`).then(setData).catch(() => setData({ attempts: [] }));
 
-  // Fetch on first open only — reopening reuses what we already have.
+  // Fetch on first open only, reopening reuses what we already have.
   function toggle() {
     if (open) return setOpen(false);
     setOpen(true);
@@ -325,7 +325,7 @@ const toPickerValue = (iso) => {
 };
 
 // One form, two jobs: posting a new assignment/project and editing an existing
-// one. Pass `initial` to edit — the form opens prefilled and stays open, the
+// one. Pass `initial` to edit: the form opens prefilled and stays open, the
 // same way the curriculum editor edits a lesson in place.
 function Submissions({ assignmentId }) {
   const [subs, setSubs] = useState(null);
@@ -335,7 +335,7 @@ function Submissions({ assignmentId }) {
   async function recheck(id) { await api(`/submissions/${id}/recheck`, { method: 'POST' }); load(); }
   async function unlock(id) { await api(`/submissions/${id}/unlock`, { method: 'POST' }); load(); }
 
-  // Fetch on first open only — reopening reuses what we already have.
+  // Fetch on first open only, reopening reuses what we already have.
   function toggle() {
     if (open) return setOpen(false);
     setOpen(true);
@@ -367,7 +367,7 @@ function GradeRow({ sub, onGrade, onRecheck, onUnlock }) {
     try { await onRecheck(sub._id); } finally { setBusy(false); }
   }
 
-  // Grading writes a score — guard against a double-click posting it twice.
+  // Grading writes a score, guard against a double-click posting it twice.
   async function grade() {
     if (grading) return;
     setGrading(true);
@@ -381,7 +381,7 @@ function GradeRow({ sub, onGrade, onRecheck, onUnlock }) {
         <span className={`badge ${sub.status === 'graded' ? 'badge-student' : sub.status === 'submitted' ? 'badge-submitted' : ''}`}>{sub.status}</span>
       </div>
 
-      {/* Drive verification — its own block, independent of the grade below. */}
+      {/* Drive verification: its own block, independent of the grade below. */}
       <SubmissionCheckPanel
         submission={{ ...sub, driveLink: sub.driveLink || sub.url }}
         onRecheck={recheck}

@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover.jsx';
 
 // A drop-in replacement for <input type="datetime-local">, which renders as a
 // different (and uniformly ugly) native widget in every browser. Same value
-// contract as the native input — 'YYYY-MM-DDTHH:mm' or '' — so call sites only
+// contract as the native input, 'YYYY-MM-DDTHH:mm' or '', so call sites only
 // change from `e.target.value` to the value itself.
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -74,7 +74,7 @@ export default function DateTimePicker({ value, onChange, placeholder = 'Pick da
     <div className="dtp">
       <Popover open={open} onOpenChange={setOpen}>
         {/* Radix owns aria-haspopup/aria-expanded, the outside-click, Escape and
-            returning focus to this button — all of which used to be hand-rolled. */}
+            returning focus to this button, all of which used to be hand-rolled. */}
         <PopoverTrigger asChild>
           <button type="button" id={id} className={`dtp-field ${selected ? '' : 'is-empty'}`}>
             <LineIcon name="clock" size={14} />

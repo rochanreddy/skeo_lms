@@ -9,7 +9,7 @@ import { clsx } from 'clsx';
  * PopoverContent's box (`p-0`, `gap-0`, `border-0`, a z-index, a top offset).
  * Those declarations now sit on the components' own classes in styles.css,
  * which is unlayered and therefore outranks Tailwind's @layer utilities
- * unconditionally — a cascade rule, not a class-order coincidence.
+ * unconditionally: a cascade rule, not a class-order coincidence.
  *
  * So the arbitration had nothing left to arbitrate, and 26.5 KB of it went
  * with it. If you add a component that needs a utility to defeat a shadcn

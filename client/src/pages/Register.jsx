@@ -3,8 +3,8 @@ import SkeoWordmark from '../components/SkeoWordmark.jsx';
 import GetSkeo from '../components/GetSkeo.jsx';
 
 // There is no self-signup any more. A skeo account is created when a plan is
-// bought on skeoai.com — the LMS makes it once the payment is confirmed and
-// mails the login — so /signup, which old links and bookmarks still reach, is
+// bought on skeoai.com, the LMS makes it once the payment is confirmed and
+// mails the login: so /signup, which old links and bookmarks still reach, is
 // where a newcomer is pointed at the plans instead. The server refuses
 // /auth/register for the same reason (routes/auth.js).
 export default function Register() {
@@ -14,7 +14,7 @@ export default function Register() {
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
           <h2>Start learning with skeo.</h2>
-          <p>Live sessions, quizzes, projects and feedback — everything in one place.</p>
+          <p>Live sessions, quizzes, projects and feedback: everything in one place.</p>
         </div>
         <div />
       </div>

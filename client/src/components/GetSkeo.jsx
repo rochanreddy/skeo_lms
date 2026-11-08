@@ -1,7 +1,7 @@
 // Where someone who has not bought skeo is sent: the plans on skeoai.com.
 //
-// A skeo account is made by buying a plan there — the LMS creates it once the
-// payment is confirmed and mails the login — so the answer to "I can't get in"
+// A skeo account is made by buying a plan there, the LMS creates it once the
+// payment is confirmed and mails the login, so the answer to "I can't get in"
 // for a non-buyer is never "reset your password", it is "here is where to buy".
 //
 // VITE_SITE_URL points a preview build at its own site; production is skeoai.com.

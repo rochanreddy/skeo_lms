@@ -7,15 +7,15 @@ import NotificationBellButton from './NotificationBellButton.jsx';
 /* How often to ask, when nothing is going to tell us.
  *
  * Every open tab asking three times a minute for one number was the largest
- * standing load this API carried — it runs on a single small instance, and
+ * standing load this API carried, it runs on a single small instance, and
  * that poll took CPU from the requests someone was actually waiting for.
  *
  * Where push is on, the bell is already event-driven: sw.js posts skeo:push
  * the moment a notification arrives, so the interval is only a safety net for
  * a message the browser dropped, and two minutes is generous for that.
  *
- * Where push is off — notifications declined, or an iPhone still in a Safari
- * tab — polling IS the mechanism, so it stays brisk. 45 seconds rather than
+ * Where push is off, notifications declined, or an iPhone still in a Safari
+ * tab: polling IS the mechanism, so it stays brisk. 45 seconds rather than
  * the 20 it was: both are longer than anyone watches a bell for, and the
  * count is refreshed immediately on coming back to the tab anyway, which is
  * when it is actually looked at.
@@ -23,7 +23,7 @@ import NotificationBellButton from './NotificationBellButton.jsx';
 const POLL_WITH_PUSH_MS = 120_000;
 const POLL_WITHOUT_PUSH_MS = 45_000;
 
-// Live notification bell — polls, shows an unread badge, and a dropdown.
+// Live notification bell: polls, shows an unread badge, and a dropdown.
 //
 // The panel is a Radix Popover, which brings floating-ui and the popper stack
 // with it. That's a lot of code for something nobody can see until they click,
@@ -31,7 +31,7 @@ const POLL_WITHOUT_PUSH_MS = 45_000;
 // mounted already-open. Hover and focus both prefetch it, and both precede a
 // click, so the chunk is normally warm by the time it's needed.
 //
-// The polling, the unread count and the mark-read-on-open call stay here — the
+// The polling, the unread count and the mark-read-on-open call stay here, the
 // badge has to be right whether or not the panel has ever been opened.
 const NotificationPanel = lazy(() => import('./NotificationPanel.jsx'));
 const warm = () => { import('./NotificationPanel.jsx'); };

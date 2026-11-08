@@ -13,11 +13,11 @@ const CHECK_LABELS = {
   CHECK_FAILED: 'Check failed',
 };
 
-// Student-facing wording — CHECK_FAILED is our fault, not theirs, so it must
+// Student-facing wording: CHECK_FAILED is our fault, not theirs, so it must
 // never read as something the student has to go fix.
 const CHECK_LABELS_STUDENT = {
   ...CHECK_LABELS,
-  CHECK_FAILED: 'Check pending — we’ll retry',
+  CHECK_FAILED: 'Check pending: we’ll retry',
 };
 
 const badgeTone = (status) => {

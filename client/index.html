@@ -18,7 +18,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Day or night before first paint, the website's way: the stored choice
-         (same key as skeoai.com — see src/components/ThemeToggle.jsx), else the
+         (same key as skeoai.com, see src/components/ThemeToggle.jsx), else the
          device's own preference. Without it a night-mode student would see a
          light flash on every load while React started. -->
     <script>
@@ -35,7 +35,7 @@
          be discovered, so the two UI families are preloaded directly and arrive
          in parallel with the app CSS rather than two hops behind it.
          DM Serif Display is decorative and used on one line, so it is left to
-         load normally — preloading it would compete with the two that matter. -->
+         load normally: preloading it would compete with the two that matter. -->
     <link rel="preload" href="/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/dm-sans-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   </head>

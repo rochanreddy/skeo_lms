@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import LineIcon from './LineIcon.jsx';
 
-// "Needs attention" — students the scorer flagged as falling behind, worst
+// "Needs attention", students the scorer flagged as falling behind, worst
 // first, with the reasons that triggered the flag. Pass a batchId to scope it to
 // one cohort; omit it for every batch the viewer teaches.
 export default function AtRiskPanel({ batchId }) {
@@ -36,7 +36,7 @@ export default function AtRiskPanel({ batchId }) {
         <p className="muted" style={{ marginTop: 12 }}>
           {data.scanned === 0
             ? 'No students enrolled yet.'
-            : `Everyone's on track — all ${data.scanned} student${data.scanned === 1 ? '' : 's'} look healthy.`}
+            : `Everyone's on track: all ${data.scanned} student${data.scanned === 1 ? '' : 's'} look healthy.`}
         </p>
       )}
 

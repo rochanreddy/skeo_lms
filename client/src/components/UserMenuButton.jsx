@@ -1,6 +1,6 @@
 // The account trigger, on its own so it can be rendered twice: once as the
-// plain button that ships in the first paint, and again — same markup, same
-// classes — as the child of Radix's DropdownMenuTrigger once the menu has been
+// plain button that ships in the first paint, and again, same markup, same
+// classes: as the child of Radix's DropdownMenuTrigger once the menu has been
 // asked for. Keeping one copy is what makes the swap invisible.
 //
 // Props spread last so Radix's own handlers, ids and aria-* win over anything

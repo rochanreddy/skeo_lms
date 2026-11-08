@@ -3,7 +3,7 @@ import { api, downloadFile } from '../../api.js';
 import AtRiskPanel from '../../components/AtRiskPanel.jsx';
 import { Donut, MiniLine, SEQ } from '../../components/Charts.jsx';
 
-// Admin platform overview — headline counts, distribution donuts, signup trend,
+// Admin platform overview: headline counts, distribution donuts, signup trend,
 // students-per-batch bars, at-risk panel, and the platform CSV report.
 export default function AdminHome() {
   const [data, setData] = useState(null);
@@ -11,9 +11,9 @@ export default function AdminHome() {
 
   const s = data?.stats || {};
   const cards = [
-    { label: 'Students', value: s.students ?? '—' },
-    { label: 'Projects', value: s.assignments ?? '—' },
-    { label: 'Quizzes', value: s.quizzes ?? '—' },
+    { label: 'Students', value: s.students ?? '-' },
+    { label: 'Projects', value: s.assignments ?? '-' },
+    { label: 'Quizzes', value: s.quizzes ?? '-' },
   ];
   const chart = (data?.perBatch || []).filter((b) => b.count > 0);
   const max = Math.max(1, ...chart.map((b) => b.count));
@@ -57,7 +57,7 @@ export default function AdminHome() {
             />
           </div>
           <div className="panel chart-card">
-            <div className="eyebrow">Student signups — last 8 weeks</div>
+            <div className="eyebrow">Student signups: last 8 weeks</div>
             <MiniLine points={data.signups} />
             <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
               {data.assignmentTypes[0].count} assignments · {data.assignmentTypes[1].count} projects in the course

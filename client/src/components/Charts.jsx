@@ -1,5 +1,5 @@
 // Tiny dependency-free SVG charts for the admin panel.
-// Palette: the theme's own tokens — the accent, amber and green — so a chart
+// Palette: the theme's own tokens, the accent, amber and green, so a chart
 // follows day and night like the rest of the page; sequential pairs are a hue
 // and its tinted line. Legends always carry the values, so no reading depends
 // on color alone.
@@ -43,7 +43,7 @@ export function Donut({ data, size = 132, thickness = 22, centerLabel, centerSub
     <div className="donut">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={data.map((d) => `${d.label}: ${d.value}`).join(', ')}>
         {total === 0 && <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth={thickness} />}
-        {/* A single 100% segment is a full ring — an arc can't close on itself. */}
+        {/* A single 100% segment is a full ring, an arc can't close on itself. */}
         {total > 0 && visible.length === 1 && (
           <circle cx={cx} cy={cy} r={rOuter - thickness / 2} fill="none" style={{ stroke: visible[0].color || SERIES[0] }} strokeWidth={thickness}>
             <title>{`${visible[0].label}: ${visible[0].value} (100%)`}</title>
@@ -155,7 +155,7 @@ export function HourBars({ hours, height = 120, color = SEQ.main }) {
   );
 }
 
-// Slim progress meter — fill + lighter track of the same hue.
+// Slim progress meter: fill + lighter track of the same hue.
 export function Meter({ pct, color = SEQ.main, track = SEQ.light }) {
   const v = Math.max(0, Math.min(100, pct ?? 0));
   return (
@@ -163,7 +163,7 @@ export function Meter({ pct, color = SEQ.main, track = SEQ.light }) {
       <div className="meter-track" style={{ background: track }}>
         <div className="meter-fill" style={{ width: `${v}%`, background: color }} />
       </div>
-      <span className="meter-val">{pct == null ? '—' : `${v}%`}</span>
+      <span className="meter-val">{pct == null ? '-' : `${v}%`}</span>
     </div>
   );
 }

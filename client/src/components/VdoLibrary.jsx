@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from './ui/dialog.jsx';
 // one-video credential -- a two-hour lecture has no business travelling through
 // an Express process that caps its own JSON bodies at 256 kB.
 
-const mins = (secs) => (secs ? `${Math.floor(secs / 60)}m ${String(Math.round(secs % 60)).padStart(2, '0')}s` : '—');
+const mins = (secs) => (secs ? `${Math.floor(secs / 60)}m ${String(Math.round(secs % 60)).padStart(2, '0')}s` : '-');
 
 /** POST the file to VdoCipher's storage with the signed payload, reporting progress. */
 function putToVdocipher({ clientPayload, file, onProgress }) {
@@ -33,7 +33,7 @@ function putToVdocipher({ clientPayload, file, onProgress }) {
     xhr.open('POST', uploadLink);
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => (xhr.status === 201 || xhr.status === 204 ? resolve() : reject(new Error(`Upload rejected (${xhr.status}).`)));
-    xhr.onerror = () => reject(new Error('The upload failed — check your connection and try again.'));
+    xhr.onerror = () => reject(new Error('The upload failed: check your connection and try again.'));
     xhr.onabort = () => reject(new Error('Upload cancelled.'));
     xhr.send(fd);
   });

@@ -16,7 +16,7 @@ export default function Profile() {
   });
   const [busy, setBusy] = useState(false);
   // Every certificate this account holds, including ones an admin issued to a
-  // whole cohort — the classroom only ever knows about the one you claimed by
+  // whole cohort: the classroom only ever knows about the one you claimed by
   // finishing a programme. A minted-but-unsent certificate is filtered out
   // server side, so this is exactly what the holder is allowed to know about.
   const [certs, setCerts] = useState([]);
@@ -61,7 +61,7 @@ export default function Profile() {
         <div>
           <div className="eyebrow">Account</div>
           <h1>Profile</h1>
-          <p>Keep your details current — certificates use them.</p>
+          <p>Keep your details current, since certificates use them.</p>
         </div>
       </div>
 
@@ -144,14 +144,14 @@ export default function Profile() {
   );
 }
 
-// Change-password form — available to every role (used to replace
+// Change-password form: available to every role (used to replace
 // the temp password the admin gave them).
 function ChangePassword() {
   const [cur, setCur] = useState('');
   const [next, setNext] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
-  // The account menu links straight here (#password) — scroll it into view and
+  // The account menu links straight here (#password): scroll it into view and
   // put the caret in the first field, so the link finishes the job.
   const { hash } = useLocation();
   const ref = useRef(null);

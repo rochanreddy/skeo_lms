@@ -12,13 +12,13 @@ import { mediaOf, mediaFrom, stripParentContext, lessonWords, readLastLesson, wr
 import CertificateModal from '../components/CertificateModal.jsx';
 
 // Learning. For students: Content + Assignments (submit) + Quizzes (take).
-// For admins: just the course content to teach from — they create &
+// For admins: just the course content to teach from, they create &
 // grade assignments/quizzes under Course, not here.
 export default function Learning() {
   const { user } = useOutletContext();
   const isStudent = user.role === 'student';
   // ?tab= lets search results (and shared links) open straight onto the right
-  // tab — "assignments" hits from ⌘K would otherwise land on Content.
+  // tab: "assignments" hits from ⌘K would otherwise land on Content.
   const [params] = useSearchParams();
   const [tab, setTab] = useState(() => {
     const t = params.get('tab');
@@ -37,7 +37,7 @@ export default function Learning() {
     return (
       <div className="learning-page">
         <h1>Learning</h1>
-        <p className="muted">The course content your students see — teach from this. Create &amp; grade projects and quizzes under <b>Course</b>.</p>
+        <p className="muted">The course content your students see. Teach from this. Create &amp; grade projects and quizzes under <b>Course</b>.</p>
         <Content />
       </div>
     );
@@ -59,7 +59,7 @@ export default function Learning() {
 }
 
 // Every quiz in one place. The module gates come first, in module order, and
-// unlock one at a time: gate N opens only once gate N-1 has been attempted —
+// unlock one at a time: gate N opens only once gate N-1 has been attempted,
 // the same rule that unlocks the modules themselves over on Content.
 function Quizzes() {
   const [gates, setGates] = useState([]);
@@ -77,7 +77,7 @@ function Quizzes() {
     if (p) {
       // Module order lives on the programme, not the quiz, so fetch the tree
       // when the list didn't already carry it. The gate quizzes only need the
-      // programme *id*, which we already have — so they go out alongside the
+      // programme *id*, which we already have, so they go out alongside the
       // tree rather than waiting a round trip behind it.
       const [full, gq] = await Promise.all([
         p.modules?.length ? p : api(`/programs/${p._id}`).then((d) => d.program).catch(() => p),
@@ -108,7 +108,7 @@ function Quizzes() {
         <>
           <h3 className="ruled-head">Module quizzes</h3>
           <p className="muted" style={{ margin: '-8px 0 16px' }}>
-            Attempt each one to unlock the next module — and the next quiz.
+            Attempt each one to unlock the next module, and the next quiz.
           </p>
           <div className="list">
             {gates.map((q, i) => (i < open ? (
@@ -153,7 +153,7 @@ function QuizCard({ quiz, onDone }) {
   const allAnswered = quiz.questions.every((_, i) => answers[i] != null);
   const q = quiz.questions[qIndex];
 
-  // Once answering has begun, warn before an accidental tab close / reload —
+  // Once answering has begun, warn before an accidental tab close / reload,
   // draft answers live only in local state and aren't saved until submit.
   const dirty = open && !attempt && Object.keys(answers).length > 0 && !busy;
   useEffect(() => {
@@ -173,7 +173,7 @@ function QuizCard({ quiz, onDone }) {
     } finally { setBusy(false); }
   }
 
-  // Fetched once, then toggled — the review never changes after an attempt.
+  // Fetched once, then toggled, the review never changes after an attempt.
   async function toggleReview() {
     if (review) { setShowReview((v) => !v); return; }
     setBusy(true);
@@ -269,7 +269,7 @@ function QuizStepper({ count, current, onSelect, statusFor }) {
 
 // Post-attempt feedback: every question with the student's pick, the right
 // answer, and the author's explanation. This is where the quiz actually
-// teaches — shown one question at a time via the stepper above it.
+// teaches: shown one question at a time via the stepper above it.
 function QuizReview({ questions }) {
   const [qIndex, setQIndex] = useState(0);
   const total = questions.length;
@@ -362,7 +362,7 @@ function Content() {
   const [topicId, setTopicId] = useState(null);
   // The page currently on the reader, if any. One piece of state for both
   // levels, resolved through a memo below into everything the reader needs.
-  // It never enters the URL — a deep link still names a lesson.
+  // It never enters the URL, a deep link still names a lesson.
   const [pageRef, setPageRef] = useState(null); // { kind: 'module'|'chapter', id }
   const [open, setOpen] = useState({});
   // Only one chapter is unfolded at a time, so a module's chapters all stay on
@@ -417,7 +417,7 @@ function Content() {
 
   // Everything a page needs, resolved from pageRef in one place. Null whenever
   // nothing is open, the reference no longer points at anything (a programme
-  // switch, a module an admin removed), or the target carries no page text —
+  // switch, a module an admin removed), or the target carries no page text,
   // so a curriculum without pages simply never reaches this state.
   const page = useMemo(() => {
     if (!pageRef || !program) return null;
@@ -463,11 +463,11 @@ function Content() {
     ? flat.findIndex((f) => String(f.topic._id) === String(page.firstTopicId))
     : -1;
 
-  // Which module (by index) a flattened lesson belongs to — for lock checks.
+  // Which module (by index) a flattened lesson belongs to, for lock checks.
   const modIndexOf = (modId) => (program?.modules || []).findIndex((m) => String(m._id) === String(modId));
 
   // What "Continue learning" offers when nothing is open: the lesson last
-  // opened here, unless it has since been completed — then the first unfinished
+  // opened here, unless it has since been completed, then the first unfinished
   // lesson after it. Never a lesson behind a gate. When everything is done, the
   // last lesson opened (or the first) is offered again to revisit.
   const resume = useMemo(() => {
@@ -517,7 +517,7 @@ function Content() {
 
   async function pick(id, preferTopicId) {
     // Progress and the gate quizzes are keyed on the programme id alone, which
-    // we already hold — starting them here rather than after the tree arrives
+    // we already hold: starting them here rather than after the tree arrives
     // takes a round trip off the critical path for the whole screen.
     setProgressReady(false); setGatesReady(false);
     loadProgress(id);
@@ -538,7 +538,7 @@ function Content() {
   }
 
   // Arriving at Learning should land on the lesson you'd continue from, with
-  // the player ready — not on an empty reader and a list to hunt through.
+  // the player ready: not on an empty reader and a list to hunt through.
   // Once per programme: closing a page afterwards must not re-open a lesson.
   useEffect(() => {
     if (!program || !progressReady || !gatesReady || topicId || pageRef) return;
@@ -564,7 +564,7 @@ function Content() {
     const id = String(m._id);
     const showingPage = pageRef?.kind === 'module' && String(pageRef.id) === id;
     // Fold it away when pressing the module that's already open while its page
-    // is showing — or, for a module that has no page, on any second press,
+    // is showing: or, for a module that has no page, on any second press,
     // which is the plain accordion it was before pages existed.
     if (open[id] && (showingPage || !m.description)) {
       setOpen((o) => ({ ...o, [id]: false }));
@@ -577,7 +577,7 @@ function Content() {
     if (m.description) showPage({ kind: 'module', id });
   }
 
-  // The week strip always *opens* — a card isn't a toggle — and on a phone,
+  // The week strip always *opens*, a card isn't a toggle, and on a phone,
   // where the syllabus sits below the reader, brings the module into view.
   function openModule(m, mi) {
     if (isLocked(mi)) return;
@@ -599,12 +599,12 @@ function Content() {
     setPageRef(null);
     setOpen((o) => ({ ...o, [f.modId]: true }));
     setOpenChap(String(f.chapId));
-    // replace, not push — Prev/Next shouldn't fill the back button with lessons.
+    // replace, not push, Prev/Next shouldn't fill the back button with lessons.
     if (program) setParams({ program: program._id, topic: String(f.topic._id) }, { replace: true });
     // Remembered per programme, so the landing card can offer to pick up here.
     if (program) writeLastLesson(program._id, f.topic._id);
     // Phones: a lesson with text opens on About; a video-only one keeps the
-    // list under the player. Either way the player comes to the top — except
+    // list under the player. Either way the player comes to the top, except
     // on arrival, when the page is already at the top and must stay there.
     setMobileTab(f.topic.body ? 'about' : 'lessons');
     if (!quiet && window.matchMedia('(max-width: 900px)').matches) {
@@ -637,7 +637,7 @@ function Content() {
       .catch(() => {});
   }, []);
 
-  // A search result opened while already on this page only changes the URL —
+  // A search result opened while already on this page only changes the URL,
   // react to that too, or ⌘K would appear to do nothing the second time.
   const urlProgram = params.get('program');
   const urlTopic = params.get('topic');
@@ -666,7 +666,7 @@ function Content() {
   const done = Math.min(completed.size, total);
   const pct = total ? Math.round((done / total) * 100) : 0;
   const isDone = topic && completed.has(topic._id);
-  // What follows this lesson — the next one in order, unless it sits behind
+  // What follows this lesson, the next one in order, unless it sits behind
   // this module's gate, in which case the gate is what's next.
   const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
   const nextLocked = !!next && isLocked(modIndexOf(next.modId));
@@ -707,7 +707,7 @@ function Content() {
       </div>
 
       {!program ? (
-        <div className="panel empty-state"><p className="muted">{programs.length ? 'Choose a program above to start learning.' : 'No programme yet — it appears here once you are enrolled.'}</p></div>
+        <div className="panel empty-state"><p className="muted">{programs.length ? 'Choose a program above to start learning.' : 'No programme yet: it appears here once you are enrolled.'}</p></div>
       ) : flat.length === 0 ? (
         <div className="panel empty-state"><p className="muted">No lessons published yet.{!isStudent ? ' Add curriculum in Programs → Manage curriculum.' : ' Check back soon.'}</p></div>
       ) : (
@@ -769,7 +769,7 @@ function Content() {
                   </div>
                 )}
 
-                {/* The lesson's own notes, then — and only then — what comes
+                {/* The lesson's own notes, then, and only then, what comes
                     after it. Up next above the notes read as their heading. */}
                 <div className={`cp-after ${hasAbout && mobileTab !== 'about' ? 'phone-hide' : ''}`}>
                   {hasAbout ? (
@@ -777,7 +777,7 @@ function Content() {
                   ) : topic && !hasVideo ? (
                     <p className="cp-empty">Nothing has been added to this lesson yet. Check back soon.</p>
                   ) : null}
-                  {/* Up next — so finishing a lesson never means hunting the
+                  {/* Up next: so finishing a lesson never means hunting the
                       list for the one after it. Lit once this one is done. */}
                   {topic && (next && !nextLocked ? (
                     <div className={`cp-next ${isDone ? 'lit' : ''}`}>
@@ -804,7 +804,7 @@ function Content() {
                       <span className="cp-next-icon"><LineIcon name="check" size={16} /></span>
                       <div className="cp-next-text">
                         <div className="cp-next-eyebrow">That was the last lesson</div>
-                        <div className="cp-next-title">{pct === 100 ? 'Course complete — well done.' : `${total - done} lesson${total - done === 1 ? '' : 's'} still to finish.`}</div>
+                        <div className="cp-next-title">{pct === 100 ? 'Course complete: well done.' : `${total - done} lesson${total - done === 1 ? '' : 's'} still to finish.`}</div>
                       </div>
                       {pct === 100
                         ? <button className="btn sm" onClick={viewCertificate}>🎓 Certificate</button>
@@ -814,12 +814,12 @@ function Content() {
                 </div>
               </>
             ) : (
-              /* Nothing open — only reachable by folding a page away, since
+              /* Nothing open: only reachable by folding a page away, since
                  arrival opens a lesson by itself. */
               resume && (
                 <div className="cp-resume">
                   <div className="cp-resume-eyebrow">
-                    {resume.kind === 'resume' ? 'Continue learning' : resume.kind === 'revisit' ? 'All done — revisit' : resume.kind === 'continue' ? 'Up next' : 'Start here'}
+                    {resume.kind === 'resume' ? 'Continue learning' : resume.kind === 'revisit' ? 'All done: revisit' : resume.kind === 'continue' ? 'Up next' : 'Start here'}
                   </div>
                   <div className="cp-resume-row">
                     <span className="cp-resume-icon"><LessonIcon type={resume.f.topic.contentType} size={22} /></span>
@@ -850,7 +850,7 @@ function Content() {
               {isStudent && pct === 100 && <button className="btn sm cp-cert" onClick={viewCertificate}>🎓 View certificate</button>}
               {pendingGate && (
                 <button type="button" className="cp-pending" onClick={() => setParams({ tab: 'quizzes' })}>
-                  <LineIcon name="key" size={14} /> Module {modIndexOf(pendingGate.moduleId) + 1} quiz is waiting — take it to unlock the next week
+                  <LineIcon name="key" size={14} /> Module {modIndexOf(pendingGate.moduleId) + 1} quiz is waiting. Take it to unlock the next week
                 </button>
               )}
             </div>
@@ -913,7 +913,7 @@ function Content() {
                     <button className={`cur-topic cur-gate ${gate.myAttempt ? 'done' : ''}`} onClick={() => setParams({ tab: 'quizzes' })}>
                       <span className="cur-tick">{gate.myAttempt && <LineIcon name="check" size={9} />}</span>
                       <span className="cur-topic-kind" aria-hidden="true"><LineIcon name="key" size={13} /></span>
-                      <span className="cur-topic-title">Module {mi + 1} quiz{gate.myAttempt ? '' : ' — unlocks the next module'}</span>
+                      <span className="cur-topic-title">Module {mi + 1} quiz{gate.myAttempt ? '' : ', unlocks the next module'}</span>
                     </button>
                   )}
                 </div>
@@ -930,7 +930,7 @@ function Content() {
   );
 }
 
-// Lesson video with a graceful failure path — a dead CDN link or an
+// Lesson video with a graceful failure path, a dead CDN link or an
 // unsupported codec should offer a retry and a direct link, not a black frame.
 function LessonVideo({ url }) {
   const [failed, setFailed] = useState(false);
@@ -949,13 +949,13 @@ function LessonVideo({ url }) {
   // preload="none": the browser's default fetches metadata the moment the
   // element mounts, so every lesson with a video paid for a range request
   // nobody had asked to play. The box is sized by CSS, so holding off costs
-  // no layout — .lesson-video carries the same 16:9 the DRM frame does.
+  // no layout: .lesson-video carries the same 16:9 the DRM frame does.
   return <video key={attempt} src={url} controls preload="none" className="lesson-video" onError={() => setFailed(true)} />;
 }
 
 function Assignments() {
   const [items, setItems] = useState([]);
-  // Before the first response an empty list means "not known yet" — announcing
+  // Before the first response an empty list means "not known yet", announcing
   // "no assignments" and then replacing it reads as a bug, not as loading.
   const [loading, setLoading] = useState(true);
   const load = () => api('/assignments?scope=mine').then((d) => setItems(d.assignments || [])).catch(() => {}).finally(() => setLoading(false));
@@ -983,7 +983,7 @@ const REQUIRED_LABELS = {
   html: 'An HTML file or artifact',
 };
 
-// "3 days left" for the header — the one number a student actually scans for.
+// "3 days left" for the header: the one number a student actually scans for.
 // Null once the deadline has passed; the overdue state is worded separately.
 function timeLeft(due) {
   const ms = new Date(due) - Date.now();
@@ -1039,13 +1039,13 @@ function AssignmentCard({ a, onChange }) {
   const start = a.startDate && fmt(a.startDate);
   const left = a.dueDate && !sub && timeLeft(a.dueDate);
   const showForm = (!sub || editing) && !notOpenYet;
-  // Mirrors the server's rules — the API is still the authority, this just
+  // Mirrors the server's rules, the API is still the authority, this just
   // avoids offering an action that would be rejected.
   const editable = !sub?.locked && !overdue && !notOpenYet;
   const required = (a.requiredDriveTypes || []).map((t) => REQUIRED_LABELS[t] || t);
   const studentName = user?.full_name || user?.fullName || user?.email;
   const noun = a.type === 'project' ? 'project' : 'assignment';
-  // No video and no PDF means no left column at all — an empty rail beside
+  // No video and no PDF means no left column at all, an empty rail beside
   // the brief reads as something that failed to load.
   const hasMedia = Boolean(a.videoUrl || a.pdfUrl);
 
@@ -1078,8 +1078,8 @@ function AssignmentCard({ a, onChange }) {
         <span className={`badge ${state[1]}`}>{state[0]}</span>
       </div>
 
-      {/* Two columns. Watching and reading on the left — the video, with the
-          brief PDF under it; doing, on the right — read the brief, then hand
+      {/* Two columns. Watching and reading on the left, the video, with the
+          brief PDF under it; doing, on the right, read the brief, then hand
           the work in directly beneath it. The media column sticks, so the
           video stays put while a student works down the right-hand side. */}
       <div className={`assign-split ${hasMedia ? '' : 'solo'}`}>
@@ -1134,14 +1134,14 @@ function AssignmentCard({ a, onChange }) {
                 </div>
               </dl>
 
-              {/* Current verification state — visible without opening notifications. */}
+              {/* Current verification state: visible without opening notifications. */}
               {sub && !editing && (
                 <SubmissionCheckPanel submission={{ ...sub, driveLink: sub.driveLink || sub.url }} audience="student" />
               )}
 
               {sub?.status === 'graded' && (
                 <div className="graded">
-                  <div className="tile-value">{sub.score != null ? `${sub.score}/10` : '—'}</div>
+                  <div className="tile-value">{sub.score != null ? `${sub.score}/10` : '-'}</div>
                   <div><strong>Score</strong>{sub.feedback && <p className="muted">“{sub.feedback}”</p>}</div>
                 </div>
               )}
@@ -1160,7 +1160,7 @@ function AssignmentCard({ a, onChange }) {
                     </div>
                   )}
 
-                  {/* What the automated check will look for — shown so the student
+                  {/* What the automated check will look for, shown so the student
                       isn't guessing at what the folder must contain. */}
                   {required.length > 0 && (
                     <div className="assign-reqs">

@@ -6,7 +6,7 @@ import SkeoWordmark from '../components/SkeoWordmark.jsx';
 // Step 1 of password recovery: ask for the reset email.
 //
 // The server answers /auth/forgot with { ok: true } whether or not the address
-// has an account — that is deliberate, it stops this form being used to find
+// has an account: that is deliberate, it stops this form being used to find
 // out who is registered. So the screen says the same thing either way, and must
 // not imply the mail is definitely on its way to an account that exists.
 export default function ForgotPassword() {
@@ -37,7 +37,7 @@ export default function ForgotPassword() {
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
           <h2>Locked out?</h2>
-          <p>It happens. We&apos;ll email you a link to set a new password — it stays valid for 30 minutes.</p>
+          <p>It happens. We&apos;ll email you a link to set a new password. It stays valid for 30 minutes.</p>
         </div>
         <div />
       </div>

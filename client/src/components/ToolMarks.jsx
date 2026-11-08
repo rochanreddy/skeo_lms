@@ -1,9 +1,9 @@
 // The tools' own marks, as the website draws them (skeo_web
-// src/components/tools/marks.tsx — the paths are copied from there, not
+// src/components/tools/marks.tsx, the paths are copied from there, not
 // retyped). The certificate names the tool it vouches for, so it carries that
 // tool's mark and accent the way the website's specimen does.
 //
-// Lovable's mark is its silhouette under its own gradient — the website's
+// Lovable's mark is its silhouette under its own gradient, the website's
 // version layers blurred colour fields inside the same outline, which is more
 // than a 15px badge can show.
 
@@ -52,7 +52,7 @@ export function LovableMark({ className }) {
 }
 
 /* One entry per tool batch (Claude, ChatGPT, Gemini, n8n, Lovable,
-   Antigravity — see server/utils/provision.js). The accents are the tools'
+   Antigravity: see server/utils/provision.js). The accents are the tools'
    brand colours, the same values the website's certificate uses. Antigravity
    has no mark on the website yet, so its badge carries the name alone. */
 export const TOOLS = [

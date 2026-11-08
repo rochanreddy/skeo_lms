@@ -5,7 +5,7 @@ import SkeoWordmark from '../components/SkeoWordmark.jsx';
 
 // Step 2: the screen the emailed link lands on.
 //
-// The link carries ?token=&email= — the server hashes the token and matches it
+// The link carries ?token=&email=, the server hashes the token and matches it
 // against the stored hash, so the raw value exists only in that URL and is
 // never stored here. On success we send them to sign in rather than logging
 // them in silently: /auth/reset issues no token, and typing the new password
@@ -55,7 +55,7 @@ export default function ResetPassword() {
           <div className="auth-form">
             <h1>This link is incomplete</h1>
             <p className="sub">
-              It looks like the reset link was cut short — some mail clients wrap long URLs. Request a fresh one and open
+              It looks like the reset link was cut short, since some mail clients wrap long URLs. Request a fresh one and open
               it in a single click.
             </p>
             <p className="auth-alt"><Link to="/forgot">Request a new link</Link></p>

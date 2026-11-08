@@ -21,13 +21,13 @@ const warmPalette = () => { import('./CommandPalette.jsx'); };
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
 
 // Wraps every logged-in page. No sidebar: navigation runs along the top bar as
-// ruled links — one click, always visible, and the rule marks where you are.
+// ruled links: one click, always visible, and the rule marks where you are.
 // ⌘K still works for people who reach for it, but it's a shortcut, not the
 // primary path; making a modal the only way to move was ceremony around a menu.
 export default function AppShell({ user, setUser, logout }) {
   const tabs = navFor(user.role);
   const [cmdOpen, setCmdOpen] = useState(false);
-  // Latches on the first open and stays latched — see the mount note below.
+  // Latches on the first open and stays latched, see the mount note below.
   const [everOpened, setEverOpened] = useState(false);
   const [stuck, setStuck] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -73,10 +73,10 @@ export default function AppShell({ user, setUser, logout }) {
   }, [moreOpen]);
 
   // ⌘K / Ctrl-K from anywhere, and "/" when not already typing. The chunk is
-  // fetched once the shell is idle so the shortcut never waits on the network —
+  // fetched once the shell is idle so the shortcut never waits on the network,
   // it has no on-screen trigger to hover first.
   useEffect(() => {
-    // requestIdleCallback is still missing on older Safari — a bare reference
+    // requestIdleCallback is still missing on older Safari, a bare reference
     // would throw, so it's feature-detected rather than assumed.
     const idle = typeof requestIdleCallback === 'function';
     const id = idle ? requestIdleCallback(warmPalette) : setTimeout(warmPalette, 1500);
@@ -132,7 +132,7 @@ export default function AppShell({ user, setUser, logout }) {
         <UserMenu user={user} logout={logout} />
       </header>
 
-      {/* keyed on the route so each page fades in — movement between sections
+      {/* keyed on the route so each page fades in, movement between sections
           reads as a change of place rather than a flicker. */}
       <main className="main page-enter" key={location.pathname}>
         <Suspense fallback={<div className="route-loading"><div className="skeleton"><div className="skeleton-row title" /><div className="skeleton-row tall" /><div className="skeleton-row" /><div className="skeleton-row" /></div></div>}>
@@ -142,7 +142,7 @@ export default function AppShell({ user, setUser, logout }) {
 
       {/* The dock. Icons always; only the active item expands to show its
           label, which keeps it compact regardless of how many sections a role
-          has. Same component and position on mobile — one pattern everywhere. */}
+          has. Same component and position on mobile, one pattern everywhere. */}
       <nav className={`dock ${hasMore ? 'has-more' : ''}`} aria-label="Main">
         {dockTabs.map((t) => (
           <NavLink

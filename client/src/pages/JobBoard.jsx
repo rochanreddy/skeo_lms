@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
  * The job board.
  *
  * One list, the same for students and admins: openings scraped from ten
- * sources every morning, plus any an admin typed in. Nothing is vetted — the
+ * sources every morning, plus any an admin typed in. Nothing is vetted, the
  * feed goes straight through, and the only thing an admin can do that a
  * student can't is add an opening and remove one they added.
  *
@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
  *
  * The page is laid out as a board: search across the top, the four filters
  * beside it as menus, listings filling the rest. Every filter is one row of
- * chrome whatever its width — laid out flat, the four vocabularies are
+ * chrome whatever its width, laid out flat, the four vocabularies are
  * twenty-odd chips, which is a screenful before a single opening.
  */
 
@@ -106,7 +106,7 @@ function groupHeading(job, prev) {
  * A company's monogram and its colour.
  *
  * Both come from the name, so a company keeps the same square everywhere and
- * on every reload — the point is to be able to scan a long list by shape and
+ * on every reload: the point is to be able to scan a long list by shape and
  * colour, which a random tone each render would defeat.
  */
 function monogram(company) {
@@ -254,7 +254,7 @@ export default function JobBoard() {
    * Listings store slugs ('AI-NonTech', 'full-time') because labels get
    * reworded and rewriting thousands of rows over a copy edit shouldn't be
    * possible. The board is where they get read, so this is where they get
-   * turned back into words — the facets carry both halves already.
+   * turned back into words, the facets carry both halves already.
    */
   const labelOf = useMemo(() => {
     const map = new Map();
@@ -303,7 +303,7 @@ export default function JobBoard() {
       {!data.feedAvailable && !loading && (
         <p className="panel" role="status">
           The jobs feed can&apos;t be reached right now, so this is only what the team has
-          posted. It usually comes back on its own — nothing here is lost.
+          posted. It usually comes back on its own, and nothing here is lost.
         </p>
       )}
 
@@ -380,7 +380,7 @@ export default function JobBoard() {
               <strong>{active.length ? 'Nothing matches those filters' : 'No openings right now'}</strong>
               {active.length
                 ? 'Loosen one of them, or clear them all and start again.'
-                : 'The board refreshes every morning — check back tomorrow.'}
+                : 'The board refreshes every morning, so check back tomorrow.'}
             </div>
           )}
 
@@ -556,7 +556,7 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
         {job.isRemote && <span className="job-tag">Remote</span>}
         {workType && <span className="job-tag">{labelOf(workType)}</span>}
         {/* An internship is a level and an engagement at once, and the feed
-            tags it as both — printing it twice makes the row look broken. */}
+            tags it as both, printing it twice makes the row look broken. */}
         {level && level !== workType && <span className="job-tag">{labelOf(level)}</span>}
       </div>
 
@@ -580,7 +580,7 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
 
       {job.description && <p className="job-desc">{job.description}</p>}
 
-      {/* Only the team's own postings can be removed — a scraped listing has
+      {/* Only the team's own postings can be removed, a scraped listing has
           no record here to delete, and drops off by itself. */}
       {canRemove && (
         <div className="job-actions">
@@ -725,7 +725,7 @@ function AdminPost({ onPosted, onClose, facets }) {
         Description
         <textarea
           rows={3}
-          placeholder="Optional — what the role is, and who it suits."
+          placeholder="Optional: what the role is, and who it suits."
           value={form.description}
           onChange={(e) => set('description', e.target.value)}
         />

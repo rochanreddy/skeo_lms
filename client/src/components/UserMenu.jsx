@@ -2,11 +2,11 @@ import { Suspense, lazy, useState } from 'react';
 import UserMenuButton from './UserMenuButton.jsx';
 
 // The account menu behind the avatar. Logging out used to be reachable only by
-// opening ⌘K and typing "log out" — which nobody discovers. Clicking your own
+// opening ⌘K and typing "log out", which nobody discovers. Clicking your own
 // face is where everyone looks for it, so it lives here.
 //
 // The menu itself is Radix, which pulls in floating-ui and the whole popper
-// stack — around 40 KB that used to load before first paint for a panel that
+// stack: around 40 KB that used to load before first paint for a panel that
 // isn't on screen until you click it. So the trigger ships eagerly as a plain
 // button and the Radix version replaces it on first interaction, mounted
 // already-open so the click that armed it is also the click that opens it.
@@ -43,7 +43,7 @@ export default function UserMenu({ user, logout }) {
   }
 
   // The fallback is the identical button, so nothing moves while the chunk
-  // lands — the only visible change is the menu appearing once it has.
+  // lands: the only visible change is the menu appearing once it has.
   return (
     <Suspense
       fallback={<div className="who"><UserMenuButton name={name} initial={initial} role={user.role} open /></div>}
