@@ -2218,39 +2218,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 
 /* ── 02 At a glance, Projects, Updates and standing, three abreast ─────── */
 
-/* ── 03 From Menler, promo slots, three across ─────────────────────────── */
-.sh-ads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-@media (max-width: 860px) { .sh-ads { grid-template-columns: 1fr; } }
-.sh-ad {
-  display: flex; flex-direction: column; gap: 8px;
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: var(--radius); overflow: hidden;
-  padding: 20px 18px; text-decoration: none; text-align: left;
-  transition: border-color .16s, box-shadow .16s, transform .16s;
-}
-a.sh-ad:hover { border-color: var(--purple); box-shadow: var(--shadow); transform: translateY(-2px); }
-/* A creative fills the card edge to edge, the padding is for text promos. */
-.sh-ad:has(.sh-ad-img) { padding: 0; }
-.sh-ad-img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
-.sh-ad-title {
-  font-family: var(--display); font-size: 16px; font-weight: 700;
-  color: var(--ink); letter-spacing: -0.02em;
-}
-.sh-ad-body { font-size: 13px; color: var(--muted); line-height: 1.45; }
-.sh-ad-cta {
-  margin-top: auto; padding-top: 6px;
-  font-size: 12.5px; font-weight: 700; letter-spacing: .04em; color: var(--purple);
-}
-/* An unfilled slot holds its shape rather than collapsing the row. */
-.sh-ad.is-empty {
-  align-items: center; justify-content: center; min-height: 132px;
-  border-style: dashed; background: none;
-}
-.sh-ad.is-empty span {
-  font-size: 12px; font-weight: 600; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--muted); opacity: .55;
-}
-
 /* The six sections arrive in order rather than all at once. */
 .sh-sec { animation: page-in .44s cubic-bezier(.2,.7,.3,1) both; }
 .sh-sec:nth-of-type(1) { animation-delay: .02s; }

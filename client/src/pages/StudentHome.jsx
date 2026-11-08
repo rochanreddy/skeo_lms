@@ -24,7 +24,7 @@ export default function StudentHome() {
   const [progress, setProgress] = useState({ completedTopics: [] });
   const [assignments, setAssignments] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [notes, setNotes] = useState([]);
+  const [jobsOpened, setJobsOpened] = useState(0);
   const [loading, setLoading] = useState(true);
   // The module list is folded by default: the bar above it already says
   // where you are, and the list is only wanted when you go looking.
@@ -37,7 +37,6 @@ export default function StudentHome() {
       api('/programs').catch(() => ({ programs: [] })),
       api('/assignments?scope=mine').catch(() => ({ assignments: [] })),
       api('/announcements').catch(() => ({ announcements: [] })),
-      api('/notifications').catch(() => ({ items: [] })),
       // Progress goes out with the rest, not behind them. It is keyed on a
       // programme id this screen does not know until /batches answers, so
       // asking for it used to mean a second round trip, which on a phone in
@@ -47,11 +46,12 @@ export default function StudentHome() {
       // the same rule used below, and says which one it picked, so the answer
       // can be checked rather than assumed.
       api('/progress/me').catch(() => null),
-    ]).then(async ([bd, pd, ad, nd, nt, pg]) => {
+      api('/jobs/clicks/mine').catch(() => ({ count: 0 })),
+    ]).then(async ([bd, pd, ad, nd, pg, jc]) => {
       if (!alive) return;
+      setJobsOpened(jc.count || 0);
       setAssignments(ad.assignments || []);
       setAnnouncements(nd.announcements || []);
-      setNotes(nt.items || []);
 
       const progId = (bd.batches || [])[0]?.programId;
       const p = (pd.programs || []).find((x) => x._id === progId) || (pd.programs || [])[0] || null;
@@ -113,20 +113,19 @@ export default function StudentHome() {
   const totalTopics = stations.reduce((n, s) => n + s.total, 0);
   const doneTopics = stations.reduce((n, s) => n + s.done, 0);
   const pct = totalTopics ? Math.round((doneTopics / totalTopics) * 100) : 0;
+  const modulesDone = stations.filter((s) => s.complete).length;
   // Anything with a submission counts as handed in, graded or not.
   const submittedCount = assignments.filter((a) => a.mySubmission).length;
 
 
-  // ── Updates ─── announcements and notifications are one feed to a
-  // student; only we care that they come from different collections.
-  const updates = useMemo(() => [
-    ...announcements.map((a) => ({
-      id: `a-${a._id}`, kind: 'Announcement', title: a.title, body: a.body, at: a.createdAt,
-    })),
-    ...notes.map((n) => ({
-      id: `n-${n._id}`, kind: n.type || 'Update', title: n.text, body: '', at: n.createdAt, link: n.link, unread: !n.read,
-    })),
-  ].sort((x, y) => new Date(y.at) - new Date(x.at)).slice(0, 6), [announcements, notes]);
+  // ── Updates ─── only what an admin pushed: news from Menler to everyone,
+  // or a note to this student's cohort. The automatic alerts (new assignment,
+  // graded) stay under the bell, where they already are.
+  const updates = useMemo(() => announcements.map((a) => ({
+    id: a._id,
+    from: a.batchId ? a.batchId.name || 'Your cohort' : 'Menler',
+    title: a.title, body: a.body, link: a.link, at: a.createdAt,
+  })), [announcements]);
 
   const firstName = (user.full_name || user.email).split(' ')[0];
 
@@ -247,12 +246,32 @@ export default function StudentHome() {
       </section>
 
       {/* ═══ 02 · AT A GLANCE ════════════════════════════════════════════
-          Projects, Updates and the standing numbers, three abreast. Each card
-          shows the top of its list and hands off to the page that holds the
-          rest: Home answers "where am I", not "show me everything". */}
+          Your standing as a strip on top, then Projects and Updates side by
+          side. Each list shows its top three and hands off to the page that
+          holds the rest: Home answers "where am I", not "show me everything". */}
       <section className="sh-sec">
         <SecHead n="02" title="At a glance" />
         <div className="hg">
+
+          {/* Your standing: modules finished, work handed in, jobs looked at.
+              Only figures we actually hold. */}
+          <div className="hg-card hg-standing">
+            <div className="hg-head"><h3>Your standing</h3></div>
+            <div className="hg-stats">
+              <div className="hg-stat">
+                <span className="hg-stat-n">{modulesDone}<small>/{stations.length}</small></span>
+                <span className="hg-stat-l">Modules done</span>
+              </div>
+              <div className="hg-stat">
+                <span className="hg-stat-n">{submittedCount}<small>/{assignments.length}</small></span>
+                <span className="hg-stat-l">Submitted</span>
+              </div>
+              <button type="button" className="hg-stat" onClick={() => navigate('/app/jobs')}>
+                <span className="hg-stat-n">{jobsOpened}</span>
+                <span className="hg-stat-l">Jobs opened</span>
+              </button>
+            </div>
+          </div>
 
           {/* Projects: most urgent first. */}
           <div className="hg-card">
@@ -288,101 +307,41 @@ export default function StudentHome() {
             )}
           </div>
 
-          {/* Updates: announcements and notifications, one feed. */}
+          {/* Updates: what an admin pushed, newest first. */}
           <div className="hg-card">
             <div className="hg-head">
               <h3>Updates</h3>
               {updates.length > 3 && <span className="hg-note">+{updates.length - 3} more</span>}
             </div>
             {updates.length === 0 ? (
-              <p className="hg-empty">Announcements and alerts from your team will collect here.</p>
+              <p className="hg-empty">Any updates from Menler and your team will show up here.</p>
             ) : (
               <div className="hg-rows">
-                {updates.slice(0, 3).map((u) => (
-                  <div className="hg-row" key={u.id}>
-                    <span className={`hg-mark ${u.kind === 'Announcement' ? 'is-amber' : 'is-sky'}`}>
-                      <LineIcon name={u.kind === 'Announcement' ? 'megaphone' : 'bell'} size={17} />
-                    </span>
-                    <span className="hg-text">
-                      <span className="hg-title">{u.title}</span>
-                      <span className="hg-sub">{u.kind} · {fmtDate(u.at)}</span>
-                    </span>
-                    {u.unread && <span className="hg-dot" aria-label="Unread" />}
-                  </div>
-                ))}
+                {updates.slice(0, 3).map((u) => {
+                  const inner = (
+                    <>
+                      <span className="hg-mark is-amber"><LineIcon name="megaphone" size={17} /></span>
+                      <span className="hg-text">
+                        <span className="hg-title">{u.title}</span>
+                        {u.body && <span className="hg-body">{u.body}</span>}
+                        <span className="hg-sub">{u.from} · {fmtDate(u.at)}</span>
+                      </span>
+                    </>
+                  );
+                  if (!u.link) return <div className="hg-row" key={u.id}>{inner}</div>;
+                  return u.link.startsWith('/') ? (
+                    <button className="hg-row" key={u.id} onClick={() => navigate(u.link)}>{inner}</button>
+                  ) : (
+                    <a className="hg-row" key={u.id} href={u.link} target="_blank" rel="noreferrer">{inner}</a>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Your standing: only figures we actually hold. */}
-          <div className="hg-card hg-standing">
-            <div className="hg-head"><h3>Your standing</h3></div>
-            <div className="hg-stats">
-              <div className="hg-stat">
-                <span className="hg-stat-n">{submittedCount}<small>/{assignments.length}</small></span>
-                <span className="hg-stat-l">Submitted</span>
-              </div>
-              <div className="hg-stat">
-                <span className="hg-stat-n">{doneTopics}<small>/{totalTopics}</small></span>
-                <span className="hg-stat-l">Lessons done</span>
-              </div>
-              <div className="hg-stat">
-                <span className="hg-stat-n">{pct}<small>%</small></span>
-                <span className="hg-stat-l">{stations.length ? `${stations.length} module${stations.length === 1 ? '' : 's'}` : 'Programme'}</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ═══ 03 · FROM MENLER ════════════════════════════════════════════
-          Promo slots for the main Menler site. Deliberately empty scaffolding:
-          drop a creative into each <MenlerAd>, or hand it an href and an image
-          and it becomes a link. Nothing here fetches or tracks anything. */}
-      <section className="sh-sec">
-        <SecHead n="03" title="From Menler" />
-        <p className="sh-sub">More from the team behind your programme.</p>
-        <div className="sh-ads">
-          <MenlerAd slot="home-1" />
-          <MenlerAd slot="home-2" />
-          <MenlerAd slot="home-3" />
         </div>
       </section>
     </div>
-  );
-}
-
-// One Menler promo slot.
-//
-// Empty by default, and empty is a valid state, an unfilled slot renders a
-// quiet placeholder rather than collapsing, so the row keeps its shape while
-// creatives are still being written. Fill one by passing `image` (+ `alt`) for
-// a plain creative, or `href` as well to make it a link; `title`/`body` render
-// a text promo when there is no artwork.
-function MenlerAd({ slot, href, image, alt = '', title, body, cta = 'Learn more →' }) {
-  const filled = image || title;
-
-  const inner = image ? (
-    // Dimensions are set in CSS; the attributes keep the box reserved before
-    // the stylesheet lands so a late creative can't shift the row.
-    <img className="sh-ad-img" src={image} alt={alt} width="400" height="225" loading="lazy" decoding="async" />
-  ) : (
-    <>
-      <span className="sh-ad-title">{title}</span>
-      {body && <span className="sh-ad-body">{body}</span>}
-      {href && <span className="sh-ad-cta">{cta}</span>}
-    </>
-  );
-
-  if (!filled) {
-    return <div className="sh-ad is-empty" data-slot={slot} aria-hidden="true"><span>Ad slot</span></div>;
-  }
-
-  return href ? (
-    <a className="sh-ad" data-slot={slot} href={href} target="_blank" rel="noreferrer sponsored">{inner}</a>
-  ) : (
-    <div className="sh-ad" data-slot={slot}>{inner}</div>
   );
 }
 

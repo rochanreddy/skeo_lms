@@ -76,21 +76,30 @@
 }
 
 /* ── HOME · AT A GLANCE ─────────────────────────────────────────────────────
-   Three plain cards: a heading with its link on the right, ruled rows with
-   an icon tile, one line of title, one of detail, and a status chip. */
-.hg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
-.hg-card { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px 14px; }
+   Your standing runs full width on top as a strip of stat tiles; Projects
+   and Updates sit two abreast under it, stretched to the same height so the
+   bottoms line up. Lists are ruled rows with an icon tile, one line of
+   title, one of detail, and a status chip. */
+.hg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.hg-card { min-width: 0; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px 14px; }
+.hg-standing { grid-column: 1 / -1; }
 .hg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; min-height: 28px; }
 .hg-head h3 { margin: 0; font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
 .hg-link { border: 0; background: none; padding: 4px 0; font-family: var(--font); font-size: 12.5px; font-weight: 700; color: var(--purple); cursor: pointer; white-space: nowrap; }
 .hg-link:hover { text-decoration: underline; }
 .hg-note { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .hg-empty { margin: 8px 0 4px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+/* In a card stretched to its neighbour's height, the empty line sits in the
+   middle of the space rather than stranded at the top. */
+.hg-card > .hg-empty { flex: 1; display: flex; align-items: center; }
 .hg-rows { display: flex; flex-direction: column; }
 .hg-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 9px 0; border: 0; border-top: 1px solid var(--line-soft); background: none; font-family: var(--font); text-align: left; color: inherit; }
 .hg-row:first-child { border-top: 0; }
 button.hg-row { cursor: pointer; }
-button.hg-row:hover .hg-title { color: var(--purple); }
+button.hg-row:hover .hg-title, a.hg-row:hover .hg-title { color: var(--purple); }
+a.hg-row { text-decoration: none; cursor: pointer; }
+/* An update's details: two lines at most, the rest is for the link. */
+.hg-body { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .hg-mark { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--purple-soft); color: var(--purple); }
 .hg-mark.is-green { background: var(--green-soft); color: var(--a6-ink); }
 .hg-mark.is-rose  { background: var(--a4-soft); color: var(--a4-ink); }
@@ -101,10 +110,20 @@ button.hg-row:hover .hg-title { color: var(--purple); }
 .hg-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hg-row .status { flex: none; font-size: 11.5px; padding: 4px 10px 4px 9px; }
 .hg-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--purple); }
-.hg-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-.hg-stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 12px 12px 11px; border-radius: 12px; background: var(--wash); }
-.hg-stat-n { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hg-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.hg-stat { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 16px 16px 14px; border-radius: 12px; background: var(--wash); }
+.hg-stat-n { font-family: var(--display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
 .hg-stat-n small { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 1px; }
-.hg-stat-l { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 1040px) { .hg { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hg-standing { grid-column: 1 / -1; } }
-@media (max-width: 640px) { .hg { grid-template-columns: minmax(0, 1fr); gap: 12px; } .hg-standing { grid-column: auto; } .hg-card { padding: 14px 16px 12px; } }
+.hg-stat-l { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* "Jobs opened" is a way into the job board, so that tile is a button. */
+button.hg-stat { border: 0; font-family: var(--font); text-align: left; cursor: pointer; transition: background .16s; }
+button.hg-stat:hover { background: var(--purple-soft); }
+button.hg-stat:hover .hg-stat-n { color: var(--purple); }
+@media (max-width: 860px) { .hg { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
+@media (max-width: 640px) {
+  .hg-card { padding: 14px 16px 12px; }
+  .hg-stats { gap: 8px; }
+  .hg-stat { padding: 12px 12px 11px; }
+  .hg-stat-n { font-size: 24px; }
+  .hg-stat-l { font-size: 11.5px; }
+}
