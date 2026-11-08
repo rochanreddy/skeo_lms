@@ -2934,8 +2934,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   .jb-bar > * { justify-content: center; }
   .jb-bar > .btn { grid-column: 1 / -1; }
 
-  .job-foot { gap: 10px; }
-  .job-apply { padding: 9px 16px; }
 }
 
 /* ── Not bought yet ─────────────────────────────────────────────────────────
@@ -3008,7 +3006,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   .dock-item { flex: 1 1 0; min-width: 0; padding: 8px 2px 7px; }
   .dock-label { font-size: 10.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .dock.has-more .dock-extra { display: none; }
-  .dock.has-more .dock-more { display: flex; border: 0; background: none; font-family: var(--font); color: var(--muted); cursor: pointer; }
+  .dock.has-more .dock-more { display: flex; border: 0; background: none; font: inherit; line-height: inherit; color: var(--muted); cursor: pointer; }
   .dock.has-more .dock-more.on { background: var(--ink); color: var(--on-ink); }
   .dock-sheet-scrim { display: block; position: fixed; inset: 0; z-index: 58; background: rgba(0, 0, 0, .35); }
   .dock-sheet {
@@ -3174,34 +3172,13 @@ body:has(.fv) .dock { visibility: hidden; }
 .install-foot { margin: 22px 0 0; font-size: 13.5px; text-align: center; }
 .install-foot a { color: var(--muted); }
 
-/* ── Job Board in the dock ────────────────────────────────────────────────
-   The one featured section. It sits in the middle and wears the accent even
-   at rest: Claude terracotta by day, violet on Charcoal, so it reads as the
-   centre of the dock rather than one tab among many. On it, the fill goes
-   solid. */
-.dock-item.dock-feature {
-  color: #fff;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--blue) 82%, #fff), var(--blue) 55%, var(--blue-dark));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 6px 18px var(--blue-glow);
-}
-.dock-item.dock-feature:hover { color: #fff; background: linear-gradient(160deg, var(--blue), var(--blue-dark)); }
-.dock-item.dock-feature:hover svg { transform: translateY(-1px) scale(1.08); }
-.dock-item.dock-feature .dock-label { font-weight: 800; }
-/* On it: a ring in the accent, set off from the fill by the dock's own colour. */
-.dock-item.dock-feature.on {
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 0 0 2px var(--card), 0 0 0 4px var(--blue), 0 8px 22px var(--blue-glow);
-}
-.dock-item.dock-feature:focus-visible { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--blue); }
-
-/* On a phone the dock shows five slots, and the featured tab takes the middle
-   one whatever the DOM order (AppShell sets --dock-phone-order). It sits level
-   with the other tabs, at their size, the colour is what marks it out. */
+/* On a phone the dock shows four slots, and the featured tab (Job Board)
+   keeps its place whatever the DOM order (AppShell sets --dock-phone-order).
+   It looks like every other tab. */
 @media (max-width: 640px) {
   .dock.has-more .dock-item { order: var(--dock-phone-order, 0); }
   .dock.has-more .dock-more { order: 99; }
   .dock { overflow: visible; }
-  .dock-item.dock-feature .dock-label { overflow: visible; text-overflow: clip; }
 }
 
 /* ── Assignments & projects on a phone ────────────────────────────────────
