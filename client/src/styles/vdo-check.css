@@ -5,6 +5,8 @@
 
 .vc { border-radius: 14px; padding: 16px 20px; margin-bottom: 18px; }
 .vc-warn { background: var(--amber-soft); border: 1px solid var(--amber-line, var(--line)); }
+.vc-note { background: var(--card); border: 1px solid var(--line); }
+.vc-note .vc-why { color: var(--ink-2); }
 .vc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .vc-head strong { font-size: 14.5px; color: var(--ink); }
 .vc-sub { margin: 3px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; max-width: 70ch; }

@@ -673,11 +673,12 @@ function Content() {
   const curGate = current ? gateFor(current.modId) : null;
   // A DRM lesson wins over every plain URL on the topic: if the admin put the
   // recording in VdoCipher, that is where it is watched.
-  const vdoId = topic?.contentType === 'video' && topic?.videoSource === 'vdocipher' ? (topic.vdoVideoId || '') : '';
-  const videoUrl = vdoId ? '' : (topic?.contentType === 'video' ? topic?.contentUrl : '') || topic?.classLink || '';
+  const vdoId = topic?.contentType === 'video' ? (topic.vdoVideoId || '') : '';
+  // A video lesson always has the player box; without a recording yet it
+  // holds the "on its way" card rather than disappearing.
 
   const reading = !!(topic || page);
-  const hasVideo = !!(vdoId || videoUrl);
+  const hasVideo = topic?.contentType === 'video';
   const bodyText = topic ? (topic.body || '') : page ? (page.body || '') : '';
   const hasAbout = !!bodyText;
   const crumb = topic
@@ -725,7 +726,7 @@ function Content() {
                       upNext={next && !nextLocked ? { title: next.topic.title, onPlay: () => selectTopic(next) } : null}
                     />
                   )
-                  : <LessonSoon key={topic._id} url={videoUrl} />}
+                  : <LessonSoon key={topic._id} url={topic.contentUrl || topic.classLink || ''} />}
               </div>
             )}
 

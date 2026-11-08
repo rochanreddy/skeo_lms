@@ -36,7 +36,7 @@ export function videoProblems(modules, library) {
 
   const problems = [];
   (modules || []).forEach((m, mi) => (m.chapters || []).forEach((c, ci) => (c.topics || []).forEach((t, ti) => {
-    if (t.contentType !== 'video' || t.videoSource !== 'vdocipher') return;
+    if (t.contentType !== 'video') return; // every video lesson lives on VdoCipher
     const id = (t.vdoVideoId || '').trim();
     if (id && owned.has(id)) return;
     const n = lessonNumber(t.title);
@@ -51,15 +51,27 @@ export function videoProblems(modules, library) {
   return problems;
 }
 
-/** The account's whole library. The API pages at 60, the most it allows. */
-export async function loadLibrary(api) {
-  const all = [];
-  for (let page = 1; page <= 50; page += 1) {
-    const { videos } = await api(`/videos?limit=60&page=${page}`);
-    all.push(...(videos || []));
-    if (!videos || videos.length < 60) break;
+/** The account's whole library. The API pages at 60, the most it allows.
+ * Shared between the editor and its video check, so one visit is one read;
+ * `fresh` asks the account again (after an upload, or on "Check again"). */
+let libraryPromise = null;
+export function loadLibrary(api, { fresh = false } = {}) {
+  if (fresh || !libraryPromise) {
+    libraryPromise = (async () => {
+      const all = [];
+      for (let page = 1; page <= 50; page += 1) {
+        const { videos } = await api(`/videos?limit=60&page=${page}`);
+        all.push(...(videos || []));
+        if (!videos || videos.length < 60) break;
+      }
+      return all;
+    })();
+    libraryPromise.catch(() => { libraryPromise = null; }); // a failure is not remembered
   }
-  return all;
+  return libraryPromise;
 }
+
+/** Drop the remembered library (tests, and anything that must not reuse it). */
+export function forgetLibrary() { libraryPromise = null; }
 
 export const isReady = (video) => String(video?.status || '').toLowerCase() === 'ready';

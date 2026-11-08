@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearApiCache } from '../api.js';
 import { fakeServer, json, signIn } from '../test/server.js';
 import VdoCheck from './VdoCheck.jsx';
+import { forgetLibrary } from '../lib/vdoLinks.js';
 
 const LIBRARY = '/videos?limit=60&page=1';
 const videos = [
@@ -23,6 +24,7 @@ function show(tree, routes = { [LIBRARY]: { videos } }) {
 beforeEach(() => {
   signIn({ id: 'a1', role: 'admin', fullName: 'Admin' });
   clearApiCache();
+  forgetLibrary();
 });
 
 describe('the video check', () => {

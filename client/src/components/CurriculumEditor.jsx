@@ -4,9 +4,15 @@ import LessonIcon from './LessonIcon.jsx';
 import { ProjectsManager, QuizzesManager } from './CourseWork.jsx';
 import VdoLibrary from './VdoLibrary.jsx';
 import VdoCheck from './VdoCheck.jsx';
+import { isReady, loadLibrary } from '../lib/vdoLinks.js';
 
 // Admin curriculum builder for one program. Upload a doc to auto-structure it,
 // then review/edit the Module → Chapter → Topic tree and publish.
+//
+// Lesson recordings live on VdoCipher and nowhere else: a video lesson has one
+// video, chosen from the account's library (or uploaded into it). Until it has
+// one, students see "this lesson's video is on its way", and this editor says
+// so next to the lesson.
 export default function CurriculumEditor({ programId, onClose }) {
   const [program, setProgram] = useState(null);
   const [modules, setModules] = useState([]);
@@ -23,6 +29,10 @@ export default function CurriculumEditor({ programId, onClose }) {
   // otherwise the option would be a field that silently never plays.
   const [vdoReady, setVdoReady] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [pasting, setPasting] = useState(false);
+  // The account's library, so a lesson can show its video by name and state
+  // rather than as an id. null until it has loaded.
+  const [library, setLibrary] = useState(null);
 
   useEffect(() => {
     api(`/programs/${programId}`).then(({ program: p }) => {
@@ -34,6 +44,12 @@ export default function CurriculumEditor({ programId, onClose }) {
     api('/batches').then((d) => setBatchId((d.batches || [])[0]?.id || null)).catch(() => {});
     api('/videos/config').then((d) => setVdoReady(!!d.configured)).catch(() => {});
   }, []);
+  useEffect(() => {
+    if (!vdoReady) return;
+    // Fresh on each visit; the video check below reuses this same read.
+    loadLibrary(api, { fresh: true }).then(setLibrary).catch(() => setLibrary([]));
+  }, [vdoReady]);
+  const videoById = useMemo(() => new Map((library || []).map((v) => [v.id, v])), [library]);
 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 2500); };
   // Immutable tree edit: clone, mutate via callback, mark dirty.
@@ -41,14 +57,18 @@ export default function CurriculumEditor({ programId, onClose }) {
   const touch = (fn) => { edit(fn); setDirty(true); };
 
   const stats = useMemo(() => {
-    const topics = modules.reduce((n, m) => n + (m.chapters || []).reduce((k, c) => k + (c.topics || []).length, 0), 0);
-    return { modules: modules.length, topics };
+    let topics = 0; let videos = 0; let linked = 0;
+    for (const m of modules) for (const c of m.chapters || []) for (const t of c.topics || []) {
+      topics += 1;
+      if (t.contentType === 'video') { videos += 1; if (t.vdoVideoId) linked += 1; }
+    }
+    return { modules: modules.length, topics, videos, linked };
   }, [modules]);
 
   // ── Tree mutators ──
   const addModule = () => touch((m) => m.push({ title: 'New module', order: m.length, chapters: [] }));
   const addChapter = (mi) => touch((m) => m[mi].chapters.push({ title: 'New chapter', order: m[mi].chapters.length, topics: [] }));
-  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'text', contentUrl: '', body: '', classLink: '', order: m[mi].chapters[ci].topics.length }));
+  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'video', videoSource: 'vdocipher', vdoVideoId: '', contentUrl: '', body: '', order: m[mi].chapters[ci].topics.length }));
   const delModule = (mi) => { touch((m) => m.splice(mi, 1)); setSel(null); };
   const delChapter = (mi, ci) => { touch((m) => m[mi].chapters.splice(ci, 1)); setSel(null); };
   const delTopic = (mi, ci, ti) => { touch((m) => m[mi].chapters[ci].topics.splice(ti, 1)); setSel(null); };
@@ -56,10 +76,25 @@ export default function CurriculumEditor({ programId, onClose }) {
   const setChapterTitle = (mi, ci, v) => touch((m) => { m[mi].chapters[ci].title = v; });
   const setTopicField = (mi, ci, ti, patch) => touch((m) => { Object.assign(m[mi].chapters[ci].topics[ti], patch); });
   const move = (mi, dir) => touch((m) => { const j = mi + dir; if (j < 0 || j >= m.length) return; [m[mi], m[j]] = [m[j], m[mi]]; });
+  const select = (p) => {
+    setSel(p);
+    setPasting(false);
+    // On a phone the lesson opens below the list and the check: bring it up.
+    if (p && window.matchMedia?.('(max-width: 820px)').matches) {
+      requestAnimationFrame(() => document.querySelector('.ce-editor')?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+    }
+  };
+  // A lesson's type decides what it carries; a video lesson is always VdoCipher.
+  const setType = (tp) => setTopicField(sel.mi, sel.ci, sel.ti, tp === 'video' ? { contentType: 'video', videoSource: 'vdocipher' } : { contentType: tp });
+  const attachVideo = (v) => {
+    setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: 'vdocipher', vdoVideoId: v.id, contentUrl: '' });
+    // A fresh upload is not in the library we loaded; remember it ourselves.
+    if (library && !videoById.has(v.id)) setLibrary([...library, v]);
+  };
   // From the video check: point each lesson at the library video it matched.
   const linkVideos = (matches) => {
     touch((m) => {
-      for (const p of matches) Object.assign(m[p.mi].chapters[p.ci].topics[p.ti], { videoSource: 'vdocipher', vdoVideoId: p.match.id });
+      for (const p of matches) Object.assign(m[p.mi].chapters[p.ci].topics[p.ti], { videoSource: 'vdocipher', vdoVideoId: p.match.id, contentUrl: '' });
     });
     flash(`Linked ${matches.length} lesson${matches.length === 1 ? '' : 's'}. Save to publish ${matches.length === 1 ? 'it' : 'them'}.`);
   };
@@ -84,18 +119,35 @@ export default function CurriculumEditor({ programId, onClose }) {
     } catch (err) { flash(err.message); }
   }
 
+  /** How a video lesson stands: what the tree dot and the editor card both say. */
+  const videoState = (t) => {
+    if (t.contentType !== 'video') return null;
+    const id = (t.vdoVideoId || '').trim();
+    if (!id) return { tone: 'none', label: 'No video yet' };
+    if (!library) return { tone: 'wait', label: 'Checking the library…' };
+    const v = videoById.get(id);
+    if (!v) return { tone: 'none', label: 'Not in this VdoCipher account', video: null };
+    if (!isReady(v)) return { tone: 'wait', label: 'Processing', video: v };
+    return { tone: 'ok', label: 'Ready', video: v };
+  };
+
   if (!program) return <div className="panel">Loading…</div>;
   const selTopic = sel ? modules[sel.mi]?.chapters[sel.ci]?.topics[sel.ti] : null;
+  const selState = selTopic ? videoState(selTopic) : null;
+  const selChapter = sel ? modules[sel.mi]?.chapters[sel.ci] : null;
 
   return (
-    <div className="ce">
+    <div className={`ce ${selTopic ? 'has-sel' : ''}`}>
       <div className="ce-bar">
         <button className="btn ghost sm" onClick={onClose}>← Programs</button>
-        <div className="ce-bar-title"><strong>{program.title}</strong> <span className="muted">· {stats.modules} modules · {stats.topics} lessons</span></div>
+        <div className="ce-bar-title">
+          <strong>{program.title}</strong>
+          <span className="muted"> · {stats.modules} modules · {stats.topics} lessons{stats.videos ? ` · ${stats.linked}/${stats.videos} videos attached` : ''}</span>
+        </div>
         {view === 'curriculum' && (
           <label className="ce-pub"><input type="checkbox" checked={published} onChange={(e) => { setPublished(e.target.checked); setDirty(true); }} /> Published</label>
         )}
-        {msg && <span className="muted ce-msg">{msg}</span>}
+        {msg && <span className="muted ce-msg" role="status">{msg}</span>}
         {view === 'curriculum' && (
           <button className="btn" onClick={save} disabled={!dirty}>{dirty ? 'Save changes' : 'Saved'}</button>
         )}
@@ -115,12 +167,12 @@ export default function CurriculumEditor({ programId, onClose }) {
       {view === 'curriculum' && (
       <>
 
-      {vdoReady && <VdoCheck modules={modules} onLink={linkVideos} onOpen={(p) => setSel({ mi: p.mi, ci: p.ci, ti: p.ti })} />}
+      {vdoReady && <VdoCheck modules={modules} onLink={linkVideos} onOpen={(p) => select({ mi: p.mi, ci: p.ci, ti: p.ti })} />}
 
       <div className="ce-import">
         <div>
-          <strong>📥 Import from a document</strong>
-          <p className="muted" style={{ margin: '2px 0 0' }}>Upload a <b>.docx</b>, <b>.pdf</b>, <b>.md</b> or <b>.txt</b> and headings become modules & lessons automatically. Review below, then Save.</p>
+          <strong>Import from a document</strong>
+          <p className="muted" style={{ margin: '2px 0 0' }}>Upload a <b>.docx</b>, <b>.pdf</b>, <b>.md</b> or <b>.txt</b> and headings become modules &amp; lessons automatically. Review below, then Save.</p>
         </div>
         <div>
           <input ref={fileRef} type="file" accept=".docx,.pdf,.md,.txt,.markdown" onChange={onImport} hidden />
@@ -147,10 +199,12 @@ export default function CurriculumEditor({ programId, onClose }) {
                   </div>
                   {(c.topics || []).map((t, ti) => {
                     const active = sel && sel.mi === mi && sel.ci === ci && sel.ti === ti;
+                    const state = videoState(t);
                     return (
-                      <div key={ti} className={`ce-topic ${active ? 'active' : ''}`} onClick={() => setSel({ mi, ci, ti })}>
+                      <div key={ti} className={`ce-topic ${active ? 'active' : ''}`} onClick={() => select({ mi, ci, ti })}>
                         <span className="ce-topic-type"><LessonIcon type={t.contentType} size={13} /></span>
                         <span className="ce-topic-title">{t.title || 'Untitled'}</span>
+                        {state && <span className={`ce-dot is-${state.tone}`} title={state.label} aria-label={state.label} />}
                         <button className="ce-mini danger" title="Delete lesson" onClick={(e) => { e.stopPropagation(); delTopic(mi, ci, ti); }}>✕</button>
                       </div>
                     );
@@ -166,73 +220,81 @@ export default function CurriculumEditor({ programId, onClose }) {
 
         <section className="ce-editor panel">
           {!selTopic ? (
-            <div className="empty-state"><p className="muted">Select a lesson to edit its content, or import a document above.</p></div>
+            <div className="empty-state"><p className="muted">Select a lesson to edit it, or import a document above.</p></div>
           ) : (
             <>
+              <button type="button" className="btn ghost sm ce-back" onClick={() => select(null)}>← All lessons</button>
+              <p className="ce-eyebrow">
+                Module {sel.mi + 1}{selChapter?.title && selChapter.title !== 'Lessons' ? ` · ${selChapter.title}` : ''} · Lesson {sel.ti + 1} of {selChapter?.topics?.length || 1}
+              </p>
               <label className="ce-label">Lesson title</label>
               <input className="ce-field" value={selTopic.title} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { title: e.target.value })} />
 
               <label className="ce-label">Type</label>
               <div className="ce-types">
-                {['text', 'video', 'pdf'].map((tp) => (
-                  <button key={tp} className={`ce-type ${selTopic.contentType === tp ? 'on' : ''}`} onClick={() => setTopicField(sel.mi, sel.ci, sel.ti, { contentType: tp })}>
+                {['video', 'text', 'pdf'].map((tp) => (
+                  <button key={tp} className={`ce-type ${selTopic.contentType === tp ? 'on' : ''}`} onClick={() => setType(tp)}>
                     <LessonIcon type={tp} size={14} /> {tp === 'video' ? 'Video' : tp === 'pdf' ? 'PDF' : 'Reading'}
                   </button>
                 ))}
               </div>
 
-              {/* A video lesson picks its source; a PDF lesson just has a URL. */}
-              {selTopic.contentType === 'video' && vdoReady && (
+              {selTopic.contentType === 'video' && (
                 <>
-                  <label className="ce-label">Video source</label>
-                  <div className="ce-types">
-                    {[['url', 'Direct URL'], ['vdocipher', 'VdoCipher (DRM)']].map(([src, label]) => (
-                      <button
-                        key={src}
-                        className={`ce-type ${(selTopic.videoSource || 'url') === src ? 'on' : ''}`}
-                        onClick={() => setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: src })}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="ce-label">Video <span className="muted">(VdoCipher: encrypted playback, watermarked with the student’s name)</span></label>
+                  {!vdoReady ? (
+                    <div className="ce-video is-none">
+                      <p className="ce-video-title">Video hosting is not set up on the server.</p>
+                      <p className="ce-video-sub">Add VDOCIPHER_API_SECRET to the API and this lesson can carry a recording. Students see “on its way” until then.</p>
+                    </div>
+                  ) : selState.tone === 'none' && !selTopic.vdoVideoId ? (
+                    <div className="ce-video is-none">
+                      <p className="ce-video-title">No video yet.</p>
+                      <p className="ce-video-sub">Students see “This lesson’s video is on its way” until one is attached. The notes below stay readable.</p>
+                      <div className="ce-video-actions">
+                        <button className="btn sm" onClick={() => setPicking(true)}>Choose or upload a video</button>
+                        {!pasting && <button type="button" className="ce-link" onClick={() => setPasting(true)}>Have the video ID? Paste it</button>}
+                      </div>
+                      {pasting && (
+                        <input
+                          className="ce-field"
+                          autoFocus
+                          placeholder="VdoCipher video ID"
+                          value={selTopic.vdoVideoId || ''}
+                          onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: 'vdocipher', vdoVideoId: e.target.value.trim() })}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`ce-video is-${selState.tone}`}>
+                      <span className="ce-video-mark" aria-hidden="true"><LessonIcon type="video" size={18} /></span>
+                      <div className="ce-video-body">
+                        <p className="ce-video-title">{selState.video?.title || selTopic.vdoVideoId}</p>
+                        <p className="ce-video-sub">
+                          <span className={`ce-dot is-${selState.tone}`} aria-hidden="true" /> {selState.label}
+                          {selState.video?.length ? ` · ${Math.floor(selState.video.length / 60)}m ${String(Math.round(selState.video.length % 60)).padStart(2, '0')}s` : ''}
+                          {selState.tone === 'wait' && selState.video ? '. VdoCipher is still preparing it; it plays once that finishes.' : ''}
+                          {selState.tone === 'none' ? '. This id belongs to another account or was deleted. Students see “on its way”.' : ''}
+                        </p>
+                      </div>
+                      <div className="ce-video-actions">
+                        <button className="btn sm ghost" onClick={() => setPicking(true)}>Change</button>
+                        <button className="btn sm ghost" onClick={() => setTopicField(sel.mi, sel.ci, sel.ti, { vdoVideoId: '' })}>Remove</button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
-              {selTopic.contentType === 'video' && vdoReady && selTopic.videoSource === 'vdocipher' ? (
+              {selTopic.contentType === 'pdf' && (
                 <>
-                  <label className="ce-label">
-                    VdoCipher video <span className="muted">(encrypted playback, watermarked with the student's name)</span>
-                  </label>
-                  <div className="row">
-                    <input
-                      className="ce-field"
-                      placeholder="Video ID, or pick one from the library"
-                      value={selTopic.vdoVideoId || ''}
-                      onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { vdoVideoId: e.target.value.trim() })}
-                    />
-                    <button className="btn sm" onClick={() => setPicking(true)}>Library…</button>
-                  </div>
-                </>
-              ) : selTopic.contentType !== 'text' && (
-                <>
-                  <label className="ce-label">{selTopic.contentType === 'video' ? 'Video URL' : 'PDF URL'}</label>
-                  <input className="ce-field" placeholder="https://…" value={selTopic.contentUrl} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { contentUrl: e.target.value })} />
+                  <label className="ce-label">PDF URL</label>
+                  <input className="ce-field" placeholder="https://…" value={selTopic.contentUrl || ''} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { contentUrl: e.target.value })} />
                 </>
               )}
 
-              {/* Independent of content type, a reading lesson can still have
-                  had a live class about it. */}
-              <label className="ce-label">Class link <span className="muted">(the meeting link while it's live, YouTube once recorded; leave empty and students see "Not available yet")</span></label>
-              <input
-                className="ce-field"
-                placeholder="https://meet.google.com/… or https://youtube.com/watch?v=…"
-                value={selTopic.classLink || ''}
-                onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { classLink: e.target.value })}
-              />
-
-              <label className="ce-label">Content <span className="muted">(Markdown: # headings, **bold**, - lists, `code`)</span></label>
-              <textarea className="ce-body" rows={16} value={selTopic.body} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { body: e.target.value })} placeholder="Write the lesson content here…" />
+              <label className="ce-label">Notes <span className="muted">(Markdown: # headings, **bold**, - lists, `code`)</span></label>
+              <textarea className="ce-body" rows={16} value={selTopic.body} onChange={(e) => setTopicField(sel.mi, sel.ci, sel.ti, { body: e.target.value })} placeholder="Write the lesson notes here…" />
             </>
           )}
         </section>
@@ -244,7 +306,7 @@ export default function CurriculumEditor({ programId, onClose }) {
         <VdoLibrary
           onClose={() => setPicking(false)}
           onPick={(v) => {
-            setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: 'vdocipher', vdoVideoId: v.id });
+            attachVideo(v);
             setPicking(false);
             flash(`Attached “${v.title || v.id}”. Save to publish it.`);
           }}

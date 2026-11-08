@@ -58,12 +58,14 @@ describe('finding lessons that will not play', () => {
     expect(p.match).toBeNull();
   });
 
-  it('ignores lessons that are not VdoCipher videos', () => {
+  it('ignores readings, and counts every video lesson whatever source it was saved with', () => {
     const others = tree(
       { title: '1.1 Reading', contentType: 'text', vdoVideoId: 'old' },
-      { title: '1.2 Hosted elsewhere', contentType: 'video', videoSource: 'url', contentUrl: 'https://x.test/a.mp4' },
+      { title: '1.2 Saved as a plain link once', contentType: 'video', videoSource: 'url', contentUrl: 'https://x.test/a.mp4' },
     );
-    expect(videoProblems(others, library)).toEqual([]);
+    const found = videoProblems(others, library);
+    expect(found.map((p) => p.lesson)).toEqual(['1.2 Saved as a plain link once']);
+    expect(found[0].problem).toBe('empty');
   });
 
   it('gives the position of each lesson so it can be fixed in place', () => {
