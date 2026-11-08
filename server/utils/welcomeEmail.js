@@ -2,7 +2,7 @@
 // in, and with what.
 //
 // Two versions of one mail. A NEW account carries its temporary password, and
-// says — because it is true, see routes/me.js — that the LMS will ask for a new
+// says: because it is true, see routes/me.js, that the LMS will ask for a new
 // one at first sign-in. An EXISTING account carries no password at all: the
 // student already has one, and resetting it because they bought something else
 // would lock them out of an account they were using.
@@ -35,7 +35,7 @@ export function shell({ subject, email, body, cta = null }) {
         </td></tr>` : ''}
         <tr><td style="padding:22px 32px 30px;">
           ${P(`Questions? Write to <a href="mailto:${SUPPORT}" style="color:#6746ec;">${SUPPORT}</a>.`, 0)}
-          ${P('— skeo')}
+          ${P('Team skeo')}
         </td></tr>
       </table>
       <p style="margin:16px 0 0; font-size:12px; color:#8b879c;">You're receiving this because you bought skeo on skeoai.com as ${esc(email)}.</p>
@@ -76,7 +76,7 @@ export function welcomeEmail({ fullName, email, password = null, loginUrl, batch
     : 'Your payment is confirmed and it has been added to your existing skeo LMS account.';
 
   const unlocked = allAccess
-    ? 'Everything AI — every batch on the LMS, including new ones as they are added.'
+    ? 'Everything AI: every batch on the LMS, including new ones as they are added.'
     : batches.length ? batches.join(', ') : '';
 
   const passwordNote = isNew
@@ -112,7 +112,7 @@ export function welcomeEmail({ fullName, email, password = null, loginUrl, batch
     passwordNote, '',
     ...(playbooks ? ['Your playbooks come in separate emails, attached as PDFs.', ''] : []),
     `Questions? Write to ${SUPPORT}.`, '',
-    '— skeo',
+    'Team skeo',
   ].join('\n');
 
   return { subject, text, html };

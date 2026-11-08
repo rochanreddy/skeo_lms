@@ -10,7 +10,7 @@ import { QuizAttempt } from '../models/QuizAttempt.js';
 
 const router = Router();
 
-// All reports are admin-only CSV downloads. CSV is built by hand — no library
+// All reports are admin-only CSV downloads. CSV is built by hand, no library
 // needed for simple escaped rows, and Excel/Sheets open it directly.
 const esc = (v) => {
   const s = v === null || v === undefined ? '' : String(v);
@@ -25,7 +25,7 @@ const sendCsv = (res, filename, rows) => {
 };
 const pct = (part, total) => (total ? `${Math.round((part / total) * 100)}%` : '');
 
-// GET /api/skeo/reports/platform — one row per batch: enrolment + engagement.
+// GET /api/skeo/reports/platform: one row per batch: enrolment + engagement.
 router.get('/platform', requireAuth, requireRole('admin'), async (_req, res) => {
   const batches = await Batch.find().populate('programId', 'title').sort({ createdAt: -1 }).lean();
   const batchIds = batches.map((b) => b._id);
@@ -50,7 +50,7 @@ router.get('/platform', requireAuth, requireRole('admin'), async (_req, res) => 
   sendCsv(res, 'skeo-platform-report.csv', rows);
 });
 
-// GET /api/skeo/reports/batch/:id — one row per enrolled student. Admin only.
+// GET /api/skeo/reports/batch/:id, one row per enrolled student. Admin only.
 router.get('/batch/:id', requireAuth, requireRole('admin'), async (req, res) => {
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
   const batch = await Batch.findById(req.params.id).populate('programId', 'title').populate('studentIds', 'fullName email blocked lastActiveAt').lean();
@@ -90,7 +90,7 @@ router.get('/batch/:id', requireAuth, requireRole('admin'), async (req, res) => 
   sendCsv(res, `batch-${safe}-report.csv`, rows);
 });
 
-// GET /api/skeo/reports/student/:id — full academic record for one student.
+// GET /api/skeo/reports/student/:id, full academic record for one student.
 router.get('/student/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const student = await User.findById(req.params.id);
   if (!student) return res.status(404).json({ error: 'Student not found.' });
@@ -111,7 +111,7 @@ router.get('/student/:id', requireAuth, requireRole('admin'), async (req, res) =
   const rows = [
     ['Student report', student.fullName || student.email],
     ['Email', student.email],
-    ['Blocked', student.blocked?.lms ? `YES — ${student.blocked?.reason || ''}` : 'No'],
+    ['Blocked', student.blocked?.lms ? `YES: ${student.blocked?.reason || ''}` : 'No'],
     ['Generated', new Date().toISOString().slice(0, 10)],
     [],
     ['Batch', 'Program', 'Status'],

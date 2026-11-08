@@ -33,7 +33,7 @@ async function programWithTotal(programId) {
 
 const EMPTY = { programId: null, completedTopics: [], total: 0, completed: 0, pct: 0, certificateIssuedAt: null };
 
-// GET /api/skeo/progress/me?programId= — the student's completion for one
+// GET /api/skeo/progress/me?programId=, the student's completion for one
 // program.
 //
 // With no programId, the programme their newest cohort teaches, so the caller
@@ -67,7 +67,7 @@ router.get('/me', requireAuth, async (req, res) => {
   res.json({ programId: String(programId), completedTopics, total, completed, pct: total ? Math.round((completed / total) * 100) : 0, certificateIssuedAt: p?.certificateIssuedAt || null });
 });
 
-// POST /api/skeo/progress/toggle { programId, topicId } — mark a lesson (in)complete.
+// POST /api/skeo/progress/toggle { programId, topicId }, mark a lesson (in)complete.
 //
 // One atomic update rather than read-modify-write. The old version loaded the
 // document, rewrote the whole completedTopics array in JS and saved it back:
@@ -93,7 +93,7 @@ router.post('/toggle', requireAuth, async (req, res) => {
   res.json({ completedTopics: doc?.completedTopics || [], completed: !has });
 });
 
-// GET /api/skeo/progress/certificate?programId= — issues a certificate at 100%.
+// GET /api/skeo/progress/certificate?programId=, issues a certificate at 100%.
 router.get('/certificate', requireAuth, async (req, res) => {
   const { programId } = req.query;
   if (!mongoose.isValidObjectId(programId)) return res.status(404).json({ error: 'Not found.' });

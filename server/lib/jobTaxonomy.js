@@ -2,7 +2,7 @@
  * The vocabularies a scraped job is tagged with.
  *
  * A copy of `pipeline/taxonomy.js` in skeo-job-pipeline, which is the source
- * of truth — its classifiers produce these values. When a category is added
+ * of truth: its classifiers produce these values. When a category is added
  * or renamed it changes there first, then here. Kept as a plain copy rather
  * than a shared package because the two repos deploy separately and a
  * published package for four lists would cost more than it saves.
@@ -14,8 +14,8 @@
 
 /** Order is the order the board offers them in. */
 export const ROLE_CATEGORIES = [
-  { value: 'AI-Tech', label: 'AI — Technical' },
-  { value: 'AI-NonTech', label: 'AI — Non-technical' },
+  { value: 'AI-Tech', label: 'AI: Technical' },
+  { value: 'AI-NonTech', label: 'AI: Non-technical' },
   { value: 'Tech', label: 'Tech' },
   { value: 'Creative', label: 'Creative' },
   { value: 'Marketing', label: 'Marketing' },
@@ -66,7 +66,7 @@ export const CATEGORY_TO_DOMAIN = {
 };
 
 /**
- * How the work is engaged — independent of category, because a freelance gig
+ * How the work is engaged, independent of category, because a freelance gig
  * can be technical or not and so can a staff job. `unspecified` is a real
  * answer: most boards never say, and defaulting to full-time because it is
  * the common case would put wrong information on a listing.

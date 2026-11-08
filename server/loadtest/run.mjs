@@ -50,7 +50,7 @@ function report(name, results, wallMs) {
   return { name, count: results.length, ok, codes, wallMs, p50: pct(ms, 0.5), p95: pct(ms, 0.95), max: Math.max(...ms) };
 }
 
-// Fire `n` requests all at once and wait for the last one — the honest way to
+// Fire `n` requests all at once and wait for the last one, the honest way to
 // ask "what happens when 100 people click at the same second?".
 async function burst(name, n, fn) {
   const t0 = Date.now();
@@ -64,7 +64,7 @@ const summary = [];
 // 1. Baseline: no auth, no DB. This is the Express/Node ceiling on this box.
 summary.push(await burst(`baseline  GET /health × ${USERS}`, USERS, (i) => req('GET', '/health', { ip: ipFor(i) })));
 
-// 2. The login stampede — every virtual user signs in at once. This is the
+// 2. The login stampede, every virtual user signs in at once. This is the
 //    bcrypt path, and on menler it was where things fell over.
 const t0 = Date.now();
 const logins = await Promise.all(
@@ -75,14 +75,14 @@ summary.push(report(`login     POST /auth/login × ${USERS} (password hashing)`,
 
 const tokens = logins.map((r) => { try { return JSON.parse(r.body).accessToken; } catch { return null; } }).filter(Boolean);
 console.log(`\n  → ${tokens.length}/${USERS} usable tokens`);
-if (!tokens.length) { console.log('no tokens — cannot run the authenticated scenarios'); process.exit(1); }
+if (!tokens.length) { console.log('no tokens: cannot run the authenticated scenarios'); process.exit(1); }
 
-// 3. Authenticated read — requireAuth does a User.findById on every request,
+// 3. Authenticated read, requireAuth does a User.findById on every request,
 //    so this measures the steady-state "logged-in user browsing" cost.
 summary.push(await burst(`authed    GET /me × ${USERS}`, USERS,
   (i) => req('GET', '/api/skeo/me', { token: tokens[i % tokens.length], ip: ipFor(i) })));
 
-// 4. Curriculum list — a real read of the heaviest student-facing document.
+// 4. Curriculum list, a real read of the heaviest student-facing document.
 summary.push(await burst(`content   GET /programs × ${USERS}`, USERS,
   (i) => req('GET', '/api/skeo/programs', { token: tokens[i % tokens.length], ip: ipFor(i) })));
 

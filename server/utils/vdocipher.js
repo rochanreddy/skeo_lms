@@ -39,7 +39,7 @@ async function call(path, { method = 'GET', body } = {}) {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch {
-    // Network failure or timeout — the upstream never answered.
+    // Network failure or timeout, the upstream never answered.
     throw new VdoError('Could not reach the video service. Try again shortly.', 504);
   }
 
@@ -55,7 +55,7 @@ async function call(path, { method = 'GET', body } = {}) {
 
 /**
  * Short-lived playback ticket for one video. `annotate` is VdoCipher's
- * watermark spec (an array of layers) — we stamp the viewer's own identity on
+ * watermark spec (an array of layers), we stamp the viewer's own identity on
  * the picture, which is the whole point of paying for DRM in the first place.
  */
 export function createOtp(videoId, { ttl = 300, annotate } = {}) {
@@ -73,7 +73,7 @@ export function listVideos({ page = 1, limit = 24, q = '' } = {}) {
   return call(`/videos?${params}`);
 }
 
-/** Metadata for one video — id, name, status, length, poster. */
+/** Metadata for one video, id, name, status, length, poster. */
 export function getVideo(videoId) {
   return call(`/videos/${encodeURIComponent(videoId)}`);
 }

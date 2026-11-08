@@ -1,5 +1,5 @@
 // Which batches a website order unlocks, and the temporary password it mints.
-// Pure — no database, no server:
+// Pure: no database, no server:
 //
 //   node --test tests/provision.test.js
 //

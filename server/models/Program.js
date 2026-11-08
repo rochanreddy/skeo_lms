@@ -19,7 +19,7 @@ const topicSchema = new mongoose.Schema(
     body: { type: String, default: '' },
     // Where this particular lecture meets. Set by hand and deliberately dumb:
     // a live meeting URL while the class is running, swapped for a YouTube URL once the
-    // recording is up. We never inspect it — empty just means "not posted yet".
+    // recording is up. We never inspect it, empty just means "not posted yet".
     classLink: { type: String, default: '' },
     // Two files per lecture, both opened in the in-page viewer. The extension
     // decides how they render (PDF inline, Office formats via the embed), so a
@@ -44,7 +44,7 @@ const chapterSchema = new mongoose.Schema(
     // Markdown shown when the chapter itself is opened.
     description: { type: String, default: '' },
     // What to call that page, in the syllabus row and as the page title. An
-    // assignment chapter sets 'Brief' — "Overview" is a poor word for the one
+    // assignment chapter sets 'Brief': "Overview" is a poor word for the one
     // thing a student opens an assignment to read. Empty falls back to
     // 'Overview' in the client, so authors only set it when it differs.
     pageLabel: { type: String, default: '' },

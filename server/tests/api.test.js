@@ -47,8 +47,8 @@ const get = (path, token) =>
  *
  * fetch() is the right tool almost everywhere here, but it is not a neutral
  * client: it follows the Fetch spec, which adds and rewrites headers on your
- * behalf. For anything testing cache behaviour that matters — see the
- * /programs revalidation test — this sends the bytes asked for and no others. */
+ * behalf. For anything testing cache behaviour that matters, see the
+ * /programs revalidation test: this sends the bytes asked for and no others. */
 function rawGet(path, headers = {}) {
   const { request } = http;
   return new Promise((resolve, reject) => {
@@ -243,7 +243,7 @@ test('the service no longer identifies as the old menler-lms fork', async () => 
 // ── VdoCipher ──
 // The account secret is the whole security story here: it never leaves the
 // server, and a student can only ever obtain an OTP for a video attached to a
-// lesson they are allowed to see. These check the gates, not the upstream —
+// lesson they are allowed to see. These check the gates, not the upstream,
 // they pass whether or not VDOCIPHER_API_SECRET is set.
 
 test('the video library is admin-only, and closed to anonymous callers', async () => {
@@ -265,7 +265,7 @@ test('a student cannot mint a playback OTP for a video no lesson of theirs carri
     method: 'POST',
     headers: { Authorization: `Bearer ${studentToken}` },
   });
-  // 404 (not entitled — deliberately indistinguishable from "no such video")
+  // 404 (not entitled: deliberately indistinguishable from "no such video")
   // or 503 when this instance has no VdoCipher secret. Never 200.
   assert.ok([404, 503].includes(r.status), `unentitled OTP request answered ${r.status}`);
 
@@ -344,7 +344,7 @@ test('a student never receives quiz answers, in the list or the detail', async (
   assert.ok((quiz.questions || []).length > 0, 'the detail route returned no questions');
 });
 
-test('an admin still receives quiz answers — the projection did not break grading', async () => {
+test('an admin still receives quiz answers, the projection did not break grading', async () => {
   const { quizzes } = await (await get('/quizzes', adminToken)).json();
   assert.ok(quizzes.length > 0, 'the admin should see the seeded quizzes');
   const withQuestions = quizzes.find((q) => (q.questions || []).length);
@@ -408,7 +408,7 @@ test('/programs is byte-identical on a repeat read, and revalidatable', async ()
   /* The conditional request goes out over node:http rather than fetch(), and
    * that is not fussiness. Per the Fetch spec, setting If-None-Match by hand
    * flips the request's cache mode to "no-store", which makes fetch() add
-   * `Cache-Control: no-cache` — and a request that says no-cache is asking to
+   * `Cache-Control: no-cache`, and a request that says no-cache is asking to
    * be given the body, so Express rightly answers 200. The revalidation this
    * is checking is the one a BROWSER performs on its own from its HTTP cache,
    * where no such header is added, and only a raw client can imitate that. */

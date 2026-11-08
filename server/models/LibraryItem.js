@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-// A downloadable resource in the Library (PPT, eBook, note, etc.). Global —
+// A downloadable resource in the Library (PPT, eBook, note, etc.). Global,
 // visible to all students. Admins add them (by link for now).
 const libraryItemSchema = new mongoose.Schema(
   {
@@ -9,7 +9,7 @@ const libraryItemSchema = new mongoose.Schema(
     url: { type: String, default: '' },
     description: { type: String, default: '' },
     // A paid playbook: the set ('claude' | 'ai') that unlocks it. Its url is
-    // then an API path, served only to someone who bought that set — never a
+    // then an API path, served only to someone who bought that set, never a
     // public link. Empty for ordinary resources.
     playbookSet: { type: String, enum: ['', 'claude', 'ai'], default: '' },
   },

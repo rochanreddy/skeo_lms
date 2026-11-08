@@ -36,7 +36,7 @@ export async function connectDb() {
 }
 
 /* ------------------------------------------------------------------ *
- * The job pipeline's database — a second, separate connection.
+ * The job pipeline's database, a second, separate connection.
  *
  * The scraped job board is written by another service entirely
  * (skeo-job-pipeline), which runs on its own schedule and its own cluster.
@@ -46,7 +46,7 @@ export async function connectDb() {
  * A second connection rather than a second database on the same one:
  * they are genuinely different clusters, and mongoose.connect() only ever
  * manages one. createConnection gives a separate pool that can fail on its
- * own without taking the LMS's own database down with it — which matters,
+ * own without taking the LMS's own database down with it, which matters,
  * because a job board being unreachable should never stop a student
  * submitting an assignment.
  * ------------------------------------------------------------------ */
@@ -69,7 +69,7 @@ export function jobsDb() {
       // Small on purpose. This is a second pool on top of the LMS's own, and
       // Atlas counts them together against the cluster's connection limit.
       maxPoolSize: 5,
-      // Fail fast rather than hanging a request for the default 30s — a board
+      // Fail fast rather than hanging a request for the default 30s, a board
       // that says it can't reach the feed beats one that never answers.
       serverSelectionTimeoutMS: 8000,
     });

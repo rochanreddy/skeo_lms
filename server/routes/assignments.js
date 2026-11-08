@@ -44,7 +44,7 @@ router.get('/', requireAuth, async (req, res) => {
   res.json({ assignments });
 });
 
-// POST /api/skeo/assignments — admin sets an assignment/project.
+// POST /api/skeo/assignments: admin sets an assignment/project.
 router.post('/', requireAuth, async (req, res) => {
   const { batchId, type, title, description, videoUrl, pdfUrl, startDate, dueDate, requiredDriveTypes } = req.body || {};
   if (!batchId || !title) return res.status(400).json({ error: 'batchId and title are required.' });
@@ -74,7 +74,7 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(201).json({ assignment });
 });
 
-// PATCH /api/skeo/assignments/:id — admin edits an assignment/project.
+// PATCH /api/skeo/assignments/:id, admin edits an assignment/project.
 // Same validation as create; only the fields actually sent are touched.
 router.patch('/:id', requireAuth, async (req, res) => {
   const assignment = await Assignment.findById(req.params.id);
@@ -107,7 +107,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   res.json({ assignment });
 });
 
-// DELETE /api/skeo/assignments/:id — admin removes it, and every submission
+// DELETE /api/skeo/assignments/:id, admin removes it, and every submission
 // under it (they'd be orphaned and unreachable otherwise).
 router.delete('/:id', requireAuth, async (req, res) => {
   const assignment = await Assignment.findById(req.params.id);

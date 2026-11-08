@@ -1,5 +1,5 @@
 // Verifies a Google Drive folder a student submitted, using the Drive REST
-// API directly with a server-side API key (public-file checks only — no
+// API directly with a server-side API key (public-file checks only: no
 // OAuth, since we only ever need to read metadata on files the student has
 // already made link-shareable).
 //
@@ -17,7 +17,7 @@ const DANGEROUS_EXTENSIONS = new Set([
 
 // HTML is dangerous by default (it can carry scripts), but an admin can
 // legitimately ask for a web page as the deliverable. So it's blocked unless
-// the assignment explicitly lists 'html' as a required type — an opt-in
+// the assignment explicitly lists 'html' as a required type, an opt-in
 // relaxation, never a global one.
 const HTML_EXTENSIONS = new Set(['html', 'htm']);
 
@@ -98,7 +98,7 @@ export async function verifyDriveFolder(driveLink, { requiredTypes = ['doc'] } =
     return { status: 'CHECK_FAILED', errorDetail: 'Drive verification is not configured on the server (missing API key).', files: [] };
   }
 
-  // 1. Folder metadata first — a restricted folder can return 200 + an empty
+  // 1. Folder metadata first, a restricted folder can return 200 + an empty
   // file list, so this is the only reliable way to detect "not public".
   let folderMeta;
   try {

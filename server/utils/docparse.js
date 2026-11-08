@@ -1,17 +1,17 @@
-// Curriculum document import — the part the request path sees.
+// Curriculum document import: the part the request path sees.
 //
 // Two problems, one boundary.
 //
 // Speed: parsing (mammoth for .docx, pdf-parse for .pdf) is CPU-bound and runs
 // to whatever length a 15 MB upload demands. Done inline it held the event loop
 // for the duration, so every other user's request queued behind one admin's
-// PDF — /health included, and a platform that cannot get a health check back
+// PDF: /health included, and a platform that cannot get a health check back
 // concludes the instance is dead and restarts it mid-session. That is the same
 // failure bcrypt used to cause, and it is fixed the same way: get the work off
 // the thread that answers requests.
 //
-// Safety: it has to be a separate PROCESS, not a worker thread. PDF.js — under
-// pdf-parse — segfaults as its thread is torn down, and a segfault in a worker
+// Safety: it has to be a separate PROCESS, not a worker thread. PDF.js, under
+// pdf-parse: segfaults as its thread is torn down, and a segfault in a worker
 // thread takes the whole API with it. Isolating the parse in a thread would
 // therefore have traded a stall for a crash. A child process cannot do that: it
 // dies alone and the import comes back 422.
@@ -29,7 +29,7 @@ const TIMEOUT_MS = 60_000;
 
 /**
  * Extract + structure an uploaded doc into a modules tree.
- * Same signature and shape as before — { modules, stats } — so callers are
+ * Same signature and shape as before, { modules, stats }, so callers are
  * unchanged; only the process it runs in moved.
  */
 export function parseDocToModules(buffer, filename = '') {
@@ -59,7 +59,7 @@ export function parseDocToModules(buffer, filename = '') {
     child.on('close', () => {
       // The exit code is deliberately NOT consulted. The child flushes its
       // answer before ending, so a crash during teardown still leaves a valid
-      // result on stdout — what decides the outcome is whether we got one.
+      // result on stdout: what decides the outcome is whether we got one.
       let msg = null;
       try { msg = JSON.parse(out); } catch { /* no usable answer */ }
       if (msg?.ok) return finish(resolve, msg.result);

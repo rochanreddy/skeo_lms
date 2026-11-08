@@ -27,7 +27,7 @@ router.get('/', requireAuth, async (req, res) => {
   }));
 });
 
-// POST /api/skeo/announcements { batchId, title, body } — admin broadcast.
+// POST /api/skeo/announcements { batchId, title, body }, admin broadcast.
 router.post('/', requireAuth, async (req, res) => {
   const { batchId, title, body } = req.body || {};
   if (!batchId || !title) return res.status(400).json({ error: 'batchId and title are required.' });

@@ -51,11 +51,11 @@ async function canWatch(user, videoId) {
   );
 }
 
-// GET /api/skeo/videos/config — can the UI offer VdoCipher at all? Cheap, and
+// GET /api/skeo/videos/config: can the UI offer VdoCipher at all? Cheap, and
 // it keeps the admin editor from showing a feature the server cannot serve.
 router.get('/config', requireAuth, (_req, res) => res.json({ configured: isConfigured() }));
 
-// POST /api/skeo/videos/:videoId/otp — a playback ticket for the caller.
+// POST /api/skeo/videos/:videoId/otp, a playback ticket for the caller.
 // Rate-limited because an OTP is a paid upstream call, and one player needs one.
 router.post(
   '/:videoId/otp',
@@ -88,7 +88,7 @@ router.post(
   },
 );
 
-// GET /api/skeo/videos — the account's library, for the admin lesson picker.
+// GET /api/skeo/videos: the account's library, for the admin lesson picker.
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1); // VdoCipher pages start at 1
   const limit = Math.min(60, Math.max(1, Number(req.query.limit) || 24));
@@ -100,7 +100,7 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   }
 });
 
-// POST /api/skeo/videos/upload — credentials for a direct browser upload.
+// POST /api/skeo/videos/upload: credentials for a direct browser upload.
 // We never take the bytes ourselves: a lecture recording is far past what this
 // API should be proxying, and VdoCipher signs a payload good for one video.
 router.post('/upload', requireAuth, requireRole('admin'), async (req, res) => {
@@ -113,7 +113,7 @@ router.post('/upload', requireAuth, requireRole('admin'), async (req, res) => {
   }
 });
 
-// GET /api/skeo/videos/:videoId — metadata (name, status, length, poster).
+// GET /api/skeo/videos/:videoId, metadata (name, status, length, poster).
 // Admin only: it is how the editor shows what a stored id actually points at,
 // and how it reports that a fresh upload is still encoding.
 router.get('/:videoId', requireAuth, requireRole('admin'), async (req, res) => {
@@ -124,7 +124,7 @@ router.get('/:videoId', requireAuth, requireRole('admin'), async (req, res) => {
   }
 });
 
-// DELETE /api/skeo/videos/:videoId — removes it from VdoCipher for good. Any
+// DELETE /api/skeo/videos/:videoId, removes it from VdoCipher for good. Any
 // lesson still pointing at the id keeps the id; playback then 404s, the same as
 // a dead link, rather than the curriculum silently rewriting itself.
 router.delete('/:videoId', requireAuth, requireRole('admin'), async (req, res) => {

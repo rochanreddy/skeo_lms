@@ -14,12 +14,12 @@ const router = Router();
 const hashToken = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
 const APP_URL = () => (process.env.SKEO_APP_URL || 'http://localhost:5175').replace(/\/+$/, '');
 
-// POST /api/skeo/auth/register — closed.
+// POST /api/skeo/auth/register: closed.
 //
 // A skeo account is made by paying for a plan on skeoai.com: the website tells
 // the LMS once Cashfree confirms the money (routes/provision.js), and the LMS
 // mails the login. Open self-signup made accounts with nothing paid for, which
-// opened onto an empty LMS — so it now answers the way login does for a
+// opened onto an empty LMS, so it now answers the way login does for a
 // non-buyer, and the client sends them to the plans.
 router.post('/register', (_req, res) => res.status(403).json({
   error: 'skeo accounts are created when you buy a plan.',
@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
 
     const user = await User.findOne({ email: clean });
     // No account at all: on skeo an account is what a purchase makes, so the
-    // useful answer is where to buy one, not "invalid password" — which would
+    // useful answer is where to buy one, not "invalid password", which would
     // send someone who has never paid off to reset a password they never had.
     // Saying so reveals no more than /register's "already exists" always has.
     // Still counted as a failure, so the per-account limit holds for guesses.
@@ -81,8 +81,8 @@ router.post('/login', async (req, res) => {
         code: 'blocked',
       });
     }
-    // An account with nothing paid for — made through the old open sign-up,
-    // say — would open onto an empty LMS. Point it at the plans instead.
+    // An account with nothing paid for, made through the old open sign-up,
+    // say: would open onto an empty LMS. Point it at the plans instead.
     if (user.role === 'student' && !(await hasPaidAccess(user))) {
       return res.status(403).json({
         error: 'Your account does not have a skeo plan yet.',
@@ -128,7 +128,7 @@ router.post('/refresh', async (req, res) => {
   return res.json({ accessToken: signAccessToken(user), user: user.toPublic() });
 });
 
-// POST /api/skeo/auth/forgot — always returns success (no account enumeration).
+// POST /api/skeo/auth/forgot: always returns success (no account enumeration).
 router.post('/forgot', async (req, res) => {
   try {
     if (!rateLimit(`forgot:${req.ip}`, 200, 60_000)) return res.status(429).json({ error: 'Too many attempts. Try again shortly.' });
@@ -148,7 +148,7 @@ router.post('/forgot', async (req, res) => {
       user.resetExpires = new Date(Date.now() + 1000 * 60 * 30);
       await user.save();
       const link = `${APP_URL()}/reset?token=${raw}&email=${encodeURIComponent(email)}`;
-      /* sendMail picks its own way out — Resend, then SMTP, then the console —
+      /* sendMail picks its own way out, Resend, then SMTP, then the console,
          so this no longer asks whether SMTP specifically is configured. It used
          to, and once the mailer gained the Resend path that question would have
          answered "no" on a host where mail works perfectly well.
@@ -162,7 +162,7 @@ router.post('/forgot', async (req, res) => {
         subject: 'Reset your skeo LMS password',
         text: `Reset your password:\n\n${link}\n\nExpires in 30 minutes.`,
       });
-      if (!mail.emailed) console.log('[forgot] not delivered (' + (mail.error || 'no transport configured') + ') — reset link:', link);
+      if (!mail.emailed) console.log('[forgot] not delivered (' + (mail.error || 'no transport configured') + '): reset link:', link);
     }
     return res.json({ ok: true });
   } catch (err) {

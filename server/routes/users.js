@@ -14,7 +14,7 @@ import { programOutlines } from '../models/Program.js';
 
 const router = Router();
 
-// GET /api/skeo/users?role=student&search=foo — admin lists/searches users.
+// GET /api/skeo/users?role=student&search=foo, admin lists/searches users.
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   const q = {};
   if (req.query.role) q.role = req.query.role;
@@ -27,12 +27,12 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
     const rx = new RegExp(String(req.query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     q.$or = [{ email: rx }, { fullName: rx }];
   }
-  // Hydrated on purpose, unlike most reads here — toPublic() is an instance method.
+  // Hydrated on purpose, unlike most reads here, toPublic() is an instance method.
   const users = await User.find(q).sort({ createdAt: -1 }).limit(200);
   res.json({ users: users.map((u) => u.toPublic()) });
 });
 
-// POST /api/skeo/users — admin provisions a student (or another admin). Returns a
+// POST /api/skeo/users: admin provisions a student (or another admin). Returns a
 // generated temp password if none was supplied (so admin can share it).
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { email, fullName, phone, role = 'student', password } = req.body || {};
@@ -55,7 +55,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   res.status(201).json({ user: user.toPublic(), tempPassword: temp, custom: !!password });
 });
 
-// POST /api/skeo/users/:id/reset-password — admin resets a user's password and
+// POST /api/skeo/users/:id/reset-password, admin resets a user's password and
 // gets a fresh temp password to hand back (e.g. a student who lost theirs).
 router.post('/:id/reset-password', requireAuth, requireRole('admin'), async (req, res) => {
   const user = await User.findById(req.params.id);
@@ -71,7 +71,7 @@ router.post('/:id/reset-password', requireAuth, requireRole('admin'), async (req
   res.json({ ok: true, tempPassword: temp, custom: !!password });
 });
 
-// GET /api/skeo/users/:id/overview — deep-dive into one user: everything about
+// GET /api/skeo/users/:id/overview, deep-dive into one user: everything about
 // where they are in their courses. For students: batches, every
 // assignment (with submission state), quiz attempts, lesson progress, modules.
 router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) => {
@@ -132,7 +132,7 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
             batchName: batchName.get(String(a.batchId)) || '',
             dueDate: a.dueDate,
             // Grading fields and Drive-verification fields are kept as separate
-            // groups here on purpose — they answer different questions and a
+            // groups here on purpose, they answer different questions and a
             // later automated-review layer gets its own group again.
             submission: s
               ? {
@@ -181,7 +181,7 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
     }),
   };
 
-  // Every curriculum module across the student's programs, with block state —
+  // Every curriculum module across the student's programs, with block state,
   // drives the admin's per-module block toggles.
   if (user.role === 'student') {
     const blockedModules = new Set((user.blocked?.moduleIds || []).map(String));
@@ -207,7 +207,7 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
   res.json(out);
 });
 
-// PATCH /api/skeo/users/:id/blocks — admin block/unblock controls. Accepts any
+// PATCH /api/skeo/users/:id/blocks, admin block/unblock controls. Accepts any
 // subset of { lms, batchIds, assignmentIds, reason }; whatever is present is
 // applied. Admin accounts can never be blocked.
 router.patch('/:id/blocks', requireAuth, requireRole('admin'), async (req, res) => {
@@ -232,7 +232,7 @@ router.patch('/:id/blocks', requireAuth, requireRole('admin'), async (req, res) 
   res.json({ ok: true, user: user.toPublic() });
 });
 
-// PATCH /api/skeo/users/:id — admin edits a user's profile (name/phone/email).
+// PATCH /api/skeo/users/:id, admin edits a user's profile (name/phone/email).
 router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found.' });

@@ -6,7 +6,7 @@ import { playbookFilePath } from '../utils/playbooks.js';
 
 const router = Router();
 
-// GET /api/skeo/library — everyone can browse. Paid playbooks are listed for
+// GET /api/skeo/library: everyone can browse. Paid playbooks are listed for
 // everyone too, so a student can see what is on offer, but carry `locked`
 // unless this user bought the set they belong to.
 router.get('/', requireAuth, async (req, res) => {
@@ -19,7 +19,7 @@ router.get('/', requireAuth, async (req, res) => {
   });
 });
 
-// GET /api/skeo/library/playbooks/:set/:file — the PDF itself, to a buyer of
+// GET /api/skeo/library/playbooks/:set/:file, the PDF itself, to a buyer of
 // that set only. The files sit on the server (assets/playbooks, the same ones
 // the purchase mail attaches), never in the public site, so this is the only
 // way in.
@@ -37,7 +37,7 @@ router.get('/playbooks/:set/:file', requireAuth, async (req, res) => {
   });
 });
 
-// POST /api/skeo/library — admin add a resource (by link).
+// POST /api/skeo/library: admin add a resource (by link).
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { title, category, url, description } = req.body || {};
   if (!title) return res.status(400).json({ error: 'Title is required.' });
@@ -45,7 +45,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   res.status(201).json({ item });
 });
 
-// DELETE /api/skeo/library/:id — admin only.
+// DELETE /api/skeo/library/:id, admin only.
 router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   await LibraryItem.findByIdAndDelete(req.params.id);
   res.json({ ok: true });

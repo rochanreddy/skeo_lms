@@ -4,7 +4,7 @@ import { jobsDb } from '../db.js';
 /**
  * A job scraped by skeo-job-pipeline.
  *
- * READ ONLY. This service never writes here — the pipeline owns the data, on
+ * READ ONLY. This service never writes here, the pipeline owns the data, on
  * its own cluster, reached with a read-only Atlas user. The schema is
  * `strict: false` because the pipeline can add a field without this model
  * knowing, and a stricter definition would silently drop it on read.

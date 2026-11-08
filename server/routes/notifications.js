@@ -4,7 +4,7 @@ import { Notification } from '../models/Notification.js';
 
 const router = Router();
 
-// GET /api/skeo/notifications — the user's recent notifications + unread count.
+// GET /api/skeo/notifications: the user's recent notifications + unread count.
 router.get('/', requireAuth, async (req, res) => {
   // Two independent questions, so they travel together rather than one behind
   // the other. The bell keeps asking for as long as a tab is open, so the saved
@@ -16,7 +16,7 @@ router.get('/', requireAuth, async (req, res) => {
   res.json({ items, unread });
 });
 
-// POST /api/skeo/notifications/read — mark all as read.
+// POST /api/skeo/notifications/read: mark all as read.
 router.post('/read', requireAuth, async (req, res) => {
   await Notification.updateMany({ userId: req.user._id, read: false }, { $set: { read: true } });
   res.json({ ok: true });

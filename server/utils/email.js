@@ -1,19 +1,19 @@
 // Mailer. Four ways out, tried in this order:
 //
-//   0. ZeptoMail — ZEPTOMAIL_TOKEN set. HTTPS API, same as menler-lms. It is
+//   0. ZeptoMail, ZEPTOMAIL_TOKEN set. HTTPS API, same as menler-lms. It is
 //                 first because it is credit-based rather than capped per day:
 //                 every paid order sends a login mail, and Resend's free 100 a
 //                 day is not a ceiling a checkout can be allowed to hit. The
-//                 sender must be on a domain verified in ZeptoMail —
+//                 sender must be on a domain verified in ZeptoMail,
 //                 noreply@skeoai.com needs skeoai.com added there.
-//   1. Resend   — RESEND_API_KEY set. Plain HTTPS on 443, no SDK. This is the
+//   1. Resend  , RESEND_API_KEY set. Plain HTTPS on 443, no SDK. This is the
 //                 one that works on a managed host: Render and most others
 //                 firewall outbound 25/465/587, and the failure is not an auth
-//                 error you would notice — the connection hangs until it times
+//                 error you would notice, the connection hangs until it times
 //                 out, taking the request with it. No amount of correct SMTP
 //                 credentials fixes that. Port 443 is never blocked.
-//   2. SMTP     — SMTP_HOST/USER/PASS set. Fine on a box you control.
-//   3. Console  — neither set: the message is logged, so reset links stay
+//   2. SMTP    , SMTP_HOST/USER/PASS set. Fine on a box you control.
+//   3. Console , neither set: the message is logged, so reset links stay
 //                 testable in development without a provider.
 //
 // Every caller goes through sendMail(), so changing provider is an env change
@@ -77,8 +77,8 @@ function parseAddress(str) {
 // India data centre; ZEPTOMAIL_API_URL overrides it for the global (.com) one.
 const zeptoUrl = () => process.env.ZEPTOMAIL_API_URL || 'https://api.zeptomail.in/v1.1/email';
 
-// `attachments` everywhere below is [{ filename, content: Buffer, contentType }]
-// — nodemailer's own shape. The two HTTPS providers want the bytes base64'd,
+// `attachments` everywhere below is [{ filename, content: Buffer, contentType }],
+// nodemailer's own shape. The two HTTPS providers want the bytes base64'd,
 // each under its own field names.
 const forZepto = (attachments) => attachments.map((a) => ({
   content: Buffer.from(a.content).toString('base64'),
@@ -111,7 +111,7 @@ async function sendViaZepto({ from, to, subject, text, html, replyTo, attachment
     signal: AbortSignal.timeout(attachments?.length ? 60000 : 20000),
   });
   if (!res.ok) {
-    // ZeptoMail names the problem — an unverified sender domain reads as such,
+    // ZeptoMail names the problem, an unverified sender domain reads as such,
     // which is the difference between a config error and a bug.
     const body = await res.text().catch(() => '');
     throw new Error(`ZeptoMail ${res.status}: ${body.slice(0, 300)}`);
@@ -131,7 +131,7 @@ async function sendViaResend({ from, to, subject, text, html, replyTo, attachmen
     signal: AbortSignal.timeout(attachments?.length ? 60000 : 20000),
   });
   const body = await res.json().catch(() => ({}));
-  // Resend puts the useful part in `message` — e.g. "The skeo.in domain is not
+  // Resend puts the useful part in `message`, e.g. "The skeo.in domain is not
   // verified", which is the difference between a config error and a bug.
   if (!res.ok) throw new Error(`Resend ${res.status}: ${body?.message || body?.name || 'send failed'}`);
   return { id: body.id, provider: 'resend' };
@@ -158,7 +158,7 @@ export async function sendMail({ to, subject, text, html, replyTo, attachments }
 }
 
 /**
- * For callers that must not fail the request when the mail does — a
+ * For callers that must not fail the request when the mail does, a
  * provisioned account is still provisioned if the provider is down.
  * Returns { emailed, dev?, error? } so the caller can say which.
  */

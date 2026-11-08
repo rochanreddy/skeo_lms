@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-// A help request a user raises about the LMS itself — something broken, an
+// A help request a user raises about the LMS itself, something broken, an
 // account they can't get into, content that looks wrong. Admins answer them
 // from the Support queue.
 //
@@ -8,9 +8,9 @@ import mongoose from 'mongoose';
 // queue, so a wrong guess costs nothing.
 export const TICKET_CATEGORIES = ['Technical', 'Course content', 'Account & access', 'Payment', 'Other'];
 
-// open      — waiting on us
-// answered  — an admin has replied, waiting on the user
-// resolved  — done, by either side
+// open     : waiting on us
+// answered : an admin has replied, waiting on the user
+// resolved : done, by either side
 export const TICKET_STATUSES = ['open', 'answered', 'resolved'];
 
 export const SUBJECT_MAX = 140;
@@ -36,7 +36,7 @@ const supportTicketSchema = new mongoose.Schema(
     status: { type: String, enum: TICKET_STATUSES, default: 'open', index: true },
     // The whole conversation, oldest first. Threads here are a handful of
     // messages, so they live on the ticket rather than in a collection of
-    // their own — one read serves the list *and* every thread in it.
+    // their own: one read serves the list *and* every thread in it.
     messages: [messageSchema],
   },
   { timestamps: true },

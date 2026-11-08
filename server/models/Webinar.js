@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 // The record is deliberately thin: a title, and the link to the masterclass's
 // own landing page. That page is where the speaker, the agenda, the seats and
 // the registration form already live, so re-keying any of it here would only
-// create a second version to keep in sync — and the stale one would be ours.
+// create a second version to keep in sync, and the stale one would be ours.
 //
 // The date is optional for the same reason. Fill it in and the board can sort
 // the schedule and say how far off a session is; leave it out and the card is
@@ -16,7 +16,7 @@ const webinarSchema = new mongoose.Schema(
     // The one field the feature exists for.
     landingUrl: { type: String, required: true },
     startsAt: { type: Date, default: null },
-    // A line from the admin that isn't on the landing page — "open to all
+    // A line from the admin that isn't on the landing page, "open to all
     // cohorts", "seats are limited". Optional, and usually empty.
     note: { type: String, default: '' },
 

@@ -95,7 +95,7 @@ async function main() {
        * separately from a real miss, which is a collection that exists and is
        * being scanned. */
       absent.add(name);
-      console.log(`· ${name.padEnd(15)} no collection yet — nothing to index`);
+      console.log(`· ${name.padEnd(15)} no collection yet, nothing to index`);
       continue;
     }
     const haveKeys = new Set(have.map((i) => key(i.key)));
@@ -125,7 +125,7 @@ async function main() {
   console.log(`\n${declared} indexes declared across ${MODELS.length} models.`);
 
   if (extra.length) {
-    console.log('\nPresent but not declared in this checkout (left alone — may belong to a newer deploy):');
+    console.log('\nPresent but not declared in this checkout (left alone: may belong to a newer deploy):');
     extra.forEach((e) => console.log(`  · ${e}`));
   }
 
@@ -135,7 +135,7 @@ async function main() {
   for (const [model, k, why] of CRITICAL) {
     const Model = MODELS.find((m) => m.modelName === model);
     if (absent.has(model)) {
-      console.log(`  ·         ${model}.${k} — no collection yet`);
+      console.log(`  ·         ${model}.${k}: no collection yet`);
       continue;
     }
     let present = false;
@@ -155,7 +155,7 @@ async function main() {
       console.log('  npm run db:indexes -- --fix');
     }
   } else if (absent.size === MODELS.length) {
-    console.log('\nNothing has been written to this database yet — run the seeds first.');
+    console.log('\nNothing has been written to this database yet. Run the seeds first.');
   } else if (absent.size) {
     console.log(`\nEverything the models ask for is present. (${absent.size} collection(s) not created yet.)`);
   } else {

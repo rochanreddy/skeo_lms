@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema(
     mustChangePassword: { type: Boolean, default: false },
 
     // Bought "Everything AI. One Access" (₹799) on the website. That plan
-    // unlocks every batch — including ones created after the purchase — so it
+    // unlocks every batch: including ones created after the purchase, so it
     // is recorded as a standing entitlement, not only as enrolments made on the
     // day: routes/batches.js enrols every allAccess student into each new batch
     // as it is created. Set by routes/provision.js; never set by a student.
@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
     // Admin moderation controls. lms=true locks the account out of the whole
     // app (login + every API call); batchIds hides specific cohorts/courses;
     // moduleIds hides specific curriculum modules; assignmentIds hides specific
-    // assignments/projects. Admins are never blockable — enforced in the
+    // assignments/projects. Admins are never blockable, enforced in the
     // routes, not here.
     blocked: {
       lms: { type: Boolean, default: false },

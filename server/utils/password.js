@@ -25,7 +25,7 @@ export const PASSWORD_COST = 10;
 export const hashPassword = (plain) => bcryptHash(String(plain ?? ''), PASSWORD_COST);
 
 /**
- * Check a password against a stored hash. Answers false — rather than throwing —
+ * Check a password against a stored hash. Answers false, rather than throwing,
  * for an account with no hash, and for a stored value that is not a bcrypt hash
  * at all: that is a corrupt record, and a corrupt record is not a valid login.
  */
@@ -39,7 +39,7 @@ export async function verifyPassword(plain, hash) {
 }
 
 /**
- * The cost a stored hash was written at — bcrypt records it in the hash itself
+ * The cost a stored hash was written at, bcrypt records it in the hash itself
  * (`$2b$12$...`), which is why hashes at the old cost keep verifying.
  */
 export const costOf = (hash) => Number(String(hash || '').split('$')[2]) || 0;

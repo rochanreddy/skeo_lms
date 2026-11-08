@@ -20,13 +20,13 @@ const scopeFor = (user) => (user.role === 'admin' ? {} : { userId: user._id });
 /** Owner or admin. Anything else has no business seeing the thread. */
 const canSee = (user, ticket) => user.role === 'admin' || String(ticket.userId?._id || ticket.userId) === String(user._id);
 
-/** Every admin except `exceptId` — who to wake when a ticket needs attention. */
+/** Every admin except `exceptId`, who to wake when a ticket needs attention. */
 async function adminIds(exceptId) {
   const admins = await User.find({ role: 'admin' }).select('_id').lean();
   return admins.map((a) => a._id).filter((id) => String(id) !== String(exceptId));
 }
 
-// GET /api/skeo/support?status=open — the caller's tickets, or the whole
+// GET /api/skeo/support?status=open, the caller's tickets, or the whole
 // queue for an admin. Threads travel with the list: they are a few messages
 // each, so one read serves the list and every conversation in it.
 router.get('/', requireAuth, async (req, res) => {
@@ -40,7 +40,7 @@ router.get('/', requireAuth, async (req, res) => {
       .sort({ updatedAt: -1 })
       .limit(100)
       .lean(),
-    // Counts drive the queue's tabs, so they have to span every status —
+    // Counts drive the queue's tabs, so they have to span every status,
     // they're counted over `scope`, not `filter`.
     SupportTicket.aggregate([{ $match: scope }, { $group: { _id: '$status', n: { $sum: 1 } } }]),
   ]);
@@ -51,7 +51,7 @@ router.get('/', requireAuth, async (req, res) => {
   res.json({ tickets, counts });
 });
 
-// POST /api/skeo/support { subject, category, message } — raise a request.
+// POST /api/skeo/support { subject, category, message }, raise a request.
 router.post(
   '/',
   requireAuth,
@@ -87,7 +87,7 @@ router.post(
   },
 );
 
-// GET /api/skeo/support/:id — one thread, for a permalink or a refresh.
+// GET /api/skeo/support/:id, one thread, for a permalink or a refresh.
 router.get('/:id', requireAuth, async (req, res) => {
   const ticket = await SupportTicket.findById(req.params.id).populate('userId', 'fullName email role').lean();
   if (!ticket) return res.status(404).json({ error: 'Not found.' });
@@ -96,7 +96,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   res.json({ ticket });
 });
 
-// POST /api/skeo/support/:id/messages { body } — reply in the thread.
+// POST /api/skeo/support/:id/messages { body }: reply in the thread.
 router.post(
   '/:id/messages',
   requireAuth,
@@ -111,7 +111,7 @@ router.post(
     if (!canSee(req.user, ticket)) return res.status(404).json({ error: 'Not found.' });
 
     ticket.messages.push({ authorId: req.user._id, authorRole: req.user.role, body });
-    // Whoever just spoke, the ball is now in the other court — a reply on a
+    // Whoever just spoke, the ball is now in the other court, a reply on a
     // resolved ticket reopens it rather than disappearing into a closed thread.
     ticket.status = req.user.role === 'admin' ? 'answered' : 'open';
     await ticket.save();
@@ -131,7 +131,7 @@ router.post(
   },
 );
 
-// PATCH /api/skeo/support/:id { status } — an admin works the queue; the
+// PATCH /api/skeo/support/:id { status }: an admin works the queue; the
 // person who raised it can close it themselves once they're sorted, or
 // reopen it if they aren't. Only an admin can say "answered".
 router.patch('/:id', requireAuth, async (req, res) => {
@@ -149,7 +149,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   ticket.status = status;
   await ticket.save();
 
-  // Tell the person waiting, but only when an admin closed it — they didn't
+  // Tell the person waiting, but only when an admin closed it, they didn't
   // do it themselves, so nothing else would say so.
   if (changed && status === 'resolved' && req.user.role === 'admin') {
     notify(ticket.userId, { type: 'support', text: `🛟 Resolved: ${ticket.subject}`, link: '/app/support' });

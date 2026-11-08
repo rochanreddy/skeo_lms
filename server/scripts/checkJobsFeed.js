@@ -17,7 +17,7 @@ const count = async (Model, query) => Model.countDocuments(scrapedFilter(parseFi
 
 async function main() {
   if (!jobsDbConfigured()) {
-    console.log('JOBS_MONGODB_URI is not set — the board would show only hand-posted openings.');
+    console.log('JOBS_MONGODB_URI is not set, so the board would show only hand-posted openings.');
     return;
   }
 
@@ -57,7 +57,7 @@ async function main() {
 
   console.log('newest AI-Tech in India:');
   for (const job of sample) {
-    console.log(`  ${job.title} — ${job.company} (${job.location || job.country}) [${job.source}]`);
+    console.log(`  ${job.title}, ${job.company} (${job.location || job.country}) [${job.source}]`);
   }
 }
 

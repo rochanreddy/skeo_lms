@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Skeo LMS API \u2014 standalone backend, shares the Atlas cluster (skeo_* collections only).",
+  "description": "Skeo LMS API, standalone backend, shares the Atlas cluster (skeo_* collections only).",
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",

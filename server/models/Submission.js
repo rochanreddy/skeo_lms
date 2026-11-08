@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 // A file discovered inside a submitted Drive folder (only populated once
-// checkStatus = READY). No _id — these are display-only, never referenced.
+// checkStatus = READY). No _id, these are display-only, never referenced.
 const submissionFileSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -16,10 +16,10 @@ const submissionFileSchema = new mongoose.Schema(
 //
 // Three independent layers live on this one document, kept in separate field
 // groups so each can evolve without touching the others:
-//   1. Drive folder verification (checkStatus/errorDetail/files/checkedAt) —
+//   1. Drive folder verification (checkStatus/errorDetail/files/checkedAt),
 //      automated structural check, see utils/driveVerify.js.
-//   2. Admin grading (status/score/feedback) — unchanged, human-driven.
-//   3. (future) automated content scoring — not built yet; give it its own
+//   2. Admin grading (status/score/feedback): unchanged, human-driven.
+//   3. (future) automated content scoring, not built yet; give it its own
 //      field group (e.g. aiReview: { score, feedback, reviewedAt }) rather
 //      than reusing #1 or #2's fields.
 const submissionSchema = new mongoose.Schema(

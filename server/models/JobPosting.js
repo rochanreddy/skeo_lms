@@ -11,7 +11,7 @@ import {
  *
  * The board is mostly fed by skeo-job-pipeline, which scrapes ten sources
  * every morning. This is the other half: the roles that never reach a job
- * board — a partner company's opening, something that came in by email —
+ * board: a partner company's opening, something that came in by email,
  * which an admin types in and which sit alongside the scraped ones.
  *
  * WHY THESE STAY IN SKEO'S OWN DATABASE. The obvious thing would be to write
@@ -23,7 +23,7 @@ import {
  *
  * `type` used to be a four-value enum (Full-time / Part-time / Internship /
  * Contract). It is gone, replaced by `workType`, which can also express
- * freelance and "not specified" — see normalizeWorkType for the fold. Rows
+ * freelance and "not specified", see normalizeWorkType for the fold. Rows
  * written before that still parse: the route reads the old field when the
  * new one is missing.
  */

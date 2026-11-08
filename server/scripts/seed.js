@@ -25,7 +25,7 @@ async function run() {
     console.log(`• Admin already exists: ${ADMIN_EMAIL}`);
   }
 
-  // The course itself — the Claude programme — comes from seed:claude.
+  // The course itself: the Claude programme, comes from seed:claude.
   if ((await Program.countDocuments()) === 0) {
     console.log('• No programme yet: run `npm run seed:claude -- --write` to create the Claude course.');
   }

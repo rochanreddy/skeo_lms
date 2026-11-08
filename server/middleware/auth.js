@@ -86,23 +86,23 @@ async function getUser(req) {
   return doc ? User.hydrate(doc) : null;
 }
 
-// Only re-stamp lastActiveAt this often — otherwise every request is a write.
+// Only re-stamp lastActiveAt this often, otherwise every request is a write.
 const ACTIVITY_THROTTLE_MS = 15 * 60 * 1000;
 
-/** Express guard — 401s without a valid access token. */
+/** Express guard: 401s without a valid access token. */
 export async function requireAuth(req, res, next) {
   const user = await getUser(req);
   if (!user) return res.status(401).json({ error: 'Not authenticated.' });
 
   // Accounts with a retired/unknown role (e.g. legacy 'partner') have no
-  // access anywhere — reject at the chokepoint rather than in every route.
+  // access anywhere: reject at the chokepoint rather than in every route.
   if (!ROLES.includes(user.role)) {
     return res.status(403).json({ error: 'Your account role no longer has access.', code: 'blocked' });
   }
 
   // Admin-blocked accounts are locked out of every endpoint. Admins themselves
   // are never blockable. This reads the cached record, so an admin's block
-  // takes effect on the next request after forget() — see the note above.
+  // takes effect on the next request after forget(): see the note above.
   if (user.role !== 'admin' && user.blocked?.lms) {
     return res.status(403).json({
       error: user.blocked?.reason
@@ -128,13 +128,13 @@ export async function requireAuth(req, res, next) {
 }
 
 /**
- * Role gate — use AFTER requireAuth:
+ * Role gate: use AFTER requireAuth:
  *   router.post('/programs', requireAuth, requireRole('admin'), handler)
  */
 export function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Forbidden — insufficient role.' });
+      return res.status(403).json({ error: 'Forbidden: insufficient role.' });
     }
     next();
   };

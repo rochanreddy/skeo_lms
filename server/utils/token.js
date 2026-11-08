@@ -10,7 +10,7 @@ const SECRET = process.env.JWT_SECRET || (() => {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('JWT_SECRET is not set. Refusing to start with a known signing key.');
   }
-  console.warn('[auth] JWT_SECRET unset — using the insecure dev key. Never run this in production.');
+  console.warn('[auth] JWT_SECRET unset: using the insecure dev key. Never run this in production.');
   return 'dev-insecure-lms-secret-change-me';
 })();
 

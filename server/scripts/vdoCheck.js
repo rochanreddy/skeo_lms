@@ -21,17 +21,17 @@ import {
 const CLEANUP = process.argv.includes('--cleanup');
 const PLACEHOLDER_TITLE = 'skeo-api-check (delete me)';
 
-const ok = (label, detail = '') => console.log(`  OK    ${label}${detail ? ` — ${detail}` : ''}`);
-const bad = (label, e) => console.log(`  FAIL  ${label} — ${e?.message || e}`);
+const ok = (label, detail = '') => console.log(`  OK    ${label}${detail ? `, ${detail}` : ''}`);
+const bad = (label, e) => console.log(`  FAIL  ${label}: ${e?.message || e}`);
 
 if (!isConfigured()) {
-  console.error('VDOCIPHER_API_SECRET is not set in server/.env — nothing to check.');
+  console.error('VDOCIPHER_API_SECRET is not set in server/.env, so there is nothing to check.');
   process.exit(1);
 }
 
 console.log('\nVdoCipher capability check\n');
 
-// 1. Library listing — what the admin lesson picker runs on.
+// 1. Library listing, what the admin lesson picker runs on.
 let firstVideo = null;
 try {
   const data = await listVideos({ limit: 5 });
@@ -42,7 +42,7 @@ try {
   bad('list videos', e);
 }
 
-// 2. Playback OTP with a watermark — the one call every student makes.
+// 2. Playback OTP with a watermark, the one call every student makes.
 if (firstVideo) {
   try {
     const { otp, playbackInfo } = await createOtp(firstVideo.id, {
@@ -57,7 +57,7 @@ if (firstVideo) {
     bad('playback OTP + watermark', e);
   }
 } else {
-  console.log('  SKIP  playback OTP — the account has no video to mint one for yet');
+  console.log('  SKIP  playback OTP: the account has no video to mint one for yet');
 }
 
 // 3. Upload credentials. This RESERVES a video id on the account (no bytes are
@@ -71,7 +71,7 @@ try {
   bad('upload credentials', e);
 }
 
-// 4. Delete — only ever the placeholder this script just made.
+// 4. Delete, only ever the placeholder this script just made.
 if (placeholderId && CLEANUP) {
   try {
     await deleteVideo(placeholderId);

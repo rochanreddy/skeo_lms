@@ -2,13 +2,13 @@ import crypto from 'crypto';
 import { Router } from 'express';
 import { provisionOrder, sendPlaybooks } from '../utils/provision.js';
 
-// POST /api/skeo/provision — the website's server, and nothing else, tells the
+// POST /api/skeo/provision: the website's server, and nothing else, tells the
 // LMS that an order has been paid for.
 //
 // There is no user session here: the caller is skeoai.com's backend, after
 // Cashfree has confirmed the payment. It proves itself with PROVISION_SECRET,
 // a value only the two servers hold, sent as a Bearer token. Without that
-// value set here the route refuses everything — an unconfigured endpoint that
+// value set here the route refuses everything, an unconfigured endpoint that
 // hands out accounts is the one thing this must never be.
 const router = Router();
 
@@ -41,7 +41,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /api/skeo/provision/playbooks — the admin panel's Send / Resend.
+// POST /api/skeo/provision/playbooks: the admin panel's Send / Resend.
 // { email, name?, sets: ['claude' | 'ai'], orderId? }. Same secret as above:
 // the website's admin API calls it on the admin's behalf.
 router.post('/playbooks', async (req, res) => {

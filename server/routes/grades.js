@@ -25,7 +25,7 @@ const quizColumns = (match, order) => Quiz.aggregate([
   { $project: { title: 1, type: 1, createdAt: 1, batchId: 1, qCount: { $size: { $ifNull: ['$questions', []] } } } },
 ]);
 
-// GET /api/skeo/grades/me — the student's consolidated gradebook: every
+// GET /api/skeo/grades/me: the student's consolidated gradebook: every
 // assignment and quiz across their batches, with their own score/status.
 router.get('/me', requireAuth, async (req, res) => {
   const batchIds = await myBatchIds(req.user);
@@ -79,7 +79,7 @@ router.get('/me', requireAuth, async (req, res) => {
   res.json({ rows, summary: { total: rows.length, graded, avgPct } });
 });
 
-// GET /api/skeo/grades/batch/:batchId — admin gradebook grid: a matrix of
+// GET /api/skeo/grades/batch/:batchId, admin gradebook grid: a matrix of
 // every student in the batch against every assessment.
 router.get('/batch/:batchId', requireAuth, async (req, res) => {
   const { batchId } = req.params;

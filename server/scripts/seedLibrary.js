@@ -1,5 +1,5 @@
 // Bring the Library in line with utils/librarySeed.js now, without waiting for
-// a restart — the server applies the same list on every start anyway.
+// a restart: the server applies the same list on every start anyway.
 //   npm run seed:library
 import 'dotenv/config';
 import { connectDb } from '../db.js';

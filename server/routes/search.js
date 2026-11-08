@@ -9,13 +9,13 @@ import { myBatchIds } from '../utils/access.js';
 
 const router = Router();
 
-// Universal search — one query, every kind of thing the user is allowed to see.
+// Universal search: one query, every kind of thing the user is allowed to see.
 // This backs ⌘K on the frontend: the palette used to only list nav destinations,
 // which meant finding a lesson still took three clicks through the curriculum
 // tree. Now one query reaches the actual content and lands you inside it.
 //
 // Everything here is scoped by role the same way the individual list endpoints
-// are — a student can only ever match lessons in a published program of a batch
+// are: a student can only ever match lessons in a published program of a batch
 // they're enrolled in, and only admins match people.
 
 const escapeRx = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -153,7 +153,7 @@ router.get('/', requireAuth, async (req, res) => {
     }
   }
 
-  // Title matches first, then earlier-in-the-title matches, then alphabetical —
+  // Title matches first, then earlier-in-the-title matches, then alphabetical,
   // so typing the start of a lesson name reliably puts it at the top.
   const pos = (t) => { const i = t.toLowerCase().indexOf(q.toLowerCase()); return i < 0 ? 999 : i; };
   results.sort((a, b) => a.rank - b.rank || pos(a.title) - pos(b.title) || a.title.localeCompare(b.title));

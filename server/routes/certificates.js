@@ -14,7 +14,7 @@ const router = Router();
    code printed on paper, so it will be opened by recruiters, by bots, and
    eventually by someone trying every code they can think of. */
 
-// GET /api/skeo/certificates/verify/:code — is this certificate real?
+// GET /api/skeo/certificates/verify/:code, is this certificate real?
 //
 // No auth, by design. A credential nobody can check without an account is not
 // a credential. What keeps it safe is the shape of the answer, not a login:
@@ -40,7 +40,7 @@ router.get('/verify/:code', async (req, res) => {
 
 /* ───────────────────────── student ───────────────────────── */
 
-// GET /api/skeo/certificates/mine — what I hold, with the QR to print.
+// GET /api/skeo/certificates/mine: what I hold, with the QR to print.
 router.get('/mine', requireAuth, async (req, res) => {
   const certs = (await Certificate.find({ studentId: req.user._id }).sort({ issuedAt: -1 }).lean())
     // A minted-but-unsent certificate is not yet the student's news to have.
@@ -60,7 +60,7 @@ router.get('/mine', requireAuth, async (req, res) => {
 
 /* ───────────────────────── admin ───────────────────────── */
 
-// GET /api/skeo/certificates?batchId= — who in this cohort has one.
+// GET /api/skeo/certificates?batchId=, who in this cohort has one.
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { batchId } = req.query;
   const filter = batchId ? { batchId } : {};
@@ -121,7 +121,7 @@ router.post('/sample', requireAuth, requireRole('admin'), async (req, res) => {
   });
 });
 
-// GET /api/skeo/certificates/:id — one certificate, as the student will see it.
+// GET /api/skeo/certificates/:id, one certificate, as the student will see it.
 //
 // Separate from the list because the QR is a couple of kilobytes of inline SVG
 // each: putting it on every row would push a 200-student cohort past half a
@@ -147,11 +147,11 @@ router.get('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   });
 });
 
-// POST /api/skeo/certificates/issue { batchId } — issue to a whole cohort.
+// POST /api/skeo/certificates/issue { batchId }: issue to a whole cohort.
 //
 // Minting only. Telling the cohort is a separate act and deliberately not
 // wired to this button: issuing is reversible in practice, because nobody has
-// seen the code yet, and sending is not — once thirty people have the mail you
+// seen the code yet, and sending is not, once thirty people have the mail you
 // cannot unsend it. So this mints, the admin reads the list back, and delivery
 // is its own decision.
 router.post('/issue', requireAuth, requireRole('admin'), async (req, res) => {

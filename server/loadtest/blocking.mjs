@@ -41,7 +41,7 @@ console.log('admin block call →', r.status);
 // The very next request, with no delay at all.
 const after = await get('/me', sT);
 console.log(`IMMEDIATELY after (+${Date.now() - t0}ms), student /me →`, after.status,
-            after.status === 403 ? '✅ blocked at once' : '❌ STALE — cache served a blocked user');
+            after.status === 403 ? '✅ blocked at once' : '❌ STALE: cache served a blocked user');
 if (after.status === 403) console.log('   message:', (await after.json()).error);
 
 // Unblock and confirm access comes back just as fast.

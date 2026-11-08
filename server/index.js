@@ -23,7 +23,7 @@ app.set('trust proxy', 1);
 // Ahead of everything, so preflights and throttled requests are counted too.
 app.use(usageMeter);
 
-// CORS allowlist — the frontend calls this API cross-origin. The production
+// CORS allowlist: the frontend calls this API cross-origin. The production
 // origin comes from SKEO_APP_URL: this fork has no domain of its own yet, so
 // there is deliberately no hard-coded one to fall back to. Bearer tokens (no
 // cookies) keep this simple.

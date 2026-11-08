@@ -7,12 +7,12 @@ import { fileURLToPath } from 'node:url';
  * own: by mail, every PDF attached, sent from the server once the payment is
  * confirmed.
  *
- *   claude — Claude Playbooks (₹99)
- *   ai     — AI Library (₹99): the AI playbooks
+ *   claude: Claude Playbooks (₹99)
+ *   ai    : AI Library (₹99): the AI playbooks
  *
  * Everything AI gets both. Each set is a folder under server/assets/playbooks/
- * holding the PDFs and a playbooks.json — [{ "title", "file" }] in the order
- * the mail lists them — so adding or swapping one is a file drop and a line of
+ * holding the PDFs and a playbooks.json, [{ "title", "file" }] in the order
+ * the mail lists them, so adding or swapping one is a file drop and a line of
  * JSON, not a code change.
  *
  * PLAYBOOKS_DIR points it elsewhere; the end-to-end test uses that so it never
@@ -36,8 +36,8 @@ export function playbookSetsFor(items) {
 /**
  * The most attachment bytes one mail may carry. ZeptoMail caps a whole mail
  * at about 15 MB and attachments grow by a third in transit (base64), so 8 MB
- * of PDF leaves room for the encoding and the body. A set larger than this —
- * the AI Library is 14 MB — goes out as numbered parts rather than as one mail
+ * of PDF leaves room for the encoding and the body. A set larger than this,
+ * the AI Library is 14 MB, goes out as numbered parts rather than as one mail
  * that bounces.
  */
 export const MAX_MAIL_BYTES = 8 * 1024 * 1024;
@@ -46,7 +46,7 @@ const DEFAULT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..'
 const baseDir = () => process.env.PLAYBOOKS_DIR || DEFAULT_DIR;
 
 /**
- * Where one playbook lives on disk, for the Library to serve it to a buyer —
+ * Where one playbook lives on disk, for the Library to serve it to a buyer,
  * or null when the set or the file is not one listed in that set's
  * playbooks.json. Only listed files are ever served, so a crafted name cannot
  * reach anything else in the folder, let alone outside it.
@@ -64,7 +64,7 @@ export async function playbookFilePath(key, file, from = baseDir()) {
 
 /**
  * One set, read from disk: its label and its files. Throws if the set is
- * missing, empty, malformed or names a file that is not there — an order must
+ * missing, empty, malformed or names a file that is not there, an order must
  * fail rather than send a mail with nothing in it.
  */
 export async function loadPlaybookSet(key, from = baseDir()) {
@@ -81,7 +81,7 @@ export async function loadPlaybookSet(key, from = baseDir()) {
   if (!Array.isArray(list) || !list.length) throw new Error(`No ${def.label} are configured (assets/playbooks/${def.folder}).`);
 
   const files = await Promise.all(list.map(async ({ title, file }) => {
-    // A bare filename only — nothing listed here may reach outside the folder.
+    // A bare filename only, nothing listed here may reach outside the folder.
     if (!title || !/^[\w.-]+\.pdf$/i.test(String(file || ''))) throw new Error(`Not a playbook entry: ${JSON.stringify({ title, file })}`);
     const content = await fs.readFile(path.join(dir, file)).catch(() => {
       throw new Error(`Playbook file missing: assets/playbooks/${def.folder}/${file}`);

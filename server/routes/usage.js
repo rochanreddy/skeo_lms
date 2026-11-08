@@ -44,7 +44,7 @@ async function databaseSize() {
   }
 }
 
-// GET /api/skeo/usage?days=30 — what the admin Usage screen and its calculator
+// GET /api/skeo/usage?days=30, what the admin Usage screen and its calculator
 // are built from. Counts and rates only: no student is named anywhere in it.
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   const days = RANGES.has(Number(req.query.days)) ? Number(req.query.days) : 30;

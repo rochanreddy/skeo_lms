@@ -5,14 +5,14 @@ import { forget } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET /api/skeo/me — the frontend calls this on load to pick which dashboard
+// GET /api/skeo/me: the frontend calls this on load to pick which dashboard
 // (student/admin) to render.
 router.get('/', requireAuth, (req, res) => res.json({ user: req.user.toPublic() }));
 
-// PATCH /api/skeo/me/password — change your own password.
+// PATCH /api/skeo/me/password: change your own password.
 // - Voluntary change: requires the current password.
 // - Forced first change (mustChangePassword, set by admin on provision/reset):
-//   no current password needed — the user is already authenticated this session.
+//   no current password needed, the user is already authenticated this session.
 router.patch('/password', requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (!newPassword || String(newPassword).length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters.' });
@@ -28,7 +28,7 @@ router.patch('/password', requireAuth, async (req, res) => {
   res.json({ ok: true, user: u.toPublic() });
 });
 
-// PATCH /api/skeo/me — update own Profile tab.
+// PATCH /api/skeo/me: update own Profile tab.
 router.patch('/', requireAuth, async (req, res) => {
   const u = req.user;
   const { fullName, phone, education, professional } = req.body || {};

@@ -10,7 +10,7 @@ import { sendShared } from '../utils/sharedBody.js';
 
 const router = Router();
 
-// GET /api/skeo/batches — role-scoped: admin=all, student=their own batches.
+// GET /api/skeo/batches: role-scoped: admin=all, student=their own batches.
 router.get('/', requireAuth, async (req, res) => {
   const ids = await myBatchIds(req.user);
   await sendShared(req, res, `batches:${ids.join()}`, async () => ({ batches: await listBatches(ids) }));
@@ -49,7 +49,7 @@ async function listBatches(ids) {
   }));
 }
 
-// GET /api/skeo/batches/:id — full batch with roster (members + admin only).
+// GET /api/skeo/batches/:id, full batch with roster (members + admin only).
 router.get('/:id', requireAuth, async (req, res) => {
   if (!(await canAccessBatch(req.user, req.params.id))) return res.status(403).json({ error: 'Forbidden.' });
   // Block state (and its reason) is admin-only information.
@@ -62,11 +62,11 @@ router.get('/:id', requireAuth, async (req, res) => {
   res.json({ batch: b });
 });
 
-// POST /api/skeo/batches — admin creates a batch under a program.
+// POST /api/skeo/batches: admin creates a batch under a program.
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { programId, name, startDate, endDate, status } = req.body || {};
   if (!programId || !name) return res.status(400).json({ error: 'programId and name are required.' });
-  // Everyone who bought Everything AI owns every batch, including this one —
+  // Everyone who bought Everything AI owns every batch, including this one,
   // the plan is "unlocks all batches", not "the batches that existed the day
   // you paid". So they are in it from the moment it exists.
   const studentIds = await User.distinct('_id', { allAccess: true, role: 'student' });
@@ -75,7 +75,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   res.status(201).json({ batch });
 });
 
-// PATCH /api/skeo/batches/:id — admin edits name/dates/status.
+// PATCH /api/skeo/batches/:id, admin edits name/dates/status.
 router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const allowed = (({ name, startDate, endDate, status }) => ({ name, startDate, endDate, status }))(req.body || {});
   Object.keys(allowed).forEach((k) => allowed[k] === undefined && delete allowed[k]);
@@ -84,13 +84,13 @@ router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   res.json({ batch });
 });
 
-// DELETE /api/skeo/batches/:id — admin.
+// DELETE /api/skeo/batches/:id, admin.
 router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   await Batch.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 });
 
-// POST /api/skeo/batches/:id/students { email, fullName } — admin enrols a student.
+// POST /api/skeo/batches/:id/students { email, fullName }, admin enrols a student.
 // If no account exists for that email (e.g. someone who paid on the website),
 // one is created automatically with a temp password + forced first-login change.
 router.post('/:id/students', requireAuth, requireRole('admin'), async (req, res) => {
@@ -110,7 +110,7 @@ router.post('/:id/students', requireAuth, requireRole('admin'), async (req, res)
   res.json({ ok: true, user: user.toPublic(), created: !!tempPassword, tempPassword });
 });
 
-// DELETE /api/skeo/batches/:id/members/:userId — admin unenrols a student.
+// DELETE /api/skeo/batches/:id/members/:userId, admin unenrols a student.
 router.delete('/:id/members/:userId', requireAuth, requireRole('admin'), async (req, res) => {
   const { id, userId } = req.params;
   await Batch.findByIdAndUpdate(id, { $pull: { studentIds: userId } });

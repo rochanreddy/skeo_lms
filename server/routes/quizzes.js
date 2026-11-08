@@ -17,7 +17,7 @@ router.get('/', requireAuth, async (req, res) => {
   const { batchId, programId, scope } = req.query;
   let filter;
   if (programId) {
-    // Module gates for one program — visible to anyone signed in, since the
+    // Module gates for one program, visible to anyone signed in, since the
     // curriculum itself is.
     filter = { programId };
   } else if (batchId) {
@@ -48,7 +48,7 @@ router.get('/', requireAuth, async (req, res) => {
   res.json({ quizzes });
 });
 
-// GET /api/skeo/quizzes/:id — student gets answer-stripped; admin gets full.
+// GET /api/skeo/quizzes/:id, student gets answer-stripped; admin gets full.
 router.get('/:id', requireAuth, async (req, res) => {
   const student = req.user.role === 'student';
   const quiz = await Quiz.findById(req.params.id).select(student ? QUIZ_STUDENT_FIELDS : '').lean();
@@ -61,7 +61,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   res.json({ quiz });
 });
 
-// POST /api/skeo/quizzes — admin creates a quiz/exam.
+// POST /api/skeo/quizzes: admin creates a quiz/exam.
 router.post('/', requireAuth, async (req, res) => {
   const { batchId, programId, moduleId, title, type, questions } = req.body || {};
   if (!title || (!batchId && !programId)) return res.status(400).json({ error: 'title and one of batchId / programId are required.' });
@@ -86,7 +86,7 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(201).json({ quiz });
 });
 
-// PATCH /api/skeo/quizzes/:id — admin edits title/type/questions.
+// PATCH /api/skeo/quizzes/:id, admin edits title/type/questions.
 // Editing the questions of a quiz that has already been attempted would make
 // existing scores meaningless, so that is refused; retitling stays allowed.
 router.patch('/:id', requireAuth, async (req, res) => {
@@ -100,7 +100,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (Array.isArray(questions)) {
     const attempts = await QuizAttempt.countDocuments({ quizId: quiz._id });
     if (attempts > 0) {
-      return res.status(409).json({ error: `${attempts} student(s) have already sat this quiz — its questions can no longer change. Delete it and post a new one instead.` });
+      return res.status(409).json({ error: `${attempts} student(s) have already sat this quiz, so its questions can no longer change. Delete it and post a new one instead.` });
     }
     quiz.questions = questions.map((q) => ({
       text: q.text || '',
@@ -115,7 +115,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   res.json({ quiz });
 });
 
-// DELETE /api/skeo/quizzes/:id — admin removes it and every attempt at it.
+// DELETE /api/skeo/quizzes/:id, admin removes it and every attempt at it.
 router.delete('/:id', requireAuth, async (req, res) => {
   const quiz = await Quiz.findById(req.params.id);
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
@@ -125,7 +125,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/skeo/quizzes/:id/attempt  { answers: [idx,...] } — student attempts once.
+// POST /api/skeo/quizzes/:id/attempt  { answers: [idx,...] }, student attempts once.
 router.post('/:id/attempt', requireAuth, async (req, res) => {
   const quiz = await Quiz.findById(req.params.id).select('batchId questions').lean();
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
@@ -141,7 +141,7 @@ router.post('/:id/attempt', requireAuth, async (req, res) => {
   res.status(201).json({ attempt });
 });
 
-// GET /api/skeo/quizzes/:id/review — question-by-question feedback on an attempt:
+// GET /api/skeo/quizzes/:id/review, question-by-question feedback on an attempt:
 // what the student picked, the right answer, and the author's explanation.
 // Gated on an attempt existing, so answers can never be fetched before sitting
 // the quiz. Admins may review a specific student via ?studentId=.
@@ -150,7 +150,7 @@ router.get('/:id/review', requireAuth, async (req, res) => {
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
   if (quiz.batchId && !(await canAccessBatch(req.user, quiz.batchId))) return res.status(403).json({ error: 'Forbidden.' });
 
-  // Students are always pinned to their own attempt — ?studentId= is ignored
+  // Students are always pinned to their own attempt, ?studentId= is ignored
   // for them so it can't be used to read a classmate's answers.
   const requested = req.user.role === 'student' ? null : req.query.studentId;
   if (requested && !mongoose.isValidObjectId(requested)) return res.status(400).json({ error: 'Invalid studentId.' });
@@ -181,7 +181,7 @@ router.get('/:id/review', requireAuth, async (req, res) => {
   });
 });
 
-// GET /api/skeo/quizzes/:id/results — admin sees all attempts.
+// GET /api/skeo/quizzes/:id/results, admin sees all attempts.
 router.get('/:id/results', requireAuth, async (req, res) => {
   const quiz = await Quiz.findById(req.params.id).select('title questions').lean();
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });

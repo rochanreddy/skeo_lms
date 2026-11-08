@@ -50,7 +50,7 @@ export function tooMany(key, max) {
   return Boolean(rec && Date.now() <= rec.reset && rec.count >= max);
 }
 
-/** Forget a key — called when the thing it was counting succeeds. */
+/** Forget a key: called when the thing it was counting succeeds. */
 export const clear = (key) => buckets.delete(key);
 
 /**

@@ -37,14 +37,14 @@ function readBody(body = {}) {
 
 const badDate = (d) => d instanceof Date && Number.isNaN(d.getTime());
 
-// GET /api/skeo/webinars — everyone sees the same board, newest push first.
+// GET /api/skeo/webinars: everyone sees the same board, newest push first.
 // The client splits it into what's coming and what's been.
 router.get('/', requireAuth, async (_req, res) => {
   const webinars = await Webinar.find().sort({ createdAt: -1 }).limit(100).lean();
   res.json({ webinars });
 });
 
-// POST /api/skeo/webinars — admin pushes a masterclass to the school.
+// POST /api/skeo/webinars: admin pushes a masterclass to the school.
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const fields = readBody(req.body);
   if (!fields.title) return res.status(400).json({ error: 'A title is required.' });
@@ -65,7 +65,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   res.status(201).json({ webinar });
 });
 
-// PATCH /api/skeo/webinars/:id — fix a title, a link or a date.
+// PATCH /api/skeo/webinars/:id, fix a title, a link or a date.
 router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const fields = readBody(req.body);
   if ('title' in fields && !fields.title) return res.status(400).json({ error: 'A title is required.' });
@@ -77,7 +77,7 @@ router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   res.json({ webinar });
 });
 
-// DELETE /api/skeo/webinars/:id — admin only.
+// DELETE /api/skeo/webinars/:id, admin only.
 router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   await Webinar.findByIdAndDelete(req.params.id);
   res.json({ ok: true });

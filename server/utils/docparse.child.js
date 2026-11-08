@@ -4,7 +4,7 @@
 //   { ok: true, result: { modules, stats } }   or   { ok: false, error }
 //
 // The write is awaited to completion before this process is allowed to end, so
-// the answer is through the pipe even if PDF.js crashes on its way out — see
+// the answer is through the pipe even if PDF.js crashes on its way out, see
 // the note in docparse.js about why that matters.
 import { parseDocToModules } from './docparse.impl.js';
 

@@ -10,12 +10,12 @@ import { playbooksEmail } from './playbooksEmail.js';
 import { PLAYBOOK_SETS, loadPlaybookSet, playbookSetsFor, splitIntoMails } from './playbooks.js';
 
 /**
- * A paid website order → an LMS account, its batches, and the login mail —
+ * A paid website order → an LMS account, its batches, and the login mail,
  * and, for the playbooks, the mail that carries them.
  *
  * Called only by the website's server, after Cashfree has confirmed the money
  * (routes/provision.js checks the shared secret). Safe to call repeatedly for
- * one order — see models/ProvisionedOrder.js.
+ * one order: see models/ProvisionedOrder.js.
  */
 
 /**
@@ -65,18 +65,18 @@ export function batchesFor(items, batches) {
     if (!set.has(key)) continue;
     const batch = batches.find((b) => String(b.name || '').trim().toLowerCase() === name.toLowerCase());
     if (batch) ids.add(String(batch._id));
-    else warnings.push(`${name} course bought, but no batch is named "${name}" — enrol this student by hand.`);
+    else warnings.push(`${name} course bought, but no batch is named "${name}". Enrol this student by hand.`);
   }
   return { batchIds: [...ids], allAccess: false, warnings };
 }
 
-/** Whether any playbooks go out by mail — Claude Playbooks, the AI Library, or both via Everything AI. */
+/** Whether any playbooks go out by mail, Claude Playbooks, the AI Library, or both via Everything AI. */
 export const getsPlaybooks = (items) => playbookSetsFor(items).length > 0;
 
 /**
  * Whether the order needs an LMS account. The Claude Playbooks and the AI
  * Library are PDFs delivered by mail, so an order of nothing else has no
- * reason for a login — and a login that opens onto an empty LMS would only
+ * reason for a login, and a login that opens onto an empty LMS would only
  * confuse the buyer.
  */
 const MAIL_ONLY = new Set(['playbooks', 'library']);
@@ -89,8 +89,8 @@ export function tempPassword() {
   return [...bytes].map((b) => alphabet[b % alphabet.length]).join('');
 }
 
-// A 'processing' row older than this is taken to be a request that died —
-// the server restarted mid-order — and may be picked up again.
+// A 'processing' row older than this is taken to be a request that died,
+// the server restarted mid-order, and may be picked up again.
 const STALE_MS = 2 * 60 * 1000;
 
 /** Take the lock on an order, or report why not. */
@@ -190,7 +190,7 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
       displayName = user.fullName || displayName;
 
       if (user.role !== 'student') {
-        warnings.push(`${cleanEmail} is a ${user.role} account — nothing was enrolled.`);
+        warnings.push(`${cleanEmail} is a ${user.role} account, so nothing was enrolled.`);
       } else {
         if (batchIds.length) {
           await Batch.updateMany({ _id: { $in: batchIds } }, { $addToSet: { studentIds: user._id } });
@@ -205,7 +205,7 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
             },
           },
         );
-        if (user.blocked?.lms) warnings.push(`${cleanEmail} is blocked from the LMS — the purchase was added, but they cannot sign in until an admin unblocks them.`);
+        if (user.blocked?.lms) warnings.push(`${cleanEmail} is blocked from the LMS. The purchase was added, but they cannot sign in until an admin unblocks them.`);
       }
 
       order.userId = user._id;
@@ -235,7 +235,7 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
 
     // Each set as one mail, or as numbered parts when it is too large for
     // one. Every part is recorded as it goes, so a retry sends only the parts
-    // that did not — never a second copy of one that arrived.
+    // that did not: never a second copy of one that arrived.
     for (const set of sets) {
       const mails = splitIntoMails(set.files);
       for (let i = 0; i < mails.length; i++) {
@@ -275,7 +275,7 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
 }
 
 /**
- * Send playbook sets to someone now — the admin panel's Send / Resend.
+ * Send playbook sets to someone now, the admin panel's Send / Resend.
  *
  * Unlike provisionOrder this does not ask whether they were sent before: the
  * admin pressing the button is the decision. Every set is read from disk

@@ -34,7 +34,7 @@ const router = Router();
  *
  * Students and admins see exactly the same listings. The only thing the
  * admin has that a student doesn't is the ability to add one and remove one
- * they added — there is no separate admin view to drift out of step.
+ * they added: there is no separate admin view to drift out of step.
  */
 
 /**
@@ -184,7 +184,7 @@ export function manualFilter(f) {
   const places = placeClause(f.places);
   if (places) and.push(places);
 
-  // No text index on this collection — it holds dozens of rows, not
+  // No text index on this collection, it holds dozens of rows, not
   // thousands, so a regex over two fields is cheaper than the index would be.
   if (f.search) {
     const safe = f.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -221,7 +221,7 @@ const shapeScraped = (job) => ({
   domain: job.domain || CATEGORY_TO_DOMAIN[job.roleCategory] || null,
   workType: job.workType || 'unspecified',
   experienceLevel: job.experienceLevel || 'unspecified',
-  // Which syllabus terms put this listing where it is — "claude", "n8n",
+  // Which syllabus terms put this listing where it is, "claude", "n8n",
   // "prompt engineering". The pipeline scores relevance from these, so
   // showing them is the difference between an order a student trusts and one
   // that looks arbitrary.
@@ -304,14 +304,14 @@ export async function topPicksFor(Scraped, filters) {
   return jobs;
 }
 
-// GET /api/skeo/jobs — the board. Same list for every role.
+// GET /api/skeo/jobs: the board. Same list for every role.
 router.get('/', requireAuth, async (req, res) => {
   const filters = parseFilters(req.query);
   const Scraped = ScrapedJob();
 
   // The team's own postings lead. There are a handful of them against
   // thousands of scraped rows, and they are the ones somebody chose to put
-  // in front of these particular students — so they head page one rather
+  // in front of these particular students, so they head page one rather
   // than being lost by date among the feed. They still age out with
   // everything else.
   const manualRows =
@@ -346,7 +346,7 @@ router.get('/', requireAuth, async (req, res) => {
   // This used to sort on `relevance` alone, which answered the wrong
   // question: a Staff Engineer role in San Francisco wanting ten years and a
   // US work visa matches the syllabus perfectly and is no use to anybody
-  // here. Mirrors buildJobSort() in the pipeline's db/readJobs.js — change
+  // here. Mirrors buildJobSort() in the pipeline's db/readJobs.js, change
   // both.
   //
   // A search term overrides it: the reader has said what they want, and
@@ -407,7 +407,7 @@ router.get('/', requireAuth, async (req, res) => {
   });
 });
 
-// POST /api/skeo/jobs — an admin adds an opening by hand.
+// POST /api/skeo/jobs: an admin adds an opening by hand.
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const {
     title,
@@ -452,7 +452,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   res.status(201).json({ job: shapeManual(job.toObject()) });
 });
 
-// DELETE /api/skeo/jobs/:id — removes a hand-posted opening.
+// DELETE /api/skeo/jobs/:id, removes a hand-posted opening.
 router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const removed = await JobPosting.findByIdAndDelete(req.params.id);
 
@@ -460,7 +460,7 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   // means someone tried to delete one. Say so rather than reporting success.
   if (!removed) {
     return res.status(404).json({
-      error: 'Not found. Listings from the feed cannot be removed here — they drop off on their own.',
+      error: 'Not found. Listings from the feed cannot be removed here, since they drop off on their own.',
     });
   }
 

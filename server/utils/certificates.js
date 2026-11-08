@@ -7,7 +7,7 @@ import { appUrl } from './appUrl.js';
  * Issuing a certificate, and turning one into something a stranger can check.
  *
  * The whole point of the code below is that the person scanning the QR has no
- * account, no context and no reason to trust us — so the id has to come from a
+ * account, no context and no reason to trust us, so the id has to come from a
  * counter rather than from another id, the lookup has to be a lookup rather
  * than a scan, and the page they land on must show only what verifying
  * actually requires.
@@ -18,12 +18,12 @@ import { appUrl } from './appUrl.js';
 
    Taken from the title rather than the id, so every batch of a programme
    resolves the same way. A programme can also carry its own `certCode` field
-   and override this — nothing sets that today, but it is the seam to use if a
+   and override this: nothing sets that today, but it is the seam to use if a
    title change must not change the certificate numbers. */
 export function segmentFor(program) {
   if (program?.certCode) return String(program.certCode).toUpperCase();
   const title = String(program?.title || '');
-  /* Any programme has to be issuable — refusing here would mean a new course
+  /* Any programme has to be issuable, refusing here would mean a new course
      cannot hand out certificates until someone edits this file. Five letters
      off the title keeps the code readable and the uniqueness index keeps it
      honest if two titles happen to collide. */
@@ -44,13 +44,13 @@ const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', '
  * The month and year written into a batch's name.
  *
  * Batches get named "Fellowship · Sept 2026" by hand. That is a convention
- * rather than a schema, so this is a fallback and not the first choice —
+ * rather than a schema, so this is a fallback and not the first choice,
  * startDate is. It exists because a cohort created without a start date would
  * otherwise be stamped with today's, and reading the month off the name beats
  * being confidently wrong.
  *
  * Written as a token scan rather than one regex: the name is punctuated in
- * whatever way whoever created it felt like ("·", "—", ",", nothing), and a
+ * whatever way whoever created it felt like ("·", a dash, ",", nothing), and a
  * pattern that tries to describe all of that is harder to read than splitting
  * on punctuation and looking at the words.
  *
@@ -80,7 +80,7 @@ export function monthFromName(name) {
  * A cohort that ran in September gets September codes even when the
  * certificates are handed out in November, so every certificate from one
  * intake shares a stamp and they sort together. The "Issued on" line on the
- * certificate still shows the real issue date — the two are allowed to differ,
+ * certificate still shows the real issue date, the two are allowed to differ,
  * and on a late issue they will.
  *
  * startDate first, then the month written into the name, then the issue date.
@@ -96,7 +96,7 @@ export function stampDateFor(batch, issuedAt = new Date()) {
  * A code for a sample certificate: SKEO-CLAUD-0926-0000.
  *
  * The 0000 is the point. The counter behind nextCode() starts at 1 and only
- * ever goes up, so no certificate that was actually issued can end in 0000 —
+ * ever goes up, so no certificate that was actually issued can end in 0000,
  * which means a sample can never be mistaken for a credential, and a verifier
  * handed one gets an honest "no certificate with that ID" rather than a record
  * that half-exists. It also costs the real sequence nothing: sampling does not
@@ -116,9 +116,9 @@ export function sampleCode(program, batch = null) {
  * A NOTE ON WHAT THIS GIVES UP. These codes are sequential and therefore
  * guessable: holding SKEO-CLAUD-0926-0007 tells you -0006 and -0008 almost
  * certainly exist, and the verification endpoint will describe them. That is a
- * deliberate trade — a code in this shape can be read down a phone line, typed
- * off a printed page and sorted in a spreadsheet, which a random string cannot
- * — but it does mean the endpoint can be walked to list a cohort's names. The
+ * deliberate trade: a code in this shape can be read down a phone line, typed
+ * off a printed page and sorted in a spreadsheet, which a random string cannot,
+ * but it does mean the endpoint can be walked to list a cohort's names. The
  * rate limit on /verify is what keeps that expensive, and the public view is
  * trimmed to name, programme, batch and date so walking it yields nothing an
  * employer could not already ask for. If enumeration ever matters more than
@@ -161,8 +161,8 @@ export async function qrDataUri(code) {
  * Issue one certificate, or hand back the one that already exists.
  *
  * Idempotent on (student, programme, batch), because re-running a cohort issue
- * is a normal thing to do — somebody enrolled late, a send failed, an admin
- * pressed it twice — and a second press must not mint a second code for a
+ * is a normal thing to do, somebody enrolled late, a send failed, an admin
+ * pressed it twice: and a second press must not mint a second code for a
  * person who has already shared their first one.
  */
 export async function issueCertificate({ student, program, batch = null, issuedBy = null }) {
@@ -173,7 +173,7 @@ export async function issueCertificate({ student, program, batch = null, issuedB
   /* The counter behind nextCode() is atomic, so two issues racing get two
      different numbers and the loop below should never run twice. It stays
      because the unique index on `code` is the only thing that actually
-     guarantees it — a counter document restored from an older backup, or a
+     guarantees it: a counter document restored from an older backup, or a
      code written by hand during a migration, would both collide, and a retry
      costs nothing against a case that should not happen. */
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -206,7 +206,7 @@ export async function issueCertificate({ student, program, batch = null, issuedB
  * Issuing a cohort's certificates and telling that cohort about them are two
  * different acts, and an admin does the first in order to check the second is
  * worth doing. So a certificate an admin minted stays invisible to the student
- * until the mail goes — otherwise someone refreshing their profile finds out
+ * until the mail goes, otherwise someone refreshing their profile finds out
  * before the announcement, and an admin who spots a wrong name has already
  * lost the chance to fix it quietly.
  *
@@ -222,7 +222,7 @@ export const studentCanSee = (cert) => Boolean(cert.sentAt) || !cert.issuedBy;
  * An allowlist built by hand, not the document with a few fields deleted: the
  * document carries the student's id and will carry more over time, and a
  * deny-list is one schema change away from publishing something it shouldn't.
- * No email, no ids — a verifier needs to know the name on the certificate
+ * No email, no ids, a verifier needs to know the name on the certificate
  * matches the person in front of them, and nothing else.
  */
 export const publicView = (cert) => ({

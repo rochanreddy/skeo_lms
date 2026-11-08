@@ -5,8 +5,8 @@ import mongoose from 'mongoose';
 // Certificate numbers run 0001, 0002, 0003 within a programme and month, which
 // means two admins issuing two cohorts at the same moment must not both be
 // handed 0007. Reading the highest existing number and adding one cannot give
-// that guarantee — between the read and the write another process has already
-// taken it — so the increment happens inside the database, where
+// that guarantee: between the read and the write another process has already
+// taken it: so the increment happens inside the database, where
 // findOneAndUpdate with $inc is atomic against every other writer.
 const counterSchema = new mongoose.Schema(
   {

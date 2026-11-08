@@ -7,7 +7,7 @@ const questionSchema = new mongoose.Schema(
     text: { type: String, required: true },
     options: { type: [String], default: [] }, // 2–6 choices
     correctIndex: { type: Number, default: 0 }, // index into options
-    // Why the correct answer is correct — shown to the student only after they
+    // Why the correct answer is correct, shown to the student only after they
     // attempt, so the quiz teaches instead of just scoring. Optional.
     explanation: { type: String, default: '' },
   },

@@ -32,12 +32,12 @@ async function runCheck(sub, assignment) {
   } else if (result.status === 'READY') {
     notify(sub.studentId, { type: 'assignment', text: `Your submission for "${assignment?.title || 'your assignment'}" was received and is in the review queue.`, link: '/app/learning' });
   }
-  // CHECK_FAILED is a system fault, not the student's — no student notification.
+  // CHECK_FAILED is a system fault, not the student's, no student notification.
   // Admins see it directly via checkStatus in the list/detail views instead.
   return sub;
 }
 
-// POST /api/skeo/submissions  { assignmentId, driveLink } — student creates/re-submits
+// POST /api/skeo/submissions  { assignmentId, driveLink }, student creates/re-submits
 // a Drive-folder submission and it's verified synchronously.
 router.post('/', requireAuth, async (req, res) => {
   const { assignmentId, driveLink } = req.body || {};
@@ -64,7 +64,7 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(201).json({ submission: sub });
 });
 
-// GET /api/skeo/submissions/assignment/:assignmentId — admin lists submissions
+// GET /api/skeo/submissions/assignment/:assignmentId, admin lists submissions
 // for one assignment (used by the existing grading UI).
 router.get('/assignment/:assignmentId', requireAuth, async (req, res) => {
   const a = await Assignment.findById(req.params.assignmentId).select('_id').lean();
@@ -74,7 +74,7 @@ router.get('/assignment/:assignmentId', requireAuth, async (req, res) => {
   res.json({ submissions });
 });
 
-// GET /api/skeo/submissions — admin list across every batch, filterable
+// GET /api/skeo/submissions: admin list across every batch, filterable
 // by assignmentId/status (checkStatus).
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { assignmentId, status } = req.query;
@@ -91,7 +91,7 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   res.json({ submissions });
 });
 
-// GET /api/skeo/submissions/:id — admin detail view.
+// GET /api/skeo/submissions/:id, admin detail view.
 router.get('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, isDeleted: false })
     .populate('assignmentId', 'title type batchId dueDate')
@@ -102,9 +102,9 @@ router.get('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   res.json({ submission: sub });
 });
 
-// PATCH /api/skeo/submissions/:id  { driveLink?, assignmentId? } — student edits
+// PATCH /api/skeo/submissions/:id  { driveLink?, assignmentId? }, student edits
 // their own submission (own, un-locked, before the due date). Resets checkStatus
-// and re-verifies — never leaves stale error text on a changed link.
+// and re-verifies: never leaves stale error text on a changed link.
 router.patch('/:id', requireAuth, async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, studentId: req.user._id, isDeleted: false }).populate('assignmentId');
   if (!sub) return res.status(404).json({ error: 'Submission not found.' });
@@ -137,7 +137,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   res.json({ submission: sub });
 });
 
-// DELETE /api/skeo/submissions/:id — student soft-deletes their own submission.
+// DELETE /api/skeo/submissions/:id, student soft-deletes their own submission.
 router.delete('/:id', requireAuth, async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, studentId: req.user._id, isDeleted: false }).populate('assignmentId', 'dueDate');
   if (!sub) return res.status(404).json({ error: 'Submission not found.' });
@@ -148,7 +148,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// PATCH /api/skeo/submissions/:id/grade  { score, feedback } — admin grades,
+// PATCH /api/skeo/submissions/:id/grade  { score, feedback }, admin grades,
 // and locks the submission against further student edits.
 router.patch('/:id/grade', requireAuth, async (req, res) => {
   const sub = await Submission.findById(req.params.id).populate('assignmentId', 'batchId');
@@ -164,7 +164,7 @@ router.patch('/:id/grade', requireAuth, async (req, res) => {
   res.json({ submission: sub });
 });
 
-// POST /api/skeo/submissions/:id/recheck — admin manually re-runs Drive
+// POST /api/skeo/submissions/:id/recheck, admin manually re-runs Drive
 // verification (after CHECK_FAILED, or the student says permissions are fixed).
 router.post('/:id/recheck', requireAuth, requireRole('admin'), async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, isDeleted: false }).populate('assignmentId', 'title batchId requiredDriveTypes');
@@ -176,7 +176,7 @@ router.post('/:id/recheck', requireAuth, requireRole('admin'), async (req, res) 
   res.json({ submission: sub });
 });
 
-// POST /api/skeo/submissions/:id/unlock — admin lifts the post-grade edit
+// POST /api/skeo/submissions/:id/unlock, admin lifts the post-grade edit
 // lock so the student can resubmit (grade/status are left as-is).
 router.post('/:id/unlock', requireAuth, requireRole('admin'), async (req, res) => {
   const sub = await Submission.findOne({ _id: req.params.id, isDeleted: false }).populate('assignmentId', 'batchId');

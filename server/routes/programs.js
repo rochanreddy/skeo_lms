@@ -13,7 +13,7 @@ const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSiz
 // Admin module-block: strip blocked curriculum modules from what a non-admin
 // user sees. The module simply doesn't exist for them (Learning, progress UI).
 //
-// Takes either a document or a lean object — the list route reads lean, the
+// Takes either a document or a lean object, the list route reads lean, the
 // detail route still hydrates.
 function withoutBlockedModules(program, user) {
   const blocked = new Set((user.blocked?.moduleIds || []).map(String));
@@ -29,7 +29,7 @@ function withoutBlockedModules(program, user) {
  * every programme, with its whole module/chapter/topic tree, lesson bodies
  * included. Student home asks for it, Learning asks for it, and ⌘K reaches it.
  * Hundreds of kilobytes of BSON decoded into JS objects and serialised back to
- * JSON, every time — and the curriculum changes when an admin edits it, which
+ * JSON, every time, and the curriculum changes when an admin edits it, which
  * is to say almost never.
  *
  * So the finished body is shared (utils/sharedBody.js). Repeat callers skip the
@@ -68,7 +68,7 @@ router.get('/', requireAuth, async (req, res) => {
   });
 });
 
-// GET /api/skeo/programs/:id — full curriculum tree.
+// GET /api/skeo/programs/:id, full curriculum tree.
 router.get('/:id', requireAuth, async (req, res) => {
   const program = await Program.findById(req.params.id).lean();
   if (!program) return res.status(404).json({ error: 'Program not found.' });
@@ -76,7 +76,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   res.json({ program: withoutBlockedModules(program, req.user) });
 });
 
-// POST /api/skeo/programs — admin only.
+// POST /api/skeo/programs: admin only.
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { title, type, description, slug } = req.body || {};
   if (!title) return res.status(400).json({ error: 'Title is required.' });
@@ -84,7 +84,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   res.status(201).json({ program });
 });
 
-// POST /api/skeo/programs/:id/import — admin uploads a
+// POST /api/skeo/programs/:id/import, admin uploads a
 // .docx/.pdf/.md/.txt. Returns the auto-structured module tree as a PREVIEW
 // (not saved) so it can be reviewed/edited before committing via PATCH.
 router.post('/:id/import', requireAuth, requireRole('admin'), importUpload.single('file'), async (req, res) => {
@@ -100,7 +100,7 @@ router.post('/:id/import', requireAuth, requireRole('admin'), importUpload.singl
   }
 });
 
-// PATCH /api/skeo/programs/:id — admin edits the program and its curriculum.
+// PATCH /api/skeo/programs/:id, admin edits the program and its curriculum.
 router.patch('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const target = await Program.findById(req.params.id).select('_id');
   if (!target) return res.status(404).json({ error: 'Program not found.' });

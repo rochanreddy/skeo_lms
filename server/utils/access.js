@@ -7,7 +7,7 @@ import { PLAYBOOK_SETS, playbookSetsFor } from './playbooks.js';
  * Has this person paid for anything the LMS holds?
  *
  * Yes if they own Everything AI, are in any batch (bought, or enrolled by an
- * admin — both count), or have a completed website order. The last one is for
+ * admin: both count), or have a completed website order. The last one is for
  * the buyer whose batch did not exist yet when they paid: the order recorded a
  * warning for an admin to act on, and they must still be able to sign in.
  */
@@ -24,7 +24,7 @@ export async function hasPaidAccess(user) {
  * Library: everything for an admin or an Everything AI owner, otherwise the
  * sets their completed orders paid for. Orders are matched by email as well as
  * by account, because a Claude Playbooks or AI Library order makes no account
- * of its own — its buyer may sign in later with one from another purchase.
+ * of its own: its buyer may sign in later with one from another purchase.
  */
 export async function ownedPlaybookSets(user) {
   if (user.role === 'admin' || user.allAccess) return new Set(Object.keys(PLAYBOOK_SETS));

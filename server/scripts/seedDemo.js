@@ -1,6 +1,6 @@
 // Rich demo data so the dashboards look alive: an admin, a batch of students
 // and a quiz with
-// attempts. Idempotent — it clears its own demo data first, then recreates.
+// attempts. Idempotent, it clears its own demo data first, then recreates.
 //   npm run seed:demo
 import 'dotenv/config';
 import { hashPassword } from '../utils/password.js';
@@ -56,7 +56,7 @@ async function run() {
     await Batch.findByIdAndUpdate(batch._id, { $addToSet: { studentIds: u._id } });
     students.push({ u, batch });
   }
-  console.log(`✓ ${students.length} students (password: ${studPass}) — e.g. aarav${DEMO_DOMAIN}`);
+  console.log(`✓ ${students.length} students (password: ${studPass}): e.g. aarav${DEMO_DOMAIN}`);
 
 
   // ── Quiz with attempts ──
