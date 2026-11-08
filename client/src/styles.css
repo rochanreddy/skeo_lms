@@ -2999,7 +2999,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   .topbar { padding-top: max(12px, env(safe-area-inset-top)); padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .main { padding-bottom: calc(116px + env(safe-area-inset-bottom)); }
 
-  /* Dock: at most five even tabs, four sections and More. */
+  /* Dock: four even tabs, three sections and More. */
   .dock { bottom: max(12px, env(safe-area-inset-bottom)); justify-content: space-between; overflow: hidden; }
   .dock-item { flex: 1 1 0; min-width: 0; padding: 8px 2px 7px; }
   .dock-label { font-size: 10.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }

@@ -37,11 +37,12 @@ export default function AppShell({ user, setUser, logout }) {
   // a scrolling dock hid sections past the edge with nothing to say they were
   // there. The stylesheet decides when (only on narrow screens), so the dock
   // markup is the same everywhere and desktop keeps every tab in view.
-  const DOCK_PRIMARY = 4;
+  // Four slots on a phone: Home, Learning, the featured tab, and More.
+  const DOCK_PRIMARY = 3;
   const hasMore = tabs.length > DOCK_PRIMARY + 1;
 
   // A featured tab (Job Board) sits in the middle of the dock: the middle of
-  // every tab on desktop, the middle of the five slots on a phone. The two
+  // every tab on desktop, third of the four slots on a phone. The two
   // middles differ for a long role, so the phone order rides on a CSS variable
   // rather than on DOM order.
   const featured = tabs.find((t) => t.featured);
