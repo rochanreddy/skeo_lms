@@ -46,30 +46,36 @@
 /* ── Library ────────────────────────────────────────────────────────────────
    One card to a row on a phone. Titles clamp at two lines and descriptions at
    three, so a wordy card does not make its row twice the height of the next. */
-.lib-page .lib-card { min-width: 0; }
+.lib-page .lib-card { min-width: 0; gap: 14px; padding: 16px; }
 /* A paid playbook the reader owns opens in-app, so it is a button, reset it
    to look like the link cards beside it. */
 .lib-page button.lib-card { font: inherit; text-align: left; cursor: pointer; width: 100%; }
+
+/* Top: a small icon tile for the kind, then the title and two lines of
+   description beside it. */
+.lib-page .lib-body { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.lib-page .lib-icon { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--purple-soft); color: var(--purple); }
+.lib-page .lib-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lib-page .lib-card strong { font-size: 15px; line-height: 1.3; }
+.lib-page .lib-desc { font-size: 13px; line-height: 1.45; color: var(--muted); }
+.lib-page .lib-card strong,
+.lib-page .lib-desc { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.lib-page .lib-card strong { -webkit-line-clamp: 2; }
+.lib-page .lib-desc { -webkit-line-clamp: 2; }
+
+/* Bottom: one ruled line. What it is, or what includes it, on the left;
+   the way in on the right. */
+.lib-page .lib-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.lib-page .lib-kind { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lib-page .lib-foot .lib-open { flex: none; margin-top: 0; }
+.lib-page .lib-lock { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; color: var(--muted); }
+.lib-page .lib-lock span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-page .lib-lock svg { flex: none; }
+
 /* One they don't own: still listed, so they can see what's on offer, but quiet. */
 .lib-page .lib-card.is-locked { background: var(--bg); }
-.lib-page .lib-card.is-locked strong,
-.lib-page .lib-card.is-locked .muted { opacity: .7; }
-/* The footer of a locked card: what includes it, then the way in. The note
-   takes the bottom-pinning margin so the link sits directly under it. */
-.lib-page .lib-lock {
-  display: flex; align-items: center; gap: 6px;
-  margin-top: auto; padding-top: 4px;
-  font-size: 12.5px; color: var(--muted); line-height: 1.4;
-}
-.lib-page .lib-lock svg { flex: none; }
-.lib-page .lib-card.is-locked .lib-unlock { margin-top: 0; }
-.lib-page .lib-card strong,
-.lib-page .lib-card .muted {
-  overflow-wrap: anywhere;
-  display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
-}
-.lib-page .lib-card strong { -webkit-line-clamp: 2; }
-.lib-page .lib-card .muted { -webkit-line-clamp: 3; }
+.lib-page .lib-card.is-locked .lib-text { opacity: .75; }
+.lib-page .lib-card.is-locked .lib-icon { background: var(--wash); color: var(--muted); }
 
 @media (max-width: 640px) {
   .lib-page .lib-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }

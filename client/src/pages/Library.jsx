@@ -2,12 +2,30 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { api, fetchFileBytes } from '../api.js';
 import FileViewer from '../components/FileViewer.jsx';
+import LineIcon from '../components/LineIcon.jsx';
 import { PRICING_URL } from '../components/GetSkeo.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 
 const CATEGORIES = ['PPT', 'eBook', 'Note', 'Library'];
 // The paid sets a playbook can belong to, as the website sells them.
 const SET_LABEL = { claude: 'Claude Playbooks', ai: 'AI Library' };
+
+// What kind of resource it is, as a small icon tile, so a row of cards is
+// told apart at a glance instead of by a capsule repeated on every one.
+const KIND_ICON = { PPT: 'slides', eBook: 'book', Note: 'folder', Library: 'briefcase' };
+
+// The top of every card: icon tile, then title and a short description.
+function CardBody({ item }) {
+  return (
+    <span className="lib-body">
+      <span className="lib-icon" aria-hidden="true"><LineIcon name={KIND_ICON[item.category] || 'book'} size={18} /></span>
+      <span className="lib-text">
+        <strong>{item.title}</strong>
+        {item.description && <span className="lib-desc">{item.description}</span>}
+      </span>
+    </span>
+  );
+}
 
 // Downloadable resource library. Everyone browses; admins add by link.
 export default function Library() {
@@ -82,32 +100,28 @@ export default function Library() {
           // pointer to the plans. Never a link to the file itself.
           i.locked ? (
             <a key={i._id} className="lib-card is-locked" href={PRICING_URL}>
-              <span className="badge">{i.category}</span>
-              <strong>{i.title}</strong>
-              {i.description && <p className="muted">{i.description}</p>}
-              <span className="lib-lock">
-                <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                  <rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                </svg>
-                Included with {SET_LABEL[i.playbookSet]} or Everything AI
+              <CardBody item={i} />
+              <span className="lib-foot">
+                <span className="lib-lock">
+                  <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                    <rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  </svg>
+                  <span>{SET_LABEL[i.playbookSet]} or Everything AI</span>
+                </span>
+                <span className="lib-open">See plans →</span>
               </span>
-              <span className="lib-open lib-unlock">See plans →</span>
             </a>
           ) : (
             <button key={i._id} type="button" className="lib-card" onClick={() => setReading(i)}>
-              <span className="badge">{i.category}</span>
-              <strong>{i.title}</strong>
-              {i.description && <p className="muted">{i.description}</p>}
-              <span className="lib-open">Read →</span>
+              <CardBody item={i} />
+              <span className="lib-foot"><span className="lib-kind">{i.category}</span><span className="lib-open">Read →</span></span>
             </button>
           )
         ) : (
           <a key={i._id} className="lib-card" href={i.url || '#'} target={i.url ? '_blank' : undefined} rel="noreferrer">
-            <span className="badge">{i.category}</span>
-            <strong>{i.title}</strong>
-            {i.description && <p className="muted">{i.description}</p>}
-            <span className="lib-open">{i.url ? 'Open →' : 'No link'}</span>
+            <CardBody item={i} />
+            <span className="lib-foot"><span className="lib-kind">{i.category}</span><span className="lib-open">{i.url ? 'Open →' : 'No link'}</span></span>
           </a>
         )))}
         {!loading && shown.length === 0 && <p className="muted">No resources yet.</p>}
