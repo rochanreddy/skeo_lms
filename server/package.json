@@ -10,6 +10,7 @@
     "seed": "node scripts/seed.js",
     "seed:demo": "node scripts/seedDemo.js",
     "seed:claude": "node scripts/seedClaude.js",
+    "seed:quizzes": "node scripts/seedQuizzes.js",
     "seed:library": "node scripts/seedLibrary.js",
     "build:curriculum-pdf": "node scripts/buildCurriculumPdf.js",
     "vdo:check": "node scripts/vdoCheck.js",

@@ -27,6 +27,7 @@ import { User } from '../models/User.js';
 import { Assignment } from '../models/Assignment.js';
 import { Submission } from '../models/Submission.js';
 import { Quiz } from '../models/Quiz.js';
+import { QUIZZES } from './claudeQuizzes.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { mergeModules, idsOf } from '../utils/curriculumMerge.js';
 import { MODULES } from './claudeCurriculum.js';
@@ -169,49 +170,11 @@ const RENAMED = {
 };
 const RETIRED = ['AI Audit \u2014 where does AI already touch your life?'];
 
-// ── Gate quizzes: one per module, 3 questions each ────────────────────────
-const QUIZZES = [
-  ['What Claude is actually doing when it answers', [
-    ['Claude answers by…', ['Predicting the next likely piece of text from learned patterns', 'Looking facts up in a database', 'Searching the web on every message'], 0],
-    ['Fluency and accuracy are…', ['The same thing', 'Separate properties: one does not guarantee the other', 'Both guaranteed by a bigger context window'], 1],
-    ['A brand-new chat starts blank unless…', ["You're inside a Project that carries context forward", 'You paid for Max', 'You ask Claude to remember'], 0],
-  ]],
-  ['Prompting and the 4D framework', [
-    ['The four Ds are…', ['Delegation, Description, Discernment, Diligence', 'Draft, Debug, Deploy, Deliver', 'Define, Design, Develop, Deliver'], 0],
-    ['Role prompting ("act as a senior analyst")…', ['Adds knowledge Claude lacks', 'Sharpens tone and framing but adds no new knowledge', 'Increases the context window'], 1],
-    ['A Skill that will not trigger is usually…', ['A broken tool', 'A vague description problem', 'A billing issue'], 1],
-  ]],
-  ['The visual and creative layer', [
-    ['Claude natively generates…', ['Photorealistic images and video', 'SVG, Mermaid diagrams and interactive HTML', 'Nothing visual at all'], 1],
-    ['For audio and video generation Claude…', ['Produces the media itself', 'Connects out to specialist tools', 'Refuses entirely'], 1],
-    ['Claude processes spoken content by…', ['Listening to the raw audio file', 'Reasoning over the transcript text you provide', 'Rendering a waveform'], 1],
-  ]],
-  ['Connectors, research and reaching further', [
-    ['MCP is…', ['A Claude subscription tier', 'The open standard many connectors are built on', 'A prompt format'], 1],
-    ['Connections are authorised…', ['Automatically by default', 'Explicitly by you, one at a time', 'By your employer only'], 1],
-    ['Cowork differs from Chat because it…', ['Executes multi-step tasks directly on your real files', 'Only writes longer answers', 'Runs a different model family'], 0],
-  ]],
-  ['Delegation, automation and building', [
-    ['A subagent reports back…', ['Its full transcript', 'Only a summary, keeping your main context clean', 'Nothing at all'], 1],
-    ['A scheduled task’s prompt must be…', ['Short', 'Self-contained, since there is no mid-run clarification', 'Written in the API'], 1],
-    ['Claude Code is a poor fit, without expert review, for…', ['Small internal tools', 'Production-scale or security-sensitive systems', 'Landing pages'], 1],
-  ]],
-  ['Devices, teams and enterprise', [
-    ['Claude Tag lets teammates…', ['Tag @Claude into Slack to delegate work', 'Rename their chats', 'Share a login'], 0],
-    ['Enterprise data controls…', ['Are identical to personal defaults', 'Differ meaningfully from personal account defaults', 'Do not exist'], 1],
-    ['Choosing a plan should be driven by…', ['The newest tier available', 'Your actual weekly usage patterns', 'What your friend uses'], 1],
-  ]],
-  ['Real-world use cases', [
-    ['A good "thinking partner" use of Claude is…', ['Red-teaming your own plan', 'Asking it to feel emotions', 'Having it pick your lunch'], 0],
-    ['For a small business, a sensible Project structure is…', ['One giant catch-all Project', 'One Project per business function', 'A new Project per message'], 1],
-    ['Outcome-based positioning sounds like…', ['"I use AI"', '"I built X, saving Y hours"', '"I know many tools"'], 1],
-  ]],
-  ['Capstone readiness', [
-    ['A capstone should be…', ['A shipped, real piece of proof-of-work', 'A written summary of the course', 'A list of tools'], 0],
-    ['The Automation Suite capstone requires…', ['One Cowork task + one Skill + one recurring brief', 'Three Artifacts', 'An API key'], 0],
-    ['Diligence at capstone time means…', ['Shipping fast without review', 'Reviewing before you put your name on it', 'Letting Claude decide'], 1],
-  ]],
-];
+// ── Gate quizzes: one per module, 12 questions each, in claudeQuizzes.js ──
+// Each question carries an explanation, shown after the student submits.
+// The first three per module are the original gate questions, unchanged,
+// so attempts already stored still line up with their questions.
+
 function buildModules() {
   return MODULES.map((m, mi) => ({
     title: m.title,
@@ -247,6 +210,7 @@ const sameQuestions = (a, b) =>
   a.length === b.length && a.every((q, i) =>
     q.text === b[i].text
     && q.correctIndex === b[i].correctIndex
+    && (q.explanation || '') === (b[i].explanation || '')
     && (q.options || []).join('|') === (b[i].options || []).join('|'));
 
 // Never write to a database without being told to. The default is a dry run
@@ -401,7 +365,7 @@ async function run() {
     liveModuleIds.add(moduleId);
     const [subject, qs] = QUIZZES[i];
     const title = `Module ${i + 1} quiz: ${subject}`;
-    const questions = qs.map(([text, options, correctIndex]) => ({ text, options, correctIndex }));
+    const questions = qs.map(({ text, options, correctIndex, explanation }) => ({ text, options, correctIndex, explanation: explanation || '' }));
     const existing = program ? await Quiz.findOne({ programId: program._id, moduleId }) : null;
     if (!existing) {
       note(`- create gate quiz: ${title}`);

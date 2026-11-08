@@ -41,6 +41,91 @@ const Star = ({ filled }) => (
   </svg>
 );
 
+// After submitting: the score, then every question played back with what the
+// student picked, the right answer, and why. The quiz teaches here, not just
+// scores.
+function QuizResult({ quiz, result, onExit }) {
+  const [review, setReview] = useState(null);
+  const [filter, setFilter] = useState('all'); // 'all' | 'wrong'
+  useEffect(() => {
+    api(`/quizzes/${quiz._id}/review`).then((d) => setReview(d.questions || [])).catch(() => setReview([]));
+  }, [quiz._id]);
+
+  const pct = result.total ? Math.round((result.score / result.total) * 100) : 0;
+  const tone = pct >= 80 ? 'is-great' : pct >= 50 ? 'is-ok' : 'is-low';
+  const verdict = pct >= 80 ? 'Strong work.' : pct >= 50 ? 'Good going. Look over the ones you missed.' : 'Worth another look at this module before moving on.';
+  const wrong = (review || []).filter((q) => !q.isCorrect).length;
+  const shown = (review || []).map((q, i) => ({ ...q, n: i + 1 })).filter((q) => filter === 'all' || !q.isCorrect);
+
+  return (
+    <div className="qz-shell qz-shell-result">
+      <div className="qz-card qz-result">
+        <div className="qz-top">
+          <button type="button" className="qz-exit" onClick={onExit}><Arrow dir="left" /> Back to Learning</button>
+          <div className="qz-eyebrow" title={quiz.title}>{quiz.title}</div>
+        </div>
+
+        <div className={`qz-result-score ${tone}`}>
+          <div className="qz-ring" style={{ '--p': pct }}><span>{pct}<small>%</small></span></div>
+          <div>
+            <div className="qz-result-line">{result.score} of {result.total} correct</div>
+            <p className="muted qz-result-verdict">{result.already ? 'You have already sat this quiz. Here is how it went.' : verdict}</p>
+          </div>
+        </div>
+
+        {review === null ? (
+          <div className="skeleton" style={{ height: 160, borderRadius: 12, marginTop: 20 }} />
+        ) : review.length > 0 && (
+          <>
+            <div className="qz-review-head">
+              <h2>Your answers</h2>
+              {wrong > 0 && (
+                <div className="qz-filter" role="tablist" aria-label="Which answers to show">
+                  <button type="button" role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')}>All {review.length}</button>
+                  <button type="button" role="tab" aria-selected={filter === 'wrong'} onClick={() => setFilter('wrong')}>Missed {wrong}</button>
+                </div>
+              )}
+            </div>
+            <ol className="qz-review">
+              {shown.map((q) => (
+                <li key={q._id || q.n} className={q.isCorrect ? 'is-right' : 'is-wrong'}>
+                  <div className="qz-review-q">
+                    <span className="qz-review-n">{q.n}</span>
+                    <span>{q.text}</span>
+                    <span className="qz-review-mark" aria-label={q.isCorrect ? 'Correct' : 'Incorrect'}>{q.isCorrect ? <Tick /> : <Cross />}</span>
+                  </div>
+                  <ul className="qz-review-opts">
+                    {q.options.map((o, oi) => {
+                      const right = oi === q.correctIndex;
+                      const mine = oi === q.myAnswer;
+                      if (!right && !mine) return null;
+                      return (
+                        <li key={oi} className={right ? 'is-correct' : 'is-picked'}>
+                          <span className="qz-review-tag">{right && mine ? 'Your answer' : right ? 'Correct answer' : 'Your answer'}</span>
+                          {o}
+                        </li>
+                      );
+                    })}
+                    {q.myAnswer == null && <li className="is-picked"><span className="qz-review-tag">Your answer</span>Left blank</li>}
+                  </ul>
+                  {q.explanation && <p className="qz-review-why">{q.explanation}</p>}
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const Tick = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+);
+const Cross = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+);
+
 const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
 export default function QuizRunner() {
@@ -160,20 +245,7 @@ export default function QuizRunner() {
   }
   if (!quiz) return <div className="qz-shell"><div className="qz-card qz-loading"><div className="skeleton" style={{ height: 300, borderRadius: 16 }} /></div></div>;
 
-  if (result) {
-    const pct = result.total ? Math.round((result.score / result.total) * 100) : 0;
-    return (
-      <div className="qz-shell">
-        <div className="qz-card qz-end">
-          <div className="qz-eyebrow">{quiz.title}</div>
-          <div className="qz-score">{pct}<span>%</span></div>
-          <p className="qz-score-sub">{result.score} of {result.total} correct</p>
-          <p className="muted">{result.already ? 'You have already sat this quiz.' : 'Submitted. Review your answers from the Quizzes tab in Learning.'}</p>
-          <button className="btn" onClick={exit}>Back to Learning</button>
-        </div>
-      </div>
-    );
-  }
+  if (result) return <QuizResult quiz={quiz} result={result} onExit={exit} />;
 
   const q = quiz.questions[current];
   const statusOf = (i) => (marked[i] ? 'marked' : answers[i] != null ? 'answered' : 'left');
