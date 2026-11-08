@@ -11,6 +11,64 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString([], { day: 'numeric',
 // Admin additionally gets the block controls (whole LMS / course / module /
 // item) and password reset.
 // in the course, plus the CSV report.
+// What the student told us on their Profile: LinkedIn, then either their
+// UG/PG course and internship, or their company, role and experience.
+// Older profiles predate the student/professional question, so whatever
+// was filled in is shown rather than nothing.
+function ProfileCard({ u }) {
+  const edu = u.education || {};
+  const pro = u.professional || {};
+  const intern = pro.internship || {};
+  const rows = [];
+  const add = (label, value) => { if (value && String(value).trim()) rows.push([label, value]); };
+
+  if (u.stage === 'student' || (!u.stage && (edu.degree || edu.institution))) {
+    add('Level', edu.level === 'UG' ? 'Undergraduate (UG)' : edu.level === 'PG' ? 'Postgraduate (PG)' : '');
+    add('Course', edu.degree);
+    add('College / University', edu.institution);
+    add('Graduating', edu.year);
+    if (intern.done === 'no') add('Internship', 'Not yet');
+    if (intern.done === 'yes') {
+      add('Internship', [intern.role, intern.company].filter(Boolean).join(' at ') || 'Yes');
+      add('Internship duration', intern.duration);
+    }
+  }
+  if (u.stage === 'professional' || (!u.stage && (pro.company || pro.title))) {
+    add('Company', pro.company);
+    add('Role', pro.title);
+    add('Experience', pro.experience);
+  }
+
+  const linkedin = /^https?:\/\//i.test(u.linkedin || '') ? u.linkedin : '';
+  const stageLabel = u.stage === 'student' ? 'Student' : u.stage === 'professional' ? 'Working professional' : '';
+
+  return (
+    <section className="panel sd-profile">
+      <div className="sd-profile-head">
+        <h3>Profile</h3>
+        {stageLabel && <span className="badge">{stageLabel}</span>}
+        {linkedin && (
+          <a className="sd-linkedin" href={linkedin} target="_blank" rel="noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4" fill="#0A66C2" /><path fill="#fff" d="M7.1 9.5h2.6V18H7.1zM8.4 5.3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM11.3 9.5h2.5v1.2c.4-.7 1.2-1.4 2.6-1.4 2.7 0 3.2 1.8 3.2 4.1V18H17v-4.1c0-1 0-2.2-1.4-2.2s-1.6 1.1-1.6 2.2V18h-2.7z" /></svg>
+            LinkedIn ↗
+          </a>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <p className="muted sd-profile-empty">
+          {linkedin ? 'No education or work details yet.' : "This student hasn't filled in their profile yet."}
+        </p>
+      ) : (
+        <dl className="sd-profile-grid">
+          {rows.map(([label, value]) => (
+            <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+          ))}
+        </dl>
+      )}
+    </section>
+  );
+}
+
 export default function StudentDetail() {
   const { id } = useParams();
   const { user: viewer } = useOutletContext();
@@ -115,6 +173,8 @@ export default function StudentDetail() {
           This student is blocked from the entire LMS{u.blocked.reason ? `: “${u.blocked.reason}”` : ''}. They cannot log in or use any feature until unblocked.
         </div>
       )}
+
+      <ProfileCard u={u} />
 
       {/* Analytics row */}
       <div className="detail-charts">

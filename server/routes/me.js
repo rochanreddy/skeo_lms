@@ -31,7 +31,23 @@ router.patch('/password', requireAuth, async (req, res) => {
 // PATCH /api/skeo/me: update own Profile tab.
 router.patch('/', requireAuth, async (req, res) => {
   const u = req.user;
-  const { fullName, phone, education, professional } = req.body || {};
+  const { fullName, phone, stage, linkedin, education, professional } = req.body || {};
+  // A LinkedIn profile, as a real web address on linkedin.com, or nothing.
+  if (linkedin !== undefined) {
+    const raw = String(linkedin || '').trim();
+    if (raw) {
+      let url;
+      try { url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`); } catch { url = null; }
+      if (!url || !/(^|\.)linkedin\.com$/i.test(url.hostname)) return res.status(400).json({ error: 'That LinkedIn link does not look right. Paste your profile address, like linkedin.com/in/your-name.' });
+      u.linkedin = url.toString();
+    } else {
+      u.linkedin = '';
+    }
+  }
+  if (stage !== undefined) {
+    if (!['', 'student', 'professional'].includes(stage)) return res.status(400).json({ error: 'Choose student or working professional.' });
+    u.stage = stage;
+  }
   if (fullName !== undefined) u.fullName = fullName;
   if (phone !== undefined) u.phone = phone;
   if (education !== undefined) u.education = education;

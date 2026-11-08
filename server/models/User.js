@@ -15,8 +15,12 @@ const userSchema = new mongoose.Schema(
 
     role: { type: String, enum: ROLES, default: 'student', index: true },
 
-    education: { type: mongoose.Schema.Types.Mixed, default: {} },     // { degree, institution, year }
-    professional: { type: mongoose.Schema.Types.Mixed, default: {} },  // { title, company, experience }
+    // Which profile they fill in: a student gives their UG/PG course and any
+    // internship, a working professional their company, role and experience.
+    stage: { type: String, enum: ['', 'student', 'professional'], default: '' },
+    linkedin: { type: String, default: '', trim: true },
+    education: { type: mongoose.Schema.Types.Mixed, default: {} },     // { level: 'UG'|'PG', degree, institution, year }
+    professional: { type: mongoose.Schema.Types.Mixed, default: {} },  // { title, company, experience, internship: { company, role, duration } }
 
     batchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Batch' }],
 
@@ -69,6 +73,8 @@ userSchema.methods.toPublic = function toPublic() {
     full_name: this.fullName,
     phone: this.phone,
     role: this.role,
+    stage: this.stage || '',
+    linkedin: this.linkedin || '',
     education: this.education,
     professional: this.professional,
     batch_ids: (this.batchIds || []).map((b) => b.toString()),

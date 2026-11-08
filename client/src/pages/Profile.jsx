@@ -4,13 +4,34 @@ import { api } from '../api.js';
 import CertificateModal from '../components/CertificateModal.jsx';
 import { promptInstall, useInstall, usePush } from '../pwa.js';
 
-// Fully wired against GET/PATCH /api/skeo/me. Sections from the spec:
-// Personal · Educational · Professional.
+// Fully wired against GET/PATCH /api/skeo/me. Personal details (with
+// LinkedIn), then "student or working professional?", and only that path's
+// questions: a student's UG/PG course and any internship, or a
+// professional's company, role and experience. Admins see all of it on the
+// student's page.
+// Years of work, as ranges: quicker to tap than to type, and comparable.
+const EXPERIENCE = ['Under 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years'];
+
+// A row of pick-one buttons.
+function Choice({ label, value, onChange, options }) {
+  return (
+    <div className="pf-choice" role="radiogroup" aria-label={label}>
+      {options.map(([v, text]) => (
+        <button key={v} type="button" role="radio" aria-checked={value === v} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Profile() {
   const { user, setUser } = useOutletContext();
   const [form, setForm] = useState({
     fullName: user.full_name || '',
     phone: user.phone || '',
+    linkedin: user.linkedin || '',
+    stage: user.stage || '',
     education: user.education || {},
     professional: user.professional || {},
   });
@@ -29,6 +50,10 @@ export default function Profile() {
 
   const setEdu = (k, v) => setForm((f) => ({ ...f, education: { ...f.education, [k]: v } }));
   const setPro = (k, v) => setForm((f) => ({ ...f, professional: { ...f.professional, [k]: v } }));
+  const intern = form.professional.internship || {};
+  const setIntern = (k, v) => setForm((f) => ({
+    ...f, professional: { ...f.professional, internship: { ...(f.professional.internship || {}), [k]: v } },
+  }));
 
   async function save(e) {
     e.preventDefault();
@@ -45,11 +70,16 @@ export default function Profile() {
     }
   }
 
-  // Fields that count toward "profile completeness".
+  // Fields that count toward "profile completeness": the ones this person
+  // was actually asked, which depends on whether they are studying or working.
   const fields = [
-    form.fullName, form.phone,
-    form.education.degree, form.education.institution, form.education.year,
-    form.professional.title, form.professional.company, form.professional.experience,
+    form.fullName, form.phone, form.linkedin, form.stage,
+    ...(form.stage === 'student' ? [
+      form.education.level, form.education.degree, form.education.institution, form.education.year, intern.done,
+      ...(intern.done === 'yes' ? [intern.company, intern.role, intern.duration] : []),
+    ] : form.stage === 'professional' ? [
+      form.professional.company, form.professional.title, form.professional.experience,
+    ] : []),
   ];
   const pct = Math.round((fields.filter((v) => String(v || '').trim()).length / fields.length) * 100);
 
@@ -91,6 +121,7 @@ export default function Profile() {
           <label>Full name<input value={form.fullName} onChange={(e) => set('fullName', e.target.value)} /></label>
           <label>Email<input value={user.email} disabled /></label>
           <label>Phone<input value={form.phone} onChange={(e) => set('phone', e.target.value)} /></label>
+          <label>LinkedIn profile<input value={form.linkedin} inputMode="url" placeholder="linkedin.com/in/your-name" onChange={(e) => set('linkedin', e.target.value)} /></label>
         </div>
       </section>
 
@@ -113,23 +144,76 @@ export default function Profile() {
         </section>
       )}
 
+      {/* First: studying or working. Each gets only its own questions. */}
       <section className="panel">
-        <h3>Educational</h3>
-        <div className="field-grid">
-          <label>Degree<input value={form.education.degree || ''} onChange={(e) => setEdu('degree', e.target.value)} /></label>
-          <label>Institution<input value={form.education.institution || ''} onChange={(e) => setEdu('institution', e.target.value)} /></label>
-          <label>Year<input value={form.education.year || ''} onChange={(e) => setEdu('year', e.target.value)} /></label>
-        </div>
+        <h3>Your background</h3>
+        <p className="muted pf-ask">Are you a student or a working professional?</p>
+        <Choice
+          label="Student or working professional"
+          value={form.stage}
+          onChange={(v) => set('stage', v)}
+          options={[['student', 'Student'], ['professional', 'Working professional']]}
+        />
       </section>
 
-      <section className="panel">
-        <h3>Professional</h3>
-        <div className="field-grid">
-          <label>Title<input value={form.professional.title || ''} onChange={(e) => setPro('title', e.target.value)} /></label>
-          <label>Company<input value={form.professional.company || ''} onChange={(e) => setPro('company', e.target.value)} /></label>
-          <label>Experience<input value={form.professional.experience || ''} onChange={(e) => setPro('experience', e.target.value)} /></label>
-        </div>
-      </section>
+      {form.stage === 'student' && (
+        <>
+          <section className="panel">
+            <h3>Education</h3>
+            <div className="pf-field">
+              <span className="pf-label">Level</span>
+              <Choice
+                label="Level"
+                value={form.education.level || ''}
+                onChange={(v) => setEdu('level', v)}
+                options={[['UG', 'Undergraduate (UG)'], ['PG', 'Postgraduate (PG)']]}
+              />
+            </div>
+            <div className="field-grid">
+              <label>Course<input value={form.education.degree || ''} placeholder={form.education.level === 'PG' ? 'e.g. MBA, M.Tech' : 'e.g. B.Tech CSE, BBA'} onChange={(e) => setEdu('degree', e.target.value)} /></label>
+              <label>College / University<input value={form.education.institution || ''} onChange={(e) => setEdu('institution', e.target.value)} /></label>
+              <label>Year of graduation<input value={form.education.year || ''} inputMode="numeric" placeholder="e.g. 2027" onChange={(e) => setEdu('year', e.target.value)} /></label>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h3>Internship</h3>
+            <p className="muted pf-ask">Have you done an internship?</p>
+            <Choice
+              label="Have you done an internship?"
+              value={intern.done || ''}
+              onChange={(v) => setIntern('done', v)}
+              options={[['yes', 'Yes'], ['no', 'Not yet']]}
+            />
+            {intern.done === 'yes' && (
+              <div className="field-grid pf-follow">
+                <label>Company name<input value={intern.company || ''} onChange={(e) => setIntern('company', e.target.value)} /></label>
+                <label>Role<input value={intern.role || ''} placeholder="e.g. Marketing intern" onChange={(e) => setIntern('role', e.target.value)} /></label>
+                <label>Duration<input value={intern.duration || ''} placeholder="e.g. 3 months (Jun to Aug 2025)" onChange={(e) => setIntern('duration', e.target.value)} /></label>
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
+      {form.stage === 'professional' && (
+        <section className="panel">
+          <h3>Work</h3>
+          <div className="field-grid">
+            <label>Company<input value={form.professional.company || ''} onChange={(e) => setPro('company', e.target.value)} /></label>
+            <label>Role<input value={form.professional.title || ''} placeholder="e.g. Product Manager" onChange={(e) => setPro('title', e.target.value)} /></label>
+          </div>
+          <div className="pf-field pf-follow">
+            <span className="pf-label">Experience</span>
+            <Choice
+              label="Experience"
+              value={form.professional.experience || ''}
+              onChange={(v) => setPro('experience', v)}
+              options={EXPERIENCE.map((x) => [x, x])}
+            />
+          </div>
+        </section>
+      )}
 
       <div className="row">
         <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>
