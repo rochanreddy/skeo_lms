@@ -169,7 +169,7 @@ export default function App() {
       />
       {/* Where the emailed reset link lands. Reachable while signed in too: the
           link may be opened in a browser that still holds someone's session. */}
-      <Route path="/reset" element={<Suspense fallback={<AppSkeleton />}><ResetPassword /></Suspense>} />
+      <Route path="/reset" element={<Suspense fallback={<AppSkeleton />}><ResetPassword user={user} onSignOut={logout} /></Suspense>} />
       {/* PUBLIC, and it has to stay that way, it is printed on paper as a QR
           code and opened by recruiters who have no account. Declared above the
           catch-all so a signed-out visitor is not bounced to /login, and it

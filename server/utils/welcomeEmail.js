@@ -19,7 +19,10 @@ export const SUPPORT = 'support@skeoai.com';
 
 export const P = (inner, top = 18) => `<p style="margin:${top}px 0 0; font-size:15px; line-height:1.7; color:#23202e;">${inner}</p>`;
 
-export function shell({ subject, email, body, cta = null }) {
+// `footer` replaces the small print under the card. The default is right for
+// purchase mail; a password reset is sent because someone typed the address
+// into a form, not because they bought anything.
+export function shell({ subject, email, body, cta = null, footer = null }) {
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${esc(subject)}</title></head>
 <body style="margin:0; padding:0; background:#f2f1f6; font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
@@ -38,7 +41,7 @@ export function shell({ subject, email, body, cta = null }) {
           ${P('Team skeo')}
         </td></tr>
       </table>
-      <p style="margin:16px 0 0; font-size:12px; color:#8b879c;">You're receiving this because you bought skeo on skeoai.com as ${esc(email)}.</p>
+      <p style="margin:16px 0 0; font-size:12px; color:#8b879c;">${footer ? esc(footer) : `You're receiving this because you bought skeo on skeoai.com as ${esc(email)}.`}</p>
     </td></tr>
   </table>
 </body></html>`;

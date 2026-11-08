@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema(
     emailVerified: { type: Boolean, default: false },
     resetTokenHash: { type: String, default: '' },
     resetExpires: { type: Date, default: null },
+    // When the password was last set through a reset link. Tokens are
+    // stateless, so this is what ends the sessions that were open before it:
+    // requireAuth and /auth/refresh refuse any token issued earlier. A reset is
+    // how someone takes an account back, and leaving a 30-day refresh token
+    // working for whoever had it would defeat the point.
+    passwordChangedAt: { type: Date, default: null },
 
     // Set when an admin provisions/resets the account: the user must set their
     // own password before they can use the app.

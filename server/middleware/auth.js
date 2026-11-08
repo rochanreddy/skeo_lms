@@ -1,5 +1,5 @@
 import { User, ROLES } from '../models/User.js';
-import { accessPayload } from '../utils/token.js';
+import { accessPayload, issuedBeforeReset } from '../utils/token.js';
 
 // ── The user cache ────────────────────────────────────────────────────────
 //
@@ -80,6 +80,8 @@ async function getUser(req) {
   if (!payload) return null;
 
   const doc = await loadUser(payload.sub);
+  // A session opened before the password was reset ends with the reset.
+  if (doc && issuedBeforeReset(payload, doc)) return null;
   // Hydrate rather than hand back the cached object: routes expect a real
   // document (toPublic, save), and hydrate deep-copies, so each request gets an
   // isolated one.

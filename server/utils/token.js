@@ -64,3 +64,15 @@ export function accessPayload(req) {
   req.skeoAccess = payload?.sub && payload.typ === 'access' ? payload : null;
   return req.skeoAccess;
 }
+
+/**
+ * True when the token was issued before the user's last password reset, so it
+ * belongs to a session the reset was meant to end. JWT `iat` is in whole
+ * seconds; comparing against the reset's own second keeps a token minted in
+ * the same second as the reset (a sign-in right after it) valid.
+ */
+export function issuedBeforeReset(payload, user) {
+  const at = user?.passwordChangedAt ? new Date(user.passwordChangedAt).getTime() : 0;
+  if (!at) return false;
+  return Number(payload?.iat || 0) < Math.floor(at / 1000);
+}

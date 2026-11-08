@@ -5,14 +5,15 @@ import { hashPassword, needsRehash, verifyPassword } from '../utils/password.js'
 import { User, ROLES } from '../models/User.js';
 import { hasPaidAccess } from '../utils/access.js';
 import { forget } from '../middleware/auth.js';
-import { signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
-import { sendMail, trySendMail } from '../utils/email.js';
+import { issuedBeforeReset, signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
+import { trySendMail } from '../utils/email.js';
+import { appUrl } from '../utils/appUrl.js';
+import { passwordChangedEmail, resetEmail, RESET_TTL_MINUTES } from '../utils/resetEmail.js';
 import { clear, hit as rateLimit, record, tooMany } from '../middleware/rateLimit.js';
 
 const router = Router();
 
 const hashToken = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
-const APP_URL = () => (process.env.SKEO_APP_URL || 'http://localhost:5175').replace(/\/+$/, '');
 
 // POST /api/skeo/auth/register: closed.
 //
@@ -114,6 +115,8 @@ router.post('/refresh', async (req, res) => {
   if (!payload?.sub || payload.typ !== 'refresh') return res.status(401).json({ error: 'Invalid refresh token.' });
   const user = await User.findById(payload.sub);
   if (!user) return res.status(401).json({ error: 'Invalid refresh token.' });
+  // Signed in before the password was reset: that session is over.
+  if (issuedBeforeReset(payload, user)) return res.status(401).json({ error: 'Your password was changed. Please sign in again.' });
   if (!ROLES.includes(user.role)) {
     return res.status(403).json({ error: 'Your account role no longer has access to this portal.' });
   }
@@ -145,24 +148,24 @@ router.post('/forgot', async (req, res) => {
     if (user) {
       const raw = crypto.randomBytes(32).toString('hex');
       user.resetTokenHash = hashToken(raw);
-      user.resetExpires = new Date(Date.now() + 1000 * 60 * 30);
+      user.resetExpires = new Date(Date.now() + RESET_TTL_MINUTES * 60_000);
       await user.save();
-      const link = `${APP_URL()}/reset?token=${raw}&email=${encodeURIComponent(email)}`;
-      /* sendMail picks its own way out, Resend, then SMTP, then the console,
-         so this no longer asks whether SMTP specifically is configured. It used
-         to, and once the mailer gained the Resend path that question would have
-         answered "no" on a host where mail works perfectly well.
+      // appUrl, not SKEO_APP_URL directly: that variable can be a comma list
+      // (it doubles as the CORS allowlist), and a link built from the raw value
+      // points at a host that does not exist.
+      const link = appUrl(`/reset?token=${raw}&email=${encodeURIComponent(email)}`);
+      /* sendMail picks its own way out (ZeptoMail, Resend, SMTP, then the
+         console), so this does not ask which provider is configured.
 
-         trySendMail rather than sendMail: a reset that cannot be delivered must
-         not become a 500, because the response here is deliberately identical
-         whether or not the address exists. An error escaping would leak which
-         addresses are real. */
-      const mail = await trySendMail({
-        to: email,
-        subject: 'Reset your skeo LMS password',
-        text: `Reset your password:\n\n${link}\n\nExpires in 30 minutes.`,
-      });
-      if (!mail.emailed) console.log('[forgot] not delivered (' + (mail.error || 'no transport configured') + '): reset link:', link);
+         Not awaited, and trySendMail rather than sendMail, for the same reason:
+         the answer here must be identical whether or not the address has an
+         account. Waiting on the provider would make a real address measurably
+         slower to answer than an unknown one, and a send error escaping would
+         turn it into a 500. Either one tells a stranger who is registered. */
+      trySendMail({ to: email, ...resetEmail({ fullName: user.fullName, email, link }) })
+        .then((mail) => {
+          if (!mail.emailed) console.log('[forgot] not delivered (' + (mail.error || 'no transport configured') + '): reset link:', link);
+        });
     }
     return res.json({ ok: true });
   } catch (err) {
@@ -174,7 +177,9 @@ router.post('/forgot', async (req, res) => {
 // POST /api/skeo/auth/reset
 router.post('/reset', async (req, res) => {
   try {
+    if (!rateLimit(`reset:${req.ip}`, 30, 15 * 60_000)) return res.status(429).json({ error: 'Too many attempts. Try again shortly.' });
     const { email, token, password } = req.body || {};
+    if (typeof password !== 'string' || typeof token !== 'string') return res.status(400).json({ error: 'This reset link is invalid or has expired.' });
     if (!password || String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     const user = await User.findOne({
       email: String(email || '').toLowerCase().trim(),
@@ -183,10 +188,20 @@ router.post('/reset', async (req, res) => {
     });
     if (!user) return res.status(400).json({ error: 'This reset link is invalid or has expired.' });
     user.passwordHash = await hashPassword(password);
+    // One use only: the link dies with the reset.
     user.resetTokenHash = '';
     user.resetExpires = null;
+    // They have just chosen their own password, which is all the forced
+    // change after an admin reset or a provisioned account was asking for.
+    user.mustChangePassword = false;
+    // Ends every session that was open before now (see issuedBeforeReset).
+    user.passwordChangedAt = new Date();
     await user.save();
     forget(user._id);
+    trySendMail({
+      to: user.email,
+      ...passwordChangedEmail({ fullName: user.fullName, email: user.email, loginUrl: appUrl('/login') }),
+    });
     return res.json({ ok: true });
   } catch (err) {
     console.error('reset error:', err);

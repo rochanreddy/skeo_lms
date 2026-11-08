@@ -10,7 +10,11 @@ import SkeoWordmark from '../components/SkeoWordmark.jsx';
 // never stored here. On success we send them to sign in rather than logging
 // them in silently: /auth/reset issues no token, and typing the new password
 // once more is the confirmation that it was actually memorable.
-export default function ResetPassword() {
+//
+// The reset also ends every session the account had open, this browser's
+// included. If this browser is signed in as that account, sign it out here,
+// or /login would bounce to /app on a session the server no longer honours.
+export default function ResetPassword({ user = null, onSignOut }) {
   const [params] = useSearchParams();
   const token = params.get('token') || '';
   const email = params.get('email') || '';
@@ -31,6 +35,9 @@ export default function ResetPassword() {
     setBusy(true);
     try {
       await api('/auth/reset', { method: 'POST', body: { email, token, password } });
+      if (user && onSignOut && String(user.email || '').toLowerCase() === email.toLowerCase().trim()) {
+        await onSignOut();
+      }
       nav('/login?reset=1', { replace: true });
     } catch (e2) {
       setErr(e2.message);
