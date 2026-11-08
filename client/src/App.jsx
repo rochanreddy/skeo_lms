@@ -37,6 +37,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 const VerifyCertificate = lazy(() => import('./pages/VerifyCertificate.jsx'));
 // The link sent to students to get the app on their phone. Public too.
 const Install = lazy(() => import('./pages/Install.jsx'));
+const QuizRunner = lazy(() => import('./pages/QuizRunner.jsx'));
 
 // What's on screen while /me is in flight. The topbar and the page frame don't
 // depend on the answer, so they paint immediately rather than after a round
@@ -176,6 +177,11 @@ export default function App() {
           certificate may well be an admin with a session open. */}
       <Route path="/verify/:code" element={<Suspense fallback={<AppSkeleton />}><VerifyCertificate /></Suspense>} />
       <Route path="/install" element={<Suspense fallback={<AppSkeleton />}><Install /></Suspense>} />
+      {/* A quiz, sat in its own tab with no app chrome around it. */}
+      <Route
+        path="/quiz/:id"
+        element={user ? <Suspense fallback={<AppSkeleton />}><QuizRunner /></Suspense> : <Navigate to="/login" />}
+      />
       <Route
         path="/app"
         element={user

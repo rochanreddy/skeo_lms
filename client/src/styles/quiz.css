@@ -1,0 +1,99 @@
+/* ── The quiz, in its own tab ─────────────────────────────────────────────────
+   Two cards: the question on the left, the clock and the question map on the
+   right. Full page, no app chrome: it is an exam, not a page of the app.
+   Sized like the rest of the app, not blown up: a centred column, body text
+   at reading size, compact controls. */
+.qz-shell {
+  min-height: 100vh; box-sizing: border-box; padding: 40px 24px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 288px; gap: 20px; align-items: start;
+  max-width: 1040px; margin: 0 auto; background: var(--bg);
+}
+.qz-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 24px 28px; min-width: 0; }
+
+/* Top line: Exit, then the quiz's name. */
+.qz-top { display: flex; align-items: center; gap: 14px; }
+.qz-ic { flex: none; display: block; }
+.qz-exit { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: none; color: var(--ink-2); font-family: var(--font); font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+.qz-exit:hover { background: var(--wash); color: var(--ink); }
+.qz-eyebrow { min-width: 0; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qz-progress { height: 4px; border-radius: 999px; background: var(--line-soft); margin: 18px 0 20px; overflow: hidden; }
+.qz-progress span { display: block; height: 100%; background: var(--purple); border-radius: inherit; transition: width .3s; }
+.qz-count { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--purple); }
+.qz-question { font-family: var(--display); font-size: 20px; font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; margin: 8px 0 18px; overflow-wrap: anywhere; }
+
+.qz-options { display: flex; flex-direction: column; gap: 8px; }
+.qz-option {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: none; color: var(--ink); font-family: var(--font); font-size: 14.5px; line-height: 1.45;
+  cursor: pointer; transition: background .12s, border-color .12s;
+}
+.qz-option:hover { border-color: var(--purple-line); background: var(--wash); }
+.qz-option.on { background: var(--purple-soft); border-color: var(--purple); }
+.qz-key { flex: none; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--wash); color: var(--muted); font-size: 12px; font-weight: 700; }
+.qz-option.on .qz-key { background: var(--purple); color: #fff; }
+
+/* Bottom row: Prev, Clear, Mark on the left; Next on the right. */
+.qz-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.qz-tools { display: flex; align-items: center; gap: 6px; }
+.qz-tool { display: inline-flex; align-items: center; gap: 4px; border: 1px solid transparent; background: none; color: var(--ink-2); font-family: var(--font); font-size: 13.5px; font-weight: 600; padding: 7px 12px; cursor: pointer; border-radius: 8px; }
+.qz-tool-pill { border-color: var(--line); }
+.qz-tool:hover:not(:disabled) { background: var(--wash); color: var(--ink); }
+.qz-tool:disabled { opacity: .4; cursor: default; }
+.qz-tool:first-child { padding-left: 8px; }
+.qz-tool.on { border-color: #c9851a; color: #c9851a; }
+.qz-next { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px 0 20px; font-size: 14px; border-radius: 9px; }
+.qz-tip { margin: 12px 0 0; font-size: 12px; color: var(--muted); }
+.qz-tip kbd { display: inline-block; padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--wash); font-family: var(--font); font-size: 11px; color: var(--ink-2); }
+
+/* The side card */
+.qz-side { position: sticky; top: 40px; padding: 18px; }
+.qz-timer { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 14px; border-radius: 12px; background: var(--wash); border: 1px solid var(--line); }
+.qz-timer span { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.qz-timer strong { font-family: var(--display); font-size: 22px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.qz-timer.is-low { background: var(--red-soft); border-color: var(--red-line, var(--red)); }
+.qz-timer.is-low strong { color: var(--red-ink); }
+.qz-side-label { margin: 16px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.qz-grid { display: grid; grid-template-columns: repeat(auto-fill, 36px); gap: 6px; }
+.qz-cell { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: none; color: var(--ink-2); font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; }
+.qz-cell:hover { border-color: var(--purple-line); }
+.qz-cell.is-answered { background: var(--purple); border-color: var(--purple); color: #fff; }
+.qz-cell.is-marked { background: #c9851a; border-color: #c9851a; color: #fff; }
+.qz-cell.is-current { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--purple); }
+.qz-legend { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); }
+.qz-legend li { display: flex; align-items: center; gap: 6px; }
+.qz-dot { width: 10px; height: 10px; border-radius: 3px; }
+.qz-dot.is-answered { background: var(--purple); }
+.qz-dot.is-marked { background: #c9851a; }
+.qz-dot.is-left { border: 1px solid var(--line); }
+.qz-submit { width: 100%; justify-content: center; min-height: 40px; margin-top: 18px; font-size: 14px; border-radius: 9px; background: #1f9d68; color: #fff; }
+.qz-submit:hover:not(:disabled) { background: #188457; }
+.qz-note { margin: 10px 0 0; text-align: center; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.qz-error { margin: 12px 0 0; color: var(--danger, var(--red-ink)); font-size: 13px; }
+
+/* Finished, or can't open */
+.qz-end { grid-column: 1 / -1; justify-self: center; width: 100%; max-width: 440px; margin-top: 8vh; text-align: center; box-sizing: border-box; }
+.qz-end .qz-eyebrow { white-space: normal; }
+.qz-score { font-family: var(--display); font-size: 52px; font-weight: 700; line-height: 1; margin-top: 16px; color: var(--ink); }
+.qz-score span { font-size: 24px; color: var(--muted); }
+.qz-score-sub { font-size: 15px; font-weight: 600; margin: 10px 0 6px; }
+.qz-end .btn { margin-top: 16px; }
+.qz-loading { grid-column: 1 / -1; }
+
+/* Submit confirmation */
+.qz-confirm-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(8, 8, 14, .55); }
+.qz-confirm { max-width: 400px; padding: 22px 24px; }
+.qz-confirm h2 { margin: 0 0 8px; font-size: 18px; }
+.qz-confirm-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.qz-confirm .qz-submit { width: auto; min-height: 38px; margin-top: 0; padding: 0 18px; }
+
+@media (max-width: 860px) {
+  .qz-shell { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 12px; }
+  .qz-side { position: static; order: -1; padding: 14px; }
+  .qz-card { padding: 18px 16px; border-radius: 14px; }
+  .qz-side-label { margin: 12px 0 8px; }
+  .qz-question { font-size: 18px; }
+  .qz-option { padding: 12px; }
+  .qz-tip { display: none; }
+  .qz-tools .qz-tool { padding: 8px 10px; }
+}

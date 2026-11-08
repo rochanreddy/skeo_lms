@@ -106,6 +106,15 @@ function Quizzes() {
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
+  // A quiz is sat in its own tab; when it reports back, or this tab comes
+  // back into view, the scores and the unlocked gates are refreshed.
+  useEffect(() => {
+    const onMessage = (e) => { if (e.origin === window.location.origin && e.data?.type === 'skeo-quiz-done') load(); };
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    window.addEventListener('message', onMessage);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.removeEventListener('message', onMessage); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
 
   // How many gates are reachable: every one up to and including the first
   // unattempted. Attempting it opens the next.
@@ -127,7 +136,7 @@ function Quizzes() {
           </p>
           <div className="list">
             {gates.map((q, i) => (i < open ? (
-              <QuizCard key={q._id} quiz={q} onDone={load} />
+              <QuizCard key={q._id} quiz={q} />
             ) : (
               <div key={q._id} className="panel quiz-locked">
                 <div className="row">
@@ -148,7 +157,7 @@ function Quizzes() {
         <>
           <h3 className="ruled-head" style={{ marginTop: gates.length ? 34 : 0 }}>Other quizzes</h3>
           <div className="list">
-            {others.map((q) => <QuizCard key={q._id} quiz={q} onDone={load} />)}
+            {others.map((q) => <QuizCard key={q._id} quiz={q} />)}
           </div>
         </>
       )}
@@ -156,37 +165,12 @@ function Quizzes() {
   );
 }
 
-function QuizCard({ quiz, onDone }) {
-  const [answers, setAnswers] = useState({});
+function QuizCard({ quiz }) {
   const [busy, setBusy] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [qIndex, setQIndex] = useState(0);
   const [review, setReview] = useState(null);
   const [showReview, setShowReview] = useState(false);
   const attempt = quiz.myAttempt;
   const total = quiz.questions.length;
-  const allAnswered = quiz.questions.every((_, i) => answers[i] != null);
-  const q = quiz.questions[qIndex];
-
-  // Once answering has begun, warn before an accidental tab close / reload,
-  // draft answers live only in local state and aren't saved until submit.
-  const dirty = open && !attempt && Object.keys(answers).length > 0 && !busy;
-  useEffect(() => {
-    if (!dirty) return undefined;
-    const warn = (e) => { e.preventDefault(); e.returnValue = ''; };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
-
-  async function submit(e) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const ordered = quiz.questions.map((_, i) => (answers[i] ?? -1));
-      await api(`/quizzes/${quiz._id}/attempt`, { method: 'POST', body: { answers: ordered } });
-      onDone();
-    } finally { setBusy(false); }
-  }
 
   // Fetched once, then toggled, the review never changes after an attempt.
   async function toggleReview() {
@@ -201,18 +185,21 @@ function QuizCard({ quiz, onDone }) {
   const pct = attempt && attempt.total ? Math.round((attempt.score / attempt.total) * 100) : null;
 
   return (
-    <div className={`panel quiz-card ${open && !attempt ? 'is-open' : ''}`}>
+    <div className="panel quiz-card">
       {/* Title and what it is on the left; the one thing to do on the right. */}
       <div className="quiz-card-head">
         <div className="quiz-card-text">
           <strong className="quiz-card-title">{quiz.title}</strong>
           <span className="quiz-card-meta">
-            {total} question{total === 1 ? '' : 's'}
+            {total} question{total === 1 ? '' : 's'} · {total} min
             {quiz.type && quiz.type !== 'quiz' && <> · {quiz.type}</>}
             {attempt && <> · <span className="quiz-card-scored">Scored {attempt.score}/{attempt.total}</span></>}
           </span>
         </div>
-        {!attempt && !open && <button className="btn quiz-card-go" onClick={() => { setOpen(true); setQIndex(0); }}>Take quiz →</button>}
+        {/* The quiz opens in its own tab, timed, with nothing else around it. */}
+        {!attempt && (
+          <a className="btn quiz-card-go" href={`/quiz/${quiz._id}`} target="_blank" rel="opener">Take quiz →</a>
+        )}
       </div>
       {attempt && (
         <div className="quiz-review-bar">
@@ -226,43 +213,10 @@ function QuizCard({ quiz, onDone }) {
         </div>
       )}
       {showReview && review && <QuizReview questions={review.questions} />}
-      {!attempt && open && (
-        <form onSubmit={submit} className="quiz-take">
-          <QuizStepper
-            count={total}
-            current={qIndex}
-            onSelect={setQIndex}
-            statusFor={(i) => (answers[i] != null ? 'answered' : 'unanswered')}
-          />
-          <div className="quiz-take-q-solo">
-            <p className="quiz-take-q-count">Question {qIndex + 1} of {total}</p>
-            <p className="quiz-take-q-text"><strong>{q.text}</strong></p>
-            {q.options.map((o, oi) => (
-              <label key={oi} className="quiz-opt">
-                <input type="radio" name={`q-${quiz._id}-${qIndex}`} checked={answers[qIndex] === oi} onChange={() => setAnswers((a) => ({ ...a, [qIndex]: oi }))} />
-                {o}
-              </label>
-            ))}
-          </div>
-          <div className="quiz-take-nav">
-            <button type="button" className="btn ghost sm" disabled={qIndex === 0} onClick={() => setQIndex((i) => i - 1)}>← Previous</button>
-            {qIndex < total - 1 ? (
-              <button type="button" className="btn sm" onClick={() => setQIndex((i) => i + 1)}>Next →</button>
-            ) : (
-              <button className="btn sm" disabled={busy || !allAnswered}>{busy ? 'Submitting…' : 'Submit answers'}</button>
-            )}
-          </div>
-          {qIndex === total - 1 && !allAnswered && <p className="muted quiz-take-hint">Answer every question to submit.</p>}
-        </form>
-      )}
     </div>
   );
 }
 
-// Numbered step navigation shared by the take-quiz and review-quiz views, so
-// a student jumps straight to any question instead of scrolling a stack of
-// blocks. `statusFor` colors each pip: answered/unanswered while taking,
-// correct/incorrect while reviewing.
 function QuizStepper({ count, current, onSelect, statusFor }) {
   return (
     <div className="quiz-stepper" role="tablist" aria-label="Questions">
