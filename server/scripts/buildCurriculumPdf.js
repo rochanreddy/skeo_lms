@@ -1,7 +1,7 @@
 // Render the Claude curriculum PDF that every lesson opens in the reader.
 //
-// Built from claudeCurriculum.js — the same source seedClaude.js writes into
-// the LMS — so edit the course there and re-run this, never the PDF by hand.
+// Built from claudeCurriculum.js, the same source seedClaude.js writes into
+// the LMS: so edit the course there and re-run this, never the PDF by hand.
 // Prints through a local Chrome or Edge in headless mode; set CHROME_PATH if
 // neither is found where it usually lives.
 //   node scripts/buildCurriculumPdf.js
@@ -47,7 +47,7 @@ function render() {
   }).join('');
 
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>skeo — Claude Curriculum</title>
+<html lang="en"><head><meta charset="utf-8"><title>skeo: Claude Curriculum</title>
 <style>
   @font-face { font-family: 'Inter'; font-weight: 100 900; src: url('${font('inter-normal-latin.woff2')}') format('woff2'); }
   @font-face { font-family: 'DM Sans'; font-weight: 500 900; src: url('${font('dm-sans-normal-latin.woff2')}') format('woff2'); }
@@ -80,7 +80,7 @@ function render() {
 <body>
   <header class="cover">
     <p class="brand">skeo</p>
-    <h1>Claude — the full curriculum</h1>
+    <h1>Claude: the full curriculum</h1>
     <p class="sub">How AI and Claude actually work, how to work with Claude well, and how to ship real work with it.</p>
     <div class="facts">
       <span><b>8</b>weeks</span>

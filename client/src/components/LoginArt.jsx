@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 /**
  * The illustration on the sign-in hero: the syllabus, working through itself.
  *
- * It is the real curriculum — module codes, lesson codes and titles lifted from
- * the Claude track the LMS actually seeds (server/scripts/seedClaude.js) — laid
+ * It is the real curriculum, module codes, lesson codes and titles lifted from
+ * the Claude track the LMS actually seeds (server/scripts/seedClaude.js), laid
  * out the way the classroom lays it out. A module opens, its lessons tick off
  * one at a time, the module closes with a check on it, and the next one opens.
  * The certificate arrives when the track is done.
@@ -23,17 +23,17 @@ import { useEffect, useState } from 'react';
  */
 
 /* Three modules of the Claude track, with their real codes and titles. Three
-   rather than all eight because the panel has to stay a panel — what matters is
+   rather than all eight because the panel has to stay a panel, what matters is
    that this is a syllabus with structure, which reads from three as well as
    from eight, and eight would shrink the type past reading. */
 const MODULES = [
   {
     code: 'M01',
-    title: 'Foundations — How AI Actually Works',
+    title: 'Foundations: How AI Actually Works',
     lessons: [
       ['1.1', 'What Generative AI Actually Is'],
       ['1.2', 'Tokens, Context Windows & Why Claude Forgets'],
-      ['1.3', 'Hallucinations — Why They Happen'],
+      ['1.3', 'Hallucinations: Why They Happen'],
     ],
   },
   {
@@ -41,17 +41,17 @@ const MODULES = [
     title: 'Working With Claude Well',
     lessons: [
       ['2.1', 'The 4D Framework'],
-      ['2.4', 'Projects — Your Persistent Workspace'],
-      ['2.5', 'Artifacts — Chat Into Real Deliverables'],
+      ['2.4', 'Projects: Your Persistent Workspace'],
+      ['2.5', 'Artifacts: Chat Into Real Deliverables'],
     ],
   },
   {
     code: 'M03',
     title: 'The Visual & Creative Layer',
     lessons: [
-      ['3.1', 'Claude and Images — Reading, Not Writing'],
+      ['3.1', 'Claude and Images: Reading, Not Writing'],
       ['3.2', 'Diagrams, Charts, Interactive Artifacts'],
-      ['3.3', 'Claude Design — Prototypes & Mockups'],
+      ['3.3', 'Claude Design: Prototypes & Mockups'],
     ],
   },
 ];
@@ -62,7 +62,7 @@ const TOTAL = MODULES.reduce((n, m) => n + m.lessons.length, 0);
  * The whole loop, as data.
  *
  * Built rather than written out, because the shape of it is the thing worth
- * reading — open a module, tick each lesson, mark it, close it — and a
+ * reading: open a module, tick each lesson, mark it, close it, and a
  * hand-written list of thirty frames hides that shape in its own length. Each
  * frame carries the complete state, so nothing accumulates across frames and
  * one can be dropped in or out without disturbing its neighbours.
@@ -83,7 +83,7 @@ function buildTimeline() {
     snap(400, -1);                                   // and it closes
   });
   snap(2500, -1, true);                              // the certificate
-  /* Back to nothing, as its own frame — the loop resets in one deliberate step
+  /* Back to nothing, as its own frame, the loop resets in one deliberate step
      rather than by the next pass happening to overwrite what the last left. */
   done.fill(0); marked.fill(false);
   snap(500, -1);
@@ -105,7 +105,7 @@ export default function LoginArt() {
   useEffect(() => {
     if (still) return undefined;
     /* A chain of timeouts rather than one interval: the frames have different
-       lengths — a lesson wants a beat, a collapse does not — and an interval
+       lengths: a lesson wants a beat, a collapse does not, and an interval
        would force them all to the same one. */
     const id = setTimeout(() => setI((n) => (n + 1) % TIMELINE.length), TIMELINE[i].ms);
     return () => clearTimeout(id);
@@ -157,7 +157,7 @@ export default function LoginArt() {
                 </div>
 
                 {/* 0fr to 1fr: the row collapses to nothing and grows to exactly
-                    its content, which a max-height guess never does — too small
+                    its content, which a max-height guess never does, too small
                     clips the last lesson, too large eases against empty space. */}
                 <div className="la-mod-body">
                   <div className="la-mod-inner">

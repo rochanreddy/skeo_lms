@@ -1,4 +1,4 @@
-// Seed the "Claude" programme — the only programme in the LMS.
+// Seed the "Claude" programme: the only programme in the LMS.
 //
 // Writes the 8-module, 8-week course from claudeCurriculum.js, removes any
 // older programme left in the database, and creates one gate quiz per module.
@@ -7,11 +7,11 @@
 // that has hands-on tasks, and the five Module 8 capstones as projects.
 //
 // Every lesson carries a video (played inline) and a PDF (opened in the
-// in-page viewer) — those two surfaces only.
+// in-page viewer): those two surfaces only.
 //
 // This re-authors a LIVE curriculum, so it is a dry run by default: it prints
 // the changes it would make and writes nothing. Commit them with --write.
-//   npm run seed:claude            # dry run — report only
+//   npm run seed:claude            # dry run, report only
 //   npm run seed:claude -- --write # commit
 //
 // Re-authoring merges into the existing tree rather than replacing it, so
@@ -35,7 +35,7 @@ import { MODULES } from './claudeCurriculum.js';
 const VIDEO = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4';
 // The course's own curriculum, served by the client from client/public/pdfs/
 // (rebuild it with scripts/buildCurriculumPdf.js). Relative, so it resolves
-// against whichever host serves the app — same-origin, which pdf.js needs.
+// against whichever host serves the app, same-origin, which pdf.js needs.
 const PDF = '/pdfs/skeo_Claude_Curriculum.pdf';
 // The retired programme's curriculum, which every lesson and project used to
 // open. Stored media normally wins over the seed (see curriculumMerge.js), so
@@ -46,7 +46,7 @@ const RETIRED_PDF = 'https://menler.in/pdfs/Menler_AI_Kickstarter_Curriculum.pdf
 // The course runs eight weeks, one module a week. Each module's hands-on tasks
 // become that week's assignment; Module 8's capstone menu becomes the
 // projects, of which a student ships one. What students hand BACK is written
-// work only — documents, decks, artifacts.
+// work only: documents, decks, artifacts.
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 // One assignment per module that sets tasks. Module 7 is a use-case library
@@ -58,23 +58,23 @@ const ASSIGNMENTS = MODULES
     const [code, name] = m.title.split(' · ');
     return {
       type: 'assignment',
-      title: `${code} assignment · ${name.split(' — ')[0]}`,
+      title: `${code} assignment · ${name.split(': ')[0]}`,
       requires: ['doc'],
       opensWeek: week - 1,
       dueWeek: week,
       description: [
         `The hands-on tasks set in the lessons of **${m.title}**. Do each one in Claude, then write up what happened.`,
         '',
-        ...tasks.map((l, i) => `${i + 1}. **${l.code} ${l.title}** — ${l.assignment}`),
+        ...tasks.map((l, i) => `${i + 1}. **${l.code} ${l.title}:** ${l.assignment}`),
         '',
-        '**Submit:** one document with a short write-up per task — what you did, what Claude gave back, and what you learned. Screenshots welcome. Put it in your Drive folder and paste the link.',
+        '**Submit:** one document with a short write-up per task: what you did, what Claude gave back, and what you learned. Screenshots welcome. Put it in your Drive folder and paste the link.',
       ].join('\n'),
     };
   });
 
 // The Module 8 menu. Every capstone is listed so a student can read them all
 // and choose; the shared intro says to ship exactly one.
-const CAPSTONE_INTRO = '**Capstone — pick ONE of the five to ship as your final proof of work.** Submit only the one you chose.';
+const CAPSTONE_INTRO = '**Capstone: pick ONE of the five to ship as your final proof of work.** Submit only the one you chose.';
 const CAPSTONES = [
   {
     code: '8.1',
@@ -122,7 +122,7 @@ const CAPSTONES = [
     brief: [
       'Use **Claude Code** (5.3) to build one small working thing: a tracker, calculator, dashboard or landing page.',
       '',
-      '- Iterate at least three times — the first output is never the one you ship.',
+      '- Iterate at least three times, since the first output is never the one you ship.',
       '- Review what comes back; you are accountable for what you publish.',
       '- Share it with one person outside this course and capture their reaction.',
       '',
@@ -136,7 +136,7 @@ const CAPSTONES = [
       'Show the range of what Claude can make, in one demo.',
       '',
       '- A **dashboard Artifact** built from real data (3.2).',
-      '- A **Claude Design** piece — a deck, mockup or one-pager (3.3).',
+      '- A **Claude Design** piece: a deck, mockup or one-pager (3.3).',
       '- One **"cool trick"** from the bonus round or the thinking-partner list (3.5, 7.8).',
       '- Combine them into one walkthrough someone could follow without you.',
       '',
@@ -160,20 +160,20 @@ const PROJECTS = CAPSTONES.map((c) => {
 
 const COURSEWORK = [...ASSIGNMENTS, ...PROJECTS];
 
-// Earlier seeds wrote these titles. A rename keeps the record — and any
-// submissions on it — under its new title; a retired one is removed, but only
+// Earlier seeds wrote these titles. A rename keeps the record, and any
+// submissions on it: under its new title; a retired one is removed, but only
 // while nobody has submitted to it.
 const RENAMED = {
   'Personal AI Operating System': 'Capstone · Personal AI Operating System',
-  'Vibe-Built Tool — ship something small and real': 'Capstone · Vibe-Built Tool',
+  'Vibe-Built Tool \u2014 ship something small and real': 'Capstone · Vibe-Built Tool',
 };
-const RETIRED = ['AI Audit — where does AI already touch your life?'];
+const RETIRED = ['AI Audit \u2014 where does AI already touch your life?'];
 
 // ── Gate quizzes: one per module, 3 questions each ────────────────────────
 const QUIZZES = [
   ['What Claude is actually doing when it answers', [
     ['Claude answers by…', ['Predicting the next likely piece of text from learned patterns', 'Looking facts up in a database', 'Searching the web on every message'], 0],
-    ['Fluency and accuracy are…', ['The same thing', 'Separate properties — one does not guarantee the other', 'Both guaranteed by a bigger context window'], 1],
+    ['Fluency and accuracy are…', ['The same thing', 'Separate properties: one does not guarantee the other', 'Both guaranteed by a bigger context window'], 1],
     ['A brand-new chat starts blank unless…', ["You're inside a Project that carries context forward", 'You paid for Max', 'You ask Claude to remember'], 0],
   ]],
   ['Prompting and the 4D framework', [
@@ -216,11 +216,11 @@ function buildModules() {
   return MODULES.map((m, mi) => ({
     title: m.title,
     order: mi,
-    // The module's page: markdown shown when the week is opened. Not a lesson —
+    // The module's page: markdown shown when the week is opened. Not a lesson,
     // nothing to complete, and totalTopics() never counts it. Empty until the
     // framing copy is authored.
     description: m.page || '',
-    // One chapter per module so the sidebar shows a flat lesson list — the
+    // One chapter per module so the sidebar shows a flat lesson list, the
     // client hides a lone chapter titled "Lessons", and a chapter with no page
     // stays a plain label rather than becoming a dropdown.
     chapters: [{
@@ -302,7 +302,7 @@ async function run() {
   const orphanTopics = [...before.topics].filter((id) => !after.topics.has(id));
   const orphanModules = [...before.modules].filter((id) => !after.modules.has(id));
 
-  const description = 'Everything you need to work well with Claude — foundations, prompting, the visual layer, connectors, delegation and the enterprise picture.';
+  const description = 'Everything you need to work well with Claude: foundations, prompting, the visual layer, connectors, delegation and the enterprise picture.';
   if (program && (program.description !== description || !program.published)) {
     note('- update the programme description / published flag');
   }
@@ -370,7 +370,7 @@ async function run() {
   }
 
   // Enrolment is stored on both sides (batch.studentIds and user.batchIds) and
-  // they can drift — a student left in a batch's roster but not their own list
+  // they can drift: a student left in a batch's roster but not their own list
   // then sees that cohort's work as duplicates. Make the user's list the
   // authority and prune the rosters to match.
   const batches = await Batch.find({});
@@ -400,7 +400,7 @@ async function run() {
     const moduleId = String(mod._id);
     liveModuleIds.add(moduleId);
     const [subject, qs] = QUIZZES[i];
-    const title = `Module ${i + 1} quiz — ${subject}`;
+    const title = `Module ${i + 1} quiz: ${subject}`;
     const questions = qs.map(([text, options, correctIndex]) => ({ text, options, correctIndex }));
     const existing = program ? await Quiz.findOne({ programId: program._id, moduleId }) : null;
     if (!existing) {
@@ -428,7 +428,7 @@ async function run() {
   for (const b of batches) {
     // The 8-week schedule counts from the course's start date. Without one it
     // counts from when Week 1's assignment opened, so later runs line up with
-    // earlier ones — and from today on the very first run.
+    // earlier ones: and from today on the very first run.
     const week1 = await Assignment.findOne({ batchId: b._id, title: COURSEWORK[0].title }).select('startDate');
     const start = new Date(b.startDate || week1?.startDate || Date.now()).getTime();
     const schedule = (p) => ({ startDate: new Date(start + p.opensWeek * WEEK), dueDate: new Date(start + p.dueWeek * WEEK) });
@@ -454,7 +454,7 @@ async function run() {
       if (!prev) continue;
       const subs = await Submission.countDocuments({ assignmentId: prev._id });
       if (subs) {
-        console.log(`  kept "${title}": ${subs} submission(s) on it — remove it from the admin once graded`);
+        console.log(`  kept "${title}": ${subs} submission(s) on it, so remove it from the admin once graded`);
       } else {
         note(`- remove retired assignment: ${title}`);
         if (WRITE) await Assignment.deleteOne({ _id: prev._id });
@@ -499,12 +499,12 @@ async function run() {
   // ── Report ──
   console.log('');
   if (changes === 0) {
-    console.log('✅ No changes — the database already matches the curriculum source.');
+    console.log('✅ No changes: the database already matches the curriculum source.');
   } else {
     console.log(`${WRITE ? 'Applied' : 'Would apply'} ${changes} change(s):`);
     for (const line of log) console.log(line);
     console.log('');
-    console.log(WRITE ? '✅ Written.' : '🔎 Dry run — nothing was written. Re-run with --write to commit.');
+    console.log(WRITE ? '✅ Written.' : '🔎 Dry run: nothing was written. Re-run with --write to commit.');
   }
   process.exit(0);
 }
