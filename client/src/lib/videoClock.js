@@ -13,6 +13,7 @@ export function createVideoClock() {
   let state = { time: 0, duration: 0 };
   const subscribers = new Set();
   let seeker = null;
+  let pauser = null;
 
   return {
     get: () => state,
@@ -33,6 +34,15 @@ export function createVideoClock() {
     /** Move to a fraction (0..1) of the video, if a player is listening. */
     seek(fraction) {
       seeker?.(fraction);
+    },
+    /** The player registers how to pause; returns the unregister. */
+    onPause(fn) {
+      pauser = fn;
+      return () => { if (pauser === fn) pauser = null; };
+    },
+    /** Pause the video, if a player is listening. */
+    pause() {
+      pauser?.();
     },
   };
 }

@@ -339,6 +339,8 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     const d = shown.current.duration;
     if (d) seekRef.current(f * d);
   }), [clock]);
+  // ...and pauses through it, when the classroom hides the player.
+  useEffect(() => clock?.onPause(() => { Promise.resolve(v()?.pause?.()).catch(() => {}); }), [clock]);
 
   const seekBy = (by) => {
     seekTo((v()?.currentTime ?? shown.current.time) + by);

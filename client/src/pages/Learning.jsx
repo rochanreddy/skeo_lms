@@ -527,9 +527,12 @@ function Content() {
   }
 
   // All lessons, on a phone: every module folded, an outline to pick from.
+  // The video is hidden there, so it is paused too: a hidden player would
+  // otherwise keep talking.
   function showAllLessons() {
     if (mobileTab !== 'lessons') { setOpen({}); setOpenChap(null); }
     setMobileTab('lessons');
+    clock.pause();
   }
 
   // Pressing a module opens it and shows its page. Pressing the one already
@@ -588,7 +591,7 @@ function Content() {
     // Phones: a lesson with text opens on About; a video-only one keeps the
     // list under the player. Either way the player comes to the top, except
     // on arrival, when the page is already at the top and must stay there.
-    setMobileTab(f.topic.body ? 'about' : 'lessons');
+    setMobileTab('about');
     if (!quiet && isPhone()) {
       requestAnimationFrame(() => document.querySelector('.cp-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
@@ -680,6 +683,8 @@ function Content() {
   const hasVideo = topic?.contentType === 'video';
   const bodyText = topic ? (topic.body || '') : page ? (page.body || '') : '';
   const hasAbout = !!bodyText;
+  // Phones, on "All lessons": only the module list shows.
+  const lessonsView = reading && mobileTab === 'lessons';
   const crumb = topic
     ? `${current.mod}${current.chap && current.chap !== 'Lessons' ? ` · ${stripParentContext(current.chap, current.mod)}` : ''}`
     : page?.crumb || '';
@@ -714,10 +719,9 @@ function Content() {
         <div className="cp-layout">
           {/* ── The player column ── */}
           <main className="cp-main">
-            {/* Phones only: switch between this lesson's notes and the list
-                of all lessons. It sits above the video; what it switches
-                stays below. Without any text there is nothing to switch to. */}
-            {reading && hasAbout && (
+            {/* Phones only: "This lesson" is the video, its title and notes;
+                "All lessons" is the module list and nothing else. */}
+            {reading && (
               <div className="cp-seg" role="tablist" aria-label="Lesson view">
                 <button type="button" role="tab" aria-selected={mobileTab === 'about'} onClick={() => setMobileTab('about')}>This lesson</button>
                 <button type="button" role="tab" aria-selected={mobileTab === 'lessons'} onClick={showAllLessons}>All lessons <span className="cp-seg-n">{flat.length}</span></button>
@@ -725,7 +729,7 @@ function Content() {
             )}
 
             {topic && hasVideo && (
-              <div className="cp-player">
+              <div className={`cp-player ${lessonsView ? 'phone-hide' : ''}`}>
                 {vdoId
                   ? (
                     <VdoPlayer
@@ -743,7 +747,7 @@ function Content() {
 
             {reading ? (
               <>
-                <div className="cp-info">
+                <div className={`cp-info ${lessonsView ? 'phone-hide' : ''}`}>
                   <div className="cp-crumb"><span>{crumb}</span><span className="cp-pos">{position}</span></div>
                   <h1 className="cp-title">{topic ? topic.title : page.title}</h1>
 
@@ -775,7 +779,11 @@ function Content() {
                       {vdoId ? (
                         <StepTimeline clock={clock} />
                       ) : (
-                        <div className="cp-step-mid cp-step-plain">Lesson {idx + 1} of {flat.length}</div>
+                        <div className="cp-step-mid" title={`Lesson ${idx + 1} of ${flat.length}`}>
+                          <div className="cp-step-bar is-static" role="progressbar" aria-label="Position in the course" aria-valuemin={1} aria-valuemax={flat.length} aria-valuenow={idx + 1}>
+                            <span className="cp-step-done" style={{ width: `${((idx + 1) / flat.length) * 100}%` }} />
+                          </div>
+                        </div>
                       )}
                       <button
                         type="button"
@@ -794,7 +802,7 @@ function Content() {
                 </div>
 
                 {/* The lesson's own notes. */}
-                <div className={`cp-after ${hasAbout && mobileTab !== 'about' ? 'phone-hide' : ''}`}>
+                <div className={`cp-after ${lessonsView ? 'phone-hide' : ''}`}>
                   {hasAbout ? (
                     <div className="cp-body"><Markdown text={bodyText} /></div>
                   ) : topic && !hasVideo ? (
@@ -826,7 +834,7 @@ function Content() {
           </main>
 
           {/* ── The list ── */}
-          <aside className={`cp-side ${reading && hasAbout && mobileTab !== 'lessons' ? 'phone-hide' : ''}`} id="learn-syllabus">
+          <aside className={`cp-side ${reading && mobileTab !== 'lessons' ? 'phone-hide' : ''}`} id="learn-syllabus">
             <div className="cp-side-head">
               <div className="cp-side-title">Course content</div>
               <div className="cp-side-prog">
@@ -953,10 +961,6 @@ function StepTimeline({ clock }) {
 
   return (
     <div className="cp-step-mid">
-      <div className="cp-step-label">
-        <span>{formatTime(time)}</span>
-        <span>{duration ? formatTime(duration) : '--:--'}</span>
-      </div>
       <div
         ref={bar}
         className="cp-step-bar"
@@ -1152,8 +1156,10 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
 
         <div className="assign-work">
           <aside className="assign-submitpane">
+            {/* The heading sits above the box, as "Walkthrough" sits above the
+                video, so the box and the video start on the same line. */}
+            <h4 className="assign-pane-head">Your submission</h4>
             <div className="assign-rail">
-              <h4 className="assign-pane-head">Your submission</h4>
 
               {/* Current verification state: visible without opening notifications. */}
               {sub && !editing && (

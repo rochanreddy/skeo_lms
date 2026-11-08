@@ -189,7 +189,10 @@
 }
 
 * { box-sizing: border-box; }
-html, body { overflow-x: hidden; }
+/* clip, not hidden: hidden turns body into a scroll container that never
+   scrolls, and every position: sticky inside the app (the course panel in
+   Learning, the quiz side card) then scrolls away with the page. */
+html, body { overflow-x: clip; }
 body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
 a { color: var(--purple); }
 
@@ -2324,7 +2327,8 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 
 /* The rail: a raised wash inside the card. */
 .assign-rail { background: var(--wash); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 22px 22px 24px; }
-.assign-rail .assign-pane-head { margin-bottom: 16px; }
+/* The rail's first child sits flush with its top edge, level with the video. */
+.assign-rail > :first-child { margin-top: 0; }
 .assign-rail > * + * { margin-top: 16px; }
 .assign-rail .sub-check { margin-top: 16px; }
 .assign-rail .sub-check-error { margin-top: 12px; }
