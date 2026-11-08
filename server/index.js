@@ -12,6 +12,7 @@ import { notFound, errorHandler } from './middleware/errors.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import { startUsageMeter, usageMeter } from './utils/usageMeter.js';
 import { syncLibrary } from './utils/librarySeed.js';
+import { startAiGrading } from './utils/aiGrader.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4200); // 4200 is Skeo's own port -- 4100 belongs to menler-lms, 4000 to the marketing API.
@@ -117,6 +118,8 @@ async function start() {
       .then((r) => { if (r.changed) console.log(`[library] synced: removed ${r.removed}, added ${r.added}`); })
       .catch((err) => console.error('[library] sync failed:', err.message));
     const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
+    // Grades submitted Drive folders with Gemini; also off the critical path.
+    startAiGrading();
     startUsageMeter(server);
 
     /* Keep connections open longer than the proxy in front of us does.

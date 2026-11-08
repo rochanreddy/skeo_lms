@@ -1474,8 +1474,6 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .grade-score { min-width: 96px; }
 .tempbox { background: var(--green-soft); border: 1px solid var(--green-line); border-radius: 10px; padding: 13px 15px; margin: 14px 0; font-size: 14px; }
 .tempbox code { background: var(--green-line); padding: 2px 8px; border-radius: 6px; }
-.graded { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
-.graded .tile-value { color: var(--green-ink); }
 
 /* ── Drive-folder verification (kept visually distinct from grading) ── */
 .sub-check { margin-top: 12px; }
@@ -2365,8 +2363,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .sub-form .assign-submit { margin-top: 16px; }
 .sub-form .assign-submit .btn:first-child { flex: 1; justify-content: center; }
 
-.assign-rail .graded { margin-top: 14px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
-.assign-rail .graded .muted { margin: 4px 0 0; font-size: 13.5px; }
 
 /* Below ~900px the columns stack, video, PDF, brief, then submission, and
    nothing sticks, since there's no second column to stick alongside. */

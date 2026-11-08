@@ -5,11 +5,17 @@ import { Submission } from '../models/Submission.js';
 import { canAccessBatch, canManageBatch, isBlockedFromAssignment } from '../utils/access.js';
 import { notify } from '../utils/notify.js';
 import { verifyDriveFolder } from '../utils/driveVerify.js';
+import { aiGradingOn, requestReview } from '../utils/aiGrader.js';
 
 const router = Router();
 
 // There are no deadlines: a student can hand work in, change it or withdraw
 // it at any time. Only an admin's own grade locks a submission.
+//
+// Grading is automatic: once a folder passes the check below, the AI grader
+// (utils/aiGrader.js) reads it and grades it against the rubric. An AI grade
+// does not lock, so a student can improve the work and resubmit, and the new
+// version is graded again.
 
 async function runCheck(sub, assignment) {
   const result = await verifyDriveFolder(sub.driveLink, { requiredTypes: assignment?.requiredDriveTypes });
@@ -17,12 +23,22 @@ async function runCheck(sub, assignment) {
   sub.errorDetail = result.errorDetail;
   sub.files = result.status === 'READY' ? result.files : [];
   sub.checkedAt = new Date();
+  // A review of an earlier version of the folder says nothing about this one.
+  if (result.status !== 'READY') sub.aiReview = null;
   await sub.save();
 
+  const title = assignment?.title || 'your assignment';
   if (result.status === 'NEEDS_FIXES') {
-    notify(sub.studentId, { type: 'assignment', text: `Your submission for "${assignment?.title || 'your assignment'}" needs fixes: ${result.errorDetail}`, link: '/app/learning' });
+    notify(sub.studentId, { type: 'assignment', text: `Your submission for "${title}" needs fixes: ${result.errorDetail}`, link: '/app/learning?tab=assignments' });
   } else if (result.status === 'READY') {
-    notify(sub.studentId, { type: 'assignment', text: `Your submission for "${assignment?.title || 'your assignment'}" was received and is in the review queue.`, link: '/app/learning' });
+    const queued = await requestReview(sub);
+    notify(sub.studentId, {
+      type: 'assignment',
+      text: queued
+        ? `Your submission for "${title}" was received and is being graded. Your score and feedback usually arrive within a few minutes.`
+        : `Your submission for "${title}" was received and is in the review queue.`,
+      link: '/app/learning?tab=assignments',
+    });
   }
   // CHECK_FAILED is a system fault, not the student's, no student notification.
   // Admins see it directly via checkStatus in the list/detail views instead.
@@ -46,7 +62,7 @@ router.post('/', requireAuth, async (req, res) => {
 
   const sub = await Submission.findOneAndUpdate(
     { assignmentId: a._id, studentId: req.user._id },
-    { $set: { driveLink, isDeleted: false, checkStatus: 'PENDING_CHECK', errorDetail: null, status: 'submitted', locked: false } },
+    { $set: { driveLink, isDeleted: false, checkStatus: 'PENDING_CHECK', errorDetail: null, status: 'submitted', gradedBy: null, locked: false } },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   );
 
@@ -119,6 +135,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   sub.checkStatus = 'PENDING_CHECK';
   sub.errorDetail = null;
   sub.status = 'submitted';
+  sub.gradedBy = null;
   await sub.save();
 
   await runCheck(sub, assignment);
@@ -135,8 +152,9 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// PATCH /api/skeo/submissions/:id/grade  { score, feedback }, admin grades,
-// and locks the submission against further student edits.
+// PATCH /api/skeo/submissions/:id/grade  { score, feedback }, admin overrides
+// the grade. Final: the AI grader never overwrites it. Locks the submission
+// against further student edits.
 router.patch('/:id/grade', requireAuth, async (req, res) => {
   const sub = await Submission.findById(req.params.id).populate('assignmentId', 'batchId');
   if (!sub) return res.status(404).json({ error: 'Submission not found.' });
@@ -145,9 +163,26 @@ router.patch('/:id/grade', requireAuth, async (req, res) => {
   sub.score = score === undefined || score === null || score === '' ? null : Number(score);
   sub.feedback = feedback || '';
   sub.status = 'graded';
+  sub.gradedBy = 'admin';
   sub.locked = true;
   await sub.save();
   notify(sub.studentId, { type: 'grade', text: `Your submission was graded${sub.score != null ? `: ${sub.score}` : ''}.`, link: '/app/learning' });
+  res.json({ submission: sub });
+});
+
+// POST /api/skeo/submissions/:id/ai-review, admin asks the AI to grade it
+// again (after a failed review, or to replace a manual grade). Hands the
+// grade back to the AI: clears an admin grade and its lock.
+router.post('/:id/ai-review', requireAuth, requireRole('admin'), async (req, res) => {
+  const sub = await Submission.findOne({ _id: req.params.id, isDeleted: false }).populate('assignmentId', 'batchId');
+  if (!sub) return res.status(404).json({ error: 'Submission not found.' });
+  if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
+  if (!aiGradingOn()) return res.status(503).json({ error: 'AI grading is off: GEMINI_API_KEY is not set on the server.' });
+  if (sub.checkStatus !== 'READY') return res.status(400).json({ error: 'The Drive folder has to pass the check before it can be graded.' });
+  sub.gradedBy = null;
+  sub.locked = false;
+  sub.status = 'submitted';
+  await requestReview(sub);
   res.json({ submission: sub });
 });
 

@@ -3,6 +3,7 @@ import { useParams, Link, useOutletContext } from 'react-router-dom';
 import { api, downloadFile } from '../../api.js';
 import { Donut, Meter, SEQ, SEQ_AQUA } from '../../components/Charts.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../../components/SubmissionCheck.jsx';
+import { AiReviewPanel } from '../../components/GradeResult.jsx';
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '-');
 
@@ -83,6 +84,14 @@ export default function StudentDetail() {
   useEffect(() => { load(); }, [id]);
 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 2500); };
+
+  async function rerun(submissionId) {
+    setErr('');
+    setRechecking(submissionId);
+    try { await api(`/submissions/${submissionId}/ai-review`, { method: 'POST' }); await load(); flash('Queued for AI grading'); }
+    catch (e) { setErr(e.message); }
+    finally { setRechecking(null); }
+  }
 
   async function recheck(submissionId) {
     setErr('');
@@ -307,6 +316,7 @@ export default function StudentDetail() {
                             onRecheck={s.id ? () => recheck(s.id) : null}
                             busy={rechecking === s.id}
                           />
+                          <AiReviewPanel sub={s} onRerun={s.id ? () => rerun(s.id) : null} busy={rechecking === s.id} />
                         </td>
                       </tr>
                     ) : null,

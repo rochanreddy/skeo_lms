@@ -7,6 +7,7 @@ import LessonIcon from '../components/LessonIcon.jsx';
 import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
+import { GradeCard, gradeState } from '../components/GradeResult.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 import { createVideoClock } from '../lib/videoClock.js';
 import { formatTime } from '../lib/player.js';
@@ -1029,6 +1030,15 @@ function Assignments() {
   const load = () => api('/assignments?scope=mine').then((d) => setItems(d.assignments || [])).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
+  // While any submission is being graded, check back every 15 seconds so the
+  // score lands on the page by itself. Stops once nothing is pending.
+  const grading = items.some((a) => gradeState(a.mySubmission) === 'grading');
+  useEffect(() => {
+    if (!grading) return undefined;
+    const t = setInterval(load, 15_000);
+    return () => clearInterval(t);
+  }, [grading]);
+
   if (loading) {
     return (
       <div className="list">
@@ -1096,15 +1106,16 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
   const showForm = !sub || editing;
   const editable = !sub?.locked;
   const required = (a.requiredDriveTypes || []).map((t) => REQUIRED_LABELS[t] || t);
-  const noun = a.type === 'project' ? 'project' : 'assignment';
   // No video and no PDF means no left column at all, an empty rail beside
   // the brief reads as something that failed to load.
   const hasMedia = Boolean(a.videoUrl || a.pdfUrl);
 
   // One badge in the corner answers "where do I stand" before anything else.
+  const grade = gradeState(sub);
   const state = !sub
     ? ['Not submitted', 'badge-muted']
-    : sub.status === 'graded' ? ['Graded', 'badge-student']
+    : grade === 'graded' ? [sub.score != null ? `Graded · ${sub.score}/10` : 'Graded', 'badge-student']
+    : grade === 'grading' ? ['Grading…', 'badge-submitted']
     : sub.status === 'submitted' ? ['Submitted', 'badge-submitted']
     : [sub.status, ''];
 
@@ -1156,16 +1167,11 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
             <h4 className="assign-pane-head">Your submission</h4>
             <div className="assign-rail">
 
-              {/* Current verification state: visible without opening notifications. */}
+              {/* The grade first (or that it is being graded), then the folder
+                  check behind it: visible without opening notifications. */}
+              {sub && !editing && <GradeCard sub={sub} />}
               {sub && !editing && (
                 <SubmissionCheckPanel submission={{ ...sub, driveLink: sub.driveLink || sub.url }} audience="student" />
-              )}
-
-              {sub?.status === 'graded' && (
-                <div className="graded">
-                  <div className="tile-value">{sub.score != null ? `${sub.score}/10` : '-'}</div>
-                  <div><strong>Score</strong>{sub.feedback && <p className="muted">“{sub.feedback}”</p>}</div>
-                </div>
               )}
 
               {error && <p className="sub-check-error">{error}</p>}
@@ -1206,7 +1212,7 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                   <p className="sub-form-hint">Share the folder as “Anyone with the link can view”, and include everything the task asks for.</p>
 
                   <div className="assign-submit">
-                    <button className="btn" disabled={busy}>{busy ? 'Checking…' : (sub ? 'Save changes' : 'Submit for review')}</button>
+                    <button className="btn" disabled={busy}>{busy ? 'Checking…' : (sub ? 'Resubmit for grading' : 'Submit for grading')}</button>
                     {sub && <button type="button" className="btn ghost" onClick={() => { setEditing(false); setError(''); setDriveLink(sub.driveLink || ''); }}>Cancel</button>}
                   </div>
                 </form>
@@ -1214,7 +1220,7 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                 <p className="assign-note">This submission has been reviewed and is locked. Ask your administrator to unlock it if you need to change it.</p>
               ) : (
                 <div className="assign-submit">
-                  <button type="button" className="btn ghost sm" onClick={() => setEditing(true)} disabled={!editable}>Edit link</button>
+                  <button type="button" className="btn ghost sm" onClick={() => setEditing(true)} disabled={!editable}>Resubmit</button>
                   <button type="button" className="btn quiet sm" onClick={remove} disabled={busy || !editable}>Delete</button>
                 </div>
               )}

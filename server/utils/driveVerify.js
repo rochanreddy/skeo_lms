@@ -159,6 +159,7 @@ export async function verifyDriveFolder(driveLink, { requiredTypes = ['doc'] } =
     }
 
     files.push({
+      driveId: item.id,
       name: item.name,
       type,
       webViewLink: fileMeta.webViewLink || `https://drive.google.com/file/d/${item.id}/view`,

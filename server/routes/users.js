@@ -11,6 +11,7 @@ import { Quiz } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { Progress } from '../models/Progress.js';
 import { programOutlines } from '../models/Program.js';
+import { courseOrder } from '../utils/courseOrder.js';
 
 const router = Router();
 
@@ -96,9 +97,10 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
   const batchIds = batches.map((b) => b._id);
 
   const [assignments, submissions, quizzes, attempts, progress, outlines] = await Promise.all([
-    Assignment.find({ batchId: { $in: batchIds } }).select('title type batchId createdAt').sort({ createdAt: -1 }).lean(),
+    Assignment.find({ batchId: { $in: batchIds } }).select('title type batchId createdAt').lean()
+      .then((list) => list.sort(courseOrder)),
     Submission.find({ studentId: uid, isDeleted: false })
-      .select('assignmentId status score feedback updatedAt driveLink url checkStatus errorDetail files locked checkedAt').lean(),
+      .select('assignmentId status score feedback gradedBy aiReview updatedAt driveLink url checkStatus errorDetail files locked checkedAt').lean(),
     Quiz.find({ batchId: { $in: batchIds } }).select('title type batchId').lean(),
     QuizAttempt.find({ studentId: uid }).select('quizId score total createdAt').lean(),
     Progress.find({ studentId: uid }).select('programId completedTopics').lean(),
@@ -139,6 +141,8 @@ router.get('/:id/overview', requireAuth, requireRole('admin'), async (req, res) 
                   status: s.status,
                   score: s.score,
                   feedback: s.feedback,
+                  gradedBy: s.gradedBy || null,
+                  aiReview: s.aiReview || null,
                   at: s.updatedAt,
                   locked: s.locked,
                   driveLink: s.driveLink || s.url || '',

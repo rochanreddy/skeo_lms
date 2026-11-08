@@ -4,6 +4,7 @@ import { api, downloadFile } from '../api.js';
 import LineIcon from './LineIcon.jsx';
 import Markdown from './Markdown.jsx';
 import { SubmissionCheckPanel } from './SubmissionCheck.jsx';
+import { AiReviewPanel } from './GradeResult.jsx';
 import { DRIVE_TYPES } from './CourseWork.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.jsx';
 
@@ -323,6 +324,7 @@ function Submissions({ assignmentId }) {
   async function grade(id, score, feedback) { await api(`/submissions/${id}/grade`, { method: 'PATCH', body: { score, feedback } }); load(); }
   async function recheck(id) { await api(`/submissions/${id}/recheck`, { method: 'POST' }); load(); }
   async function unlock(id) { await api(`/submissions/${id}/unlock`, { method: 'POST' }); load(); }
+  async function rerun(id) { await api(`/submissions/${id}/ai-review`, { method: 'POST' }); load(); }
 
   // Fetch on first open only, reopening reuses what we already have.
   function toggle() {
@@ -339,17 +341,23 @@ function Submissions({ assignmentId }) {
       {open && (
         subs === null ? <p className="muted">Loading…</p> :
           subs.length === 0 ? <p className="muted">No submissions yet.</p> :
-            subs.map((s) => <GradeRow key={s._id} sub={s} onGrade={grade} onRecheck={recheck} onUnlock={unlock} />)
+            subs.map((s) => <GradeRow key={s._id} sub={s} onGrade={grade} onRecheck={recheck} onUnlock={unlock} onRerun={rerun} />)
       )}
     </div>
   );
 }
 
-function GradeRow({ sub, onGrade, onRecheck, onUnlock }) {
+function GradeRow({ sub, onGrade, onRecheck, onUnlock, onRerun }) {
   const [score, setScore] = useState(sub.score ?? '');
   const [feedback, setFeedback] = useState(sub.feedback || '');
   const [busy, setBusy] = useState(false);
   const [grading, setGrading] = useState(false);
+  const [queuing, setQueuing] = useState(false);
+
+  async function rerun() {
+    setQueuing(true);
+    try { await onRerun(sub._id); } catch (err) { window.alert(err.message); } finally { setQueuing(false); }
+  }
 
   async function recheck() {
     setBusy(true);
@@ -377,6 +385,10 @@ function GradeRow({ sub, onGrade, onRecheck, onUnlock }) {
         busy={busy}
       />
 
+      {/* The AI's grade, which is what the student sees. The form below only
+          overrides it. */}
+      <AiReviewPanel sub={sub} onRerun={rerun} busy={queuing} />
+
       <div className="inline-form">
         {sub.locked && <button type="button" className="btn sm ghost" onClick={() => onUnlock(sub._id)}>Unlock</button>}
         {/* `score` seeds from sub.score, which arrives as a number; Radix matches
@@ -388,7 +400,7 @@ function GradeRow({ sub, onGrade, onRecheck, onUnlock }) {
           </SelectContent>
         </Select>
         <input placeholder="Feedback" value={feedback} onChange={(e) => setFeedback(e.target.value)} />
-        <button className="btn sm" onClick={grade} disabled={grading}>{grading ? 'Saving…' : 'Grade'}</button>
+        <button className="btn sm" onClick={grade} disabled={grading}>{grading ? 'Saving…' : sub.gradedBy === 'ai' ? 'Override' : 'Grade'}</button>
       </div>
     </div>
   );

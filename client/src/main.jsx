@@ -16,6 +16,7 @@ import './styles/player.css';
 import './styles/updates.css';
 import './styles/reviews.css';
 import './styles/quiz.css';
+import './styles/grading.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

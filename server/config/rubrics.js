@@ -46,13 +46,13 @@ export const ASSIGNMENT_RUBRIC = {
       id: 'coverage',
       name: 'Tasks covered',
       max: 4,
-      guide: 'A write-up for each task in the brief. 4 = nearly all tasks (skipping one, or any marked optional, is fine); 3 = about three-quarters; 2 = about half; 1 = one or two tasks; 0 = none.',
+      guide: 'A write-up for each task in the brief. 4 = nearly all tasks (skipping one, or any marked optional, is fine); 3 = more than half; 2 = a third to a half; 1 = one or two tasks; 0 = none.',
     },
     {
       id: 'evidence',
       name: 'Real work shown',
       max: 3,
-      guide: 'Shows the student actually did it in Claude: the prompt they used, what Claude returned, screenshots, examples. 3 = concrete detail on most tasks; 2 = on some; 1 = mostly general statements; 0 = nothing shows it was done.',
+      guide: 'Shows the student actually did it in Claude: the prompt they used, what Claude returned, screenshots, examples. 3 = concrete detail on most tasks; 2 = says what actually happened on several tasks, even briefly; 1 = only general statements; 0 = nothing shows it was done.',
     },
     {
       id: 'learning',
@@ -122,8 +122,8 @@ export const CAPSTONES = [
 export const GENERAL_RUBRIC = {
   name: 'General',
   criteria: [
-    { id: 'brief', name: 'Does what the brief asks', max: 4, guide: 'Covers what the brief asks for. 4 = all of it; 3 = most; 2 = about half; 1 = a little; 0 = none.' },
-    { id: 'evidence', name: 'Real work shown', max: 3, guide: 'Concrete evidence it was actually done: prompts, outputs, screenshots, examples. 3 = throughout; 2 = some; 1 = mostly general; 0 = none.' },
+    { id: 'brief', name: 'Does what the brief asks', max: 4, guide: 'Covers what the brief asks for. 4 = all or nearly all of it; 3 = more than half; 2 = a third to a half; 1 = a little; 0 = none.' },
+    { id: 'evidence', name: 'Real work shown', max: 3, guide: 'Concrete evidence it was actually done: prompts, outputs, screenshots, examples. 3 = throughout; 2 = says what actually happened, even briefly; 1 = only general statements; 0 = none.' },
     { id: 'thinking', name: 'Own thinking', max: 3, guide: 'Their own observations, decisions and takeaways. 3 = clear and specific; 2 = some; 1 = generic; 0 = none.' },
   ],
 };

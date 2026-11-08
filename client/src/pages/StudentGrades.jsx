@@ -70,7 +70,7 @@ export default function StudentGrades({ embedded = false }) {
                     <td className="gt-type"><span className={`gt-kind gt-${String(r.kind).toLowerCase()}`}>{r.kind}</span></td>
                     <td className="gt-st"><span className={`gt-status gt-${r.status}`}>{statusLabel(r)}</span></td>
                     <td className="gt-score">{scoreCell(r)}</td>
-                    <td className={`gt-feedback ${r.feedback ? '' : 'is-empty'}`}>{r.feedback || <span className="gt-dash">-</span>}</td>
+                    <td className={`gt-feedback ${r.feedback ? '' : 'is-empty'}`}>{r.feedback ? <Feedback text={r.feedback} /> : <span className="gt-dash">-</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -79,5 +79,22 @@ export default function StudentGrades({ embedded = false }) {
         )}
       </div>
     </div>
+  );
+}
+
+// Feedback can run to a paragraph (AI grades write a few sentences). Three
+// lines in the table keep the rows even; "More" opens the rest in place.
+function Feedback({ text }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > 140;
+  return (
+    <>
+      <span className={long && !open ? 'gt-fb-clamp' : undefined}>{text}</span>
+      {long && (
+        <button type="button" className="gt-fb-more" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+          {open ? 'Less' : 'More'}
+        </button>
+      )}
+    </>
   );
 }

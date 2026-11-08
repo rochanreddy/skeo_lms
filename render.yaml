@@ -98,6 +98,12 @@ services:
         sync: false
       - key: GOOGLE_DRIVE_API_KEY
         sync: false
+      # AI grading of submissions (server/utils/aiGrader.js). Without it,
+      # submissions wait for an admin to grade them.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
 
       # ---------------------------------------------------------------------
       # MAIL

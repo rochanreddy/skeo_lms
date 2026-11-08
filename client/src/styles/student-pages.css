@@ -349,3 +349,8 @@
 .sd-profile-grid dd { margin: 4px 0 0; font-size: 14.5px; color: var(--ink); overflow-wrap: anywhere; }
 .sd-profile-empty { margin: 0; font-size: 14px; }
 @media (max-width: 640px) { .sd-linkedin { margin-left: 0; } }
+
+/* Long feedback (AI grades) stays three lines until opened. */
+.grade-table .gt-fb-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.grade-table .gt-fb-more { display: inline-block; margin-top: 3px; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--blue-ink); cursor: pointer; }
+.grade-table .gt-fb-more:hover { text-decoration: underline; }
