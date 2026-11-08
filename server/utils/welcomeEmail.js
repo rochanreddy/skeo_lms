@@ -17,6 +17,13 @@ export const firstNameOf = (fullName, email) => String(fullName || '').trim().sp
 
 export const SUPPORT = 'support@skeoai.com';
 
+// The brand's profiles, linked under every mail. Kept in step with site.social in
+// the website's src/lib/site.ts.
+export const SOCIAL = [
+  ['Instagram', 'https://www.instagram.com/skeo_ai/'],
+  ['Facebook', 'https://www.facebook.com/profile.php?id=61596444447079'],
+];
+
 export const P = (inner, top = 18) => `<p style="margin:${top}px 0 0; font-size:15px; line-height:1.7; color:#23202e;">${inner}</p>`;
 
 // `footer` replaces the small print under the card. The default is right for
@@ -41,7 +48,8 @@ export function shell({ subject, email, body, cta = null, footer = null }) {
           ${P('Team skeo')}
         </td></tr>
       </table>
-      <p style="margin:16px 0 0; font-size:12px; color:#8b879c;">${footer ? esc(footer) : `You're receiving this because you bought skeo on skeoai.com as ${esc(email)}.`}</p>
+      <p style="margin:16px 0 0; font-size:12px; color:#8b879c;">Follow skeo on ${SOCIAL.map(([name, href]) => `<a href="${href}" style="color:#6746ec; text-decoration:none;">${name}</a>`).join(' and ')}</p>
+      <p style="margin:6px 0 0; font-size:12px; color:#8b879c;">${footer ? esc(footer) : `You're receiving this because you bought skeo on skeoai.com as ${esc(email)}.`}</p>
     </td></tr>
   </table>
 </body></html>`;
