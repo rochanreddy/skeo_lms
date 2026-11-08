@@ -468,6 +468,24 @@ function FilterMenu({ label, options, selected, onToggle, onClear }) {
   );
 }
 
+// Some feeds list every country a role is open in, forty names in one field.
+// Past three places, say the one that matters and how many more:
+// "India + 37 more locations", with the whole list on hover.
+// "Palestine, State of" is one place with a comma in it, so a bare
+// "State of ..." is folded back onto the name before it.
+function compactPlace(place) {
+  const parts = [];
+  for (const raw of String(place).split(',')) {
+    const p = raw.trim();
+    if (!p) continue;
+    if (/^(state|republic|province|islamic republic) of\b/i.test(p) && parts.length) parts[parts.length - 1] += `, ${p}`;
+    else parts.push(p);
+  }
+  if (parts.length <= 3) return place;
+  const lead = parts.find((p) => /^india$/i.test(p)) || parts[0];
+  return `${lead} + ${parts.length - 1} more locations`;
+}
+
 function JobCard({ job, isAdmin, onRemoved, labelOf }) {
   const [busy, setBusy] = useState(false);
 
@@ -485,6 +503,7 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
   }
 
   const place = job.location || job.country || '';
+  const shortPlace = compactPlace(place);
   const { initials, tone } = monogram(job.company);
   const fresh = isFresh(job.postedAt);
   // 'unspecified' is a real answer from the pipeline, but it is not a tag.
@@ -518,40 +537,16 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
           </h3>
           <div className="job-meta">
             <b>{job.company || 'Company not stated'}</b>
-            {place && <><i>•</i><span>{place}</span></>}
+            {place && <><i>•</i><span className="job-place" title={shortPlace !== place ? place : undefined}>{shortPlace}</span></>}
           </div>
         </div>
 
-        {/* Age on top, Apply under it, both on the right: the eye reads the
-            role on the left and lands on the one thing to do on the right.
-
-            The whole card already opens the posting, but a card-sized link is
-            not something anybody recognises as "apply", and the step a
-            student is here to take should look like a step.
-
-            Only http(s) is ever rendered as an href. Scraped URLs come from
-            eleven third-party sources and hand-posted ones from a form, and a
-            javascript: value here would be a script a student clicks. */}
-        <div className="job-side">
-          {fresh ? (
-            <span className="job-new">{ago(job.postedAt)}</span>
-          ) : (
-            <span className="job-age">{ago(job.postedAt)}</span>
-          )}
-
-          {applyHref && (
-            <a
-              className="btn job-apply"
-              href={applyHref}
-              onClick={recordClick}
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label={`Apply for ${job.title || 'this role'}${job.company ? ` at ${job.company}` : ''} (opens in a new tab)`}
-            >
-              Apply <span aria-hidden="true">↗</span>
-            </a>
-          )}
-        </div>
+        {/* How fresh it is, top right: "Today" in green, older ones quiet. */}
+        {fresh ? (
+          <span className="job-new">{ago(job.postedAt)}</span>
+        ) : (
+          <span className="job-age">{ago(job.postedAt)}</span>
+        )}
       </div>
 
       <div className="job-tags">
@@ -578,12 +573,35 @@ function JobCard({ job, isAdmin, onRemoved, labelOf }) {
 
           Without either, a student has no way to tell a ranked list from an
           arbitrary one. */}
-      {(job.rankReasons?.length > 0 || job.matchedSkills?.length > 0) && (
-        <p className="job-match">
-          Why this is here:{' '}
-          <b>{(job.rankReasons?.length ? job.rankReasons : job.matchedSkills).join(' · ')}</b>
-        </p>
-      )}
+      {/* Why this is here on the left, Apply on the right: the reason and
+          the one thing to do with it, read together.
+
+          The whole card already opens the posting, but a card-sized link is
+          not something anybody recognises as "apply", and the step a student
+          is here to take should look like a step. Only http(s) is ever
+          rendered as an href: scraped URLs come from eleven third-party
+          sources, and a javascript: value here would be a script a student
+          clicks. */}
+      <div className="job-foot">
+        {(job.rankReasons?.length > 0 || job.matchedSkills?.length > 0) && (
+          <p className="job-match">
+            Why this is here:{' '}
+            <b>{(job.rankReasons?.length ? job.rankReasons : job.matchedSkills).join(' · ')}</b>
+          </p>
+        )}
+        {applyHref && (
+          <a
+            className="btn job-apply"
+            href={applyHref}
+            onClick={recordClick}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={`Apply for ${job.title || 'this role'}${job.company ? ` at ${job.company}` : ''} (opens in a new tab)`}
+          >
+            Apply <span aria-hidden="true">↗</span>
+          </a>
+        )}
+      </div>
 
       {job.description && <p className="job-desc">{job.description}</p>}
 

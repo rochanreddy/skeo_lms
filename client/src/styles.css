@@ -2841,6 +2841,11 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 
 .job-id { min-width: 0; flex: 1; }
 .job-title { font-family: var(--display); font-size: 16.5px; font-weight: 700; letter-spacing: -.025em; line-height: 1.3; margin: 0; color: var(--ink); }
+/* Two lines at most; a long role name ends in an ellipsis rather than
+   stretching the card. */
+.job-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+/* The place is one line, whatever the feed sent. */
+.job-place { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* The title is the link and it covers the card, so the whole row is the
    target while the accessible name is still the role. */
 .job-title a { color: inherit; text-decoration: none; transition: color .14s; }
@@ -2854,26 +2859,31 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 /* Age sits opposite the title, quiet, with "new" the one thing that speaks up. */
 .job-age { flex: none; font-size: 12.5px; color: var(--muted-2); white-space: nowrap; padding-top: 3px; }
 .job-new {
-  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: var(--pill);
+  flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: var(--pill);
   background: var(--green-soft); color: var(--green-ink); font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .06em;
 }
 .job-new::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
-/* The right-hand column: age on top, Apply beneath it. */
-.job-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
 
-/* The one action on the card, so it is the largest thing on the right.
-   Lifted over the card's stretched link so it takes its own click, and the
-   underline removed - it is inherited from the global link style and made
-   the button read as a link sitting on a pill. */
+/* Bottom row: why it's here on the left, Apply on the right. */
+.job-foot { display: flex; align-items: center; gap: 14px; }
+.job-foot .job-match { flex: 1; min-width: 0; }
+
+/* The one action on the card. Lifted over the card's stretched link so it
+   takes its own click, and the underline removed - it is inherited from the
+   global link style and made the button read as a link sitting on a pill. */
 .job-apply {
-  z-index: 1; justify-content: center; min-width: 136px;
-  padding: 13px 28px; font-size: 15px; text-decoration: none;
+  position: relative; z-index: 1; flex: none; margin-left: auto; justify-content: center;
+  padding: 9px 20px; font-size: 14px; text-decoration: none;
 }
 .job-apply:hover, .job-apply:focus-visible { text-decoration: none; }
 
-.job-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+/* One line of capsules. When they don't fit, the line scrolls sideways
+   rather than wrapping; lifted over the card link so a swipe can scroll it. */
+.job-tags { position: relative; z-index: 1; display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.job-tags::-webkit-scrollbar { display: none; }
+.job-tag { flex: none; }
 .job-tag {
   display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--pill);
   background: var(--wash); border: 1px solid var(--line-soft); color: var(--muted);
@@ -2920,11 +2930,8 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   .jb-bar > * { justify-content: center; }
   .jb-bar > .btn { grid-column: 1 / -1; }
 
-  .job-card-head { flex-wrap: wrap; }
-  /* No room beside the title on a phone, so the column drops beneath it and
-     turns into a row: age on the left, a full-width Apply filling the rest. */
-  .job-side { flex-basis: 100%; flex-direction: row; align-items: center; justify-content: space-between; }
-  .job-apply { flex: 1; max-width: 240px; }
+  .job-foot { gap: 10px; }
+  .job-apply { padding: 9px 16px; }
 }
 
 /* ── Not bought yet ─────────────────────────────────────────────────────────
