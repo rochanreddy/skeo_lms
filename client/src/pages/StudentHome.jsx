@@ -118,12 +118,12 @@ export default function StudentHome() {
   const submittedCount = assignments.filter((a) => a.mySubmission).length;
 
 
-  // ── Updates ─── only what an admin pushed: news from Menler to everyone,
+  // ── Updates ─── only what an admin pushed: news from the skeo team to everyone,
   // or a note to this student's cohort. The automatic alerts (new assignment,
   // graded) stay under the bell, where they already are.
   const updates = useMemo(() => announcements.map((a) => ({
     id: a._id,
-    from: a.batchId ? a.batchId.name || 'Your cohort' : 'Menler',
+    from: a.batchId ? a.batchId.name || 'Your cohort' : 'skeo team',
     title: a.title, body: a.body, link: a.link, at: a.createdAt,
   })), [announcements]);
 
@@ -314,7 +314,7 @@ export default function StudentHome() {
               {updates.length > 3 && <span className="hg-note">+{updates.length - 3} more</span>}
             </div>
             {updates.length === 0 ? (
-              <p className="hg-empty">Any updates from Menler and your team will show up here.</p>
+              <p className="hg-empty">Any updates from the skeo team will show up here.</p>
             ) : (
               <div className="hg-rows">
                 {updates.slice(0, 3).map((u) => {

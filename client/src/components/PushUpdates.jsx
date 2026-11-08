@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 // Admin: push an update into every student's Updates card on their home
 // screen, with a notification (bell + phone push) alongside it. By default it
-// is an update from Menler to everyone; it can be narrowed to one cohort.
+// is an update from the skeo team to everyone; it can be narrowed to one cohort.
 // The panel lists what has been pushed, newest first, with a way to take
 // each one back down.
 const EVERYONE = 'everyone';
@@ -33,7 +33,7 @@ export default function PushUpdates() {
         <div>
           <div className="eyebrow">Student home</div>
           <h2>Updates</h2>
-          <p className="muted pu-lead">What students see in the Updates card. Mostly news from Menler.</p>
+          <p className="muted pu-lead">What students see in the Updates card. Mostly news from the skeo team.</p>
         </div>
         <button className="btn" onClick={() => setOpen(true)}>Push update</button>
       </div>
@@ -128,7 +128,7 @@ function Composer({ open, onOpenChange, batches, onPosted }) {
               <Select value={audience} onValueChange={setAudience}>
                 <SelectTrigger className="pu-select"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={EVERYONE}>Every student (from Menler)</SelectItem>
+                  <SelectItem value={EVERYONE}>Every student</SelectItem>
                   {batches.map((b) => <SelectItem key={b._id} value={b._id}>{b.name}</SelectItem>)}
                 </SelectContent>
               </Select>
