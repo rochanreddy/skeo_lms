@@ -3,7 +3,9 @@ import { api } from '../api.js';
 
 // Student gradebook: one consolidated view of every assignment/quiz/exam and
 // the grade received: the single place a student checks "how am I doing".
-export default function StudentGrades() {
+// Lives as the Grades tab inside Learning (`embedded`: the page there already
+// has its heading, so this one drops its own).
+export default function StudentGrades({ embedded = false }) {
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({ total: 0, graded: 0, avgPct: null });
   const [loading, setLoading] = useState(true);
@@ -27,13 +29,17 @@ export default function StudentGrades() {
 
   return (
     <div className="grades-page">
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">Student board</div>
-          <h1>My grades</h1>
-          <p>Every assessment and the grade you earned, in one place.</p>
+      {embedded ? (
+        <p className="muted gr-intro">Every assessment and the grade you earned, in one place.</p>
+      ) : (
+        <div className="page-head">
+          <div>
+            <div className="eyebrow">Student board</div>
+            <h1>My grades</h1>
+            <p>Every assessment and the grade you earned, in one place.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="tiles gr-tiles">
         <div className="tile">

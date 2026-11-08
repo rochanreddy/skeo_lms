@@ -1,4 +1,5 @@
 import { lazy } from 'react';
+import { Navigate } from 'react-router-dom';
 
 // Every destination is code-split: a role only downloads the screens it can
 // reach, and the heavy ones (lesson player, curriculum editor, PDF reader) load
@@ -8,7 +9,6 @@ const Profile = lazy(() => import('./pages/Profile.jsx'));
 const Learning = lazy(() => import('./pages/Learning.jsx'));
 const ProgramsManage = lazy(() => import('./pages/ProgramsManage.jsx'));
 const StudentHome = lazy(() => import('./pages/StudentHome.jsx'));
-const StudentGrades = lazy(() => import('./pages/StudentGrades.jsx'));
 const AdminCourse = lazy(() => import('./pages/admin/Batches.jsx'));
 const Library = lazy(() => import('./pages/Library.jsx'));
 const JobBoard = lazy(() => import('./pages/JobBoard.jsx'));
@@ -39,7 +39,13 @@ export function extraRoutesFor(role) {
   return [
     { path: 'profile', Component: Profile },
     { path: 'support', Component: Support },
+    // Grades moved into Learning as a tab; old links and bookmarks follow it.
+    { path: 'grades', Component: GradesMoved },
   ];
+}
+
+function GradesMoved() {
+  return <Navigate to="/app/learning?tab=grades" replace />;
 }
 
 // Each role's nav tabs. path '' is the index (Home). label drives the sidebar;
@@ -51,7 +57,6 @@ export function navFor(role) {
       return [
         { label: 'Home', path: '', Component: StudentHome },
         { label: 'Learning', path: 'learning', Component: Learning },
-        { label: 'Grades', path: 'grades', Component: StudentGrades },
         { label: 'Webinars', path: 'webinars', Component: Webinars },
         { label: 'Library', path: 'library', Component: Library },
         { label: 'Job Board', path: 'jobs', Component: JobBoard, featured: true },

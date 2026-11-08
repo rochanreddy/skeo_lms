@@ -14,6 +14,7 @@
 /* ── My grades ──────────────────────────────────────────────────────────────
    A plain list, not a table: title, a kind chip and a status word under it,
    the score on the right. The same shape at every width. */
+.gr-intro { margin: 4px 0 16px; font-size: 14px; }
 .gr-tiles { margin-bottom: 18px; }
 .gr-tiles .tile-value.is-empty { font-size: 15px; font-weight: 600; color: var(--muted); padding: 7px 0; }
 .gr-tiles .tile-of { font-size: 15px; color: var(--muted); font-weight: 600; }
