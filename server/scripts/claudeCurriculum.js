@@ -5,10 +5,15 @@
 // so the two cannot drift apart.
 //
 // module → lessons[] → { code, title, points[], assignment? }
-export const MODULES = [
+const AUTHORED = [
   {
     title: 'M01 · Foundations: How AI and Claude Actually Work',
     lessons: [
+      { code: '1.0', title: 'Module Intro', points: [
+        'What this module covers: how Claude actually works underneath, where it goes wrong, and which surface to reach for',
+        'Why it comes first: every later module assumes you can tell fluent output from accurate output',
+        'How each week runs: watch the lessons, try every task in Claude yourself, then take the module quiz to unlock the next week',
+      ] },
       { code: '1.1', title: 'What Generative AI Actually Is', points: [
         'Claude predicts the next likely piece of text based on patterns learned from huge amounts of data, not facts pulled from a database',
         "Fluency (sounding right) and accuracy (being right) are separate properties: one doesn't guarantee the other",
@@ -120,6 +125,11 @@ export const MODULES = [
   {
     title: 'M03 · The Visual & Creative Layer',
     lessons: [
+      { code: '3.0', title: 'Module Intro', points: [
+        'What this module covers: Claude reading images, drawing diagrams, charts and interactive Artifacts, and polishing visuals in Claude Design',
+        'Why it matters: a picture or a working tool often explains more than a paragraph ever could',
+        'What you will make: real visual output, from a clean note off a whiteboard photo to a small build you can share',
+      ] },
       { code: '3.1', title: 'Claude and Images: Reading, Not Just Writing', points: [
         'Claude accepts image input: screenshots, photos, scanned documents, charts, whiteboards',
         'Use case: a photo of handwritten or whiteboard notes → a clean, structured document',
@@ -151,6 +161,11 @@ export const MODULES = [
   {
     title: 'M04 · Reaching Further: Data, Tools & Research',
     lessons: [
+      { code: '4.0', title: 'Module Intro', points: [
+        'What this module covers: connecting Claude to the tools you already use, cited research, Claude inside Chrome and Office, voice, other languages, and Cowork on real files',
+        'Why it matters: the answer you need often lives outside the chat, in your files, your inbox and the web',
+        'The habit to build: authorise each connection on purpose, and check the sources Claude brings back',
+      ] },
       { code: '4.1', title: 'Connectors & MCP', points: [
         'Connectors let Claude read from and sometimes act on tools you already use: Drive, Gmail, Slack, DocuSign and more',
         'MCP (Model Context Protocol) is the open standard many connectors are built on, which is what lets the ecosystem grow over time',
@@ -187,6 +202,11 @@ export const MODULES = [
   {
     title: 'M05 · Delegation, Automation & Building',
     lessons: [
+      { code: '5.0', title: 'Module Intro', points: [
+        'What this module covers: subagents, scheduled and recurring tasks, building with Claude Code, and using all of it responsibly',
+        'Why it matters: this is the step from asking Claude for answers to handing it whole pieces of work',
+        'The habit to build: define exactly what should come back, and review everything before you ship it',
+      ] },
       { code: '5.1', title: 'Subagents: Delegating Without Losing Context', points: [
         'An isolated Claude instance that works on one piece of a task independently, with its own context window',
         'Reports back only a summary, keeping your main conversation clean and focused',
@@ -223,6 +243,11 @@ export const MODULES = [
   {
     title: 'M06 · Beyond the Individual: Devices, Teams & Enterprise',
     lessons: [
+      { code: '6.0', title: 'Module Intro', points: [
+        'What this module covers: Claude on every device, API basics, team and enterprise features, data and privacy, role-based use, and choosing a plan',
+        'Why it matters: the shift from your own use of Claude to how it fits a team or an organisation',
+        'The habit to build: know what data goes where before you roll Claude out to anyone else',
+      ] },
       { code: '6.1', title: 'Claude on Every Device', points: [
         'Claude mobile app (iOS/Android): Chat and Cowork on the go',
         'Claude Desktop: a unified app combining Chat, Cowork and Code',
@@ -279,3 +304,17 @@ export const MODULES = [
     ],
   },
 ];
+
+// Every module closes on a recap: a run-back through its lessons before the
+// module quiz. Titled "Module N Recap" with no lesson number of its own, and
+// built from the lessons above so it can never list one that is gone.
+export const recapLesson = (n, lessons) => ({
+  code: '',
+  title: `Module ${n} Recap`,
+  points: [
+    'A run-back through the whole module before its quiz:',
+    ...lessons.filter((l) => l.code && !/\.0$/.test(l.code)).map((l) => `${l.code} ${l.title}`),
+  ],
+});
+
+export const MODULES = AUTHORED.map((m, mi) => ({ ...m, lessons: [...m.lessons, recapLesson(mi + 1, m.lessons)] }));

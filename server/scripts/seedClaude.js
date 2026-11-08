@@ -186,7 +186,7 @@ function buildModules() {
       description: '',
       pageLabel: '',
       topics: m.lessons.map((l, li) => ({
-        title: `${l.code} · ${l.title}`,
+        title: l.code ? `${l.code} · ${l.title}` : l.title,
         contentType: 'video',
         contentUrl: VIDEO,
         readingUrl: PDF,

@@ -30,10 +30,21 @@ const plain = (doc) => (typeof doc?.toObject === 'function' ? doc.toObject() : {
 const differs = (prev, next, fields) =>
   fields.filter((f) => next[f] !== undefined && String(prev?.[f] ?? '') !== String(next[f] ?? ''));
 
+// A lesson is found by its title, not its slot: putting "1.0 · Module Intro"
+// in front of 1.1 shifts every lesson after it, and matching by position would
+// call each of them new and re-mint its id (and drop its attached video).
 function mergeTopics(existing, desired, path, log) {
+  const used = new Set();
+  const find = (d, i) => {
+    const at = existing[i];
+    if (at && !used.has(i) && sameTitle(at.title, d.title)) return i;
+    return existing.findIndex((t, j) => !used.has(j) && sameTitle(t.title, d.title));
+  };
   return desired.map((d, i) => {
-    const prev = existing[i];
-    if (!prev || !sameTitle(prev.title, d.title)) {
+    const j = find(d, i);
+    if (j >= 0) used.add(j);
+    const prev = j >= 0 ? existing[j] : null;
+    if (!prev) {
       log.push(`  + lesson   ${path} > [${i + 1}] ${d.title}`);
       return { ...d, order: i };
     }

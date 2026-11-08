@@ -132,3 +132,22 @@ test('page text on a module or chapter is authored, not preserved', () => {
   assert.equal(modules[0].chapters[0].topics[0]._id, stored[0].chapters[0].topics[0]._id);
   assert.equal(log.length, 2, 'one module change, one chapter change');
 });
+
+test('a lesson put in front of the others keeps every existing lesson and its video', () => {
+  const stored = withIds(source());
+  stored[0].chapters[0].topics[1].vdoVideoId = 'vid-1-2';
+  const desired = source();
+  desired[0].chapters[0].topics.unshift({ title: '1.0 · Module Intro', contentType: 'video', body: '- intro', order: 0 });
+  desired[0].chapters[0].topics.push({ title: 'Module 1 Recap', contentType: 'video', body: '- recap', order: 3 });
+  const { modules, log } = mergeModules(stored, desired);
+  const topics = modules[0].chapters[0].topics;
+  assert.deepEqual(topics.map((t) => t.title), ['1.0 · Module Intro', '1.1 · What Generative AI Is', '1.2 · Tokens', 'Module 1 Recap']);
+  assert.equal(topics[1]._id, stored[0].chapters[0].topics[0]._id);
+  assert.equal(topics[2]._id, stored[0].chapters[0].topics[1]._id);
+  assert.equal(topics[2].vdoVideoId, 'vid-1-2');
+  assert.deepEqual(topics.map((t) => t.order), [0, 1, 2, 3]);
+  assert.equal(log.filter((l) => l.includes('+ lesson')).length, 2);
+  const before = idsOf(stored).topics;
+  const after = idsOf(modules).topics;
+  assert.ok([...before].every((id) => after.has(id)));
+});

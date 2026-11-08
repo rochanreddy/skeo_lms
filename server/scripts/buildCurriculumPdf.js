@@ -34,7 +34,7 @@ function render() {
     const [code, name] = m.title.split(' · ');
     const items = m.lessons.map((l) => `
       <section class="lesson">
-        <h3><span class="code">${esc(l.code)}</span>${esc(l.title)}</h3>
+        <h3>${l.code ? `<span class="code">${esc(l.code)}</span>` : ''}${esc(l.title)}</h3>
         <ul>${l.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
         ${l.assignment ? `<p class="task"><strong>Assignment</strong>${esc(l.assignment)}</p>` : ''}
       </section>`).join('');
