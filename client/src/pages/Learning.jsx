@@ -725,7 +725,7 @@ function Content() {
                       upNext={next && !nextLocked ? { title: next.topic.title, onPlay: () => selectTopic(next) } : null}
                     />
                   )
-                  : <LessonVideo key={topic._id} url={videoUrl} />}
+                  : <LessonSoon key={topic._id} url={videoUrl} />}
               </div>
             )}
 
@@ -930,27 +930,42 @@ function Content() {
   );
 }
 
-// Lesson video with a graceful failure path, a dead CDN link or an
-// unsupported codec should offer a retry and a direct link, not a black frame.
-function LessonVideo({ url }) {
-  const [failed, setFailed] = useState(false);
+// Lesson recordings live on VdoCipher and nowhere else. A lesson whose video
+// is not there yet shows this card: a quiet word for the student, and for the
+// admin the way to fix it. Never an error, never a raw link.
+function LessonSoon({ url, failed, onRetry }) {
+  const { user } = useOutletContext();
+  const canManage = user?.role && user.role !== 'student';
+  return (
+    <div className="lesson-soon" role="status">
+      <span className="lesson-soon-mark" aria-hidden="true"><LineIcon name="video" size={22} /></span>
+      <p className="lesson-soon-title">{failed ? 'This video is taking a moment.' : 'This lesson’s video is on its way.'}</p>
+      <p className="lesson-soon-sub">{failed ? 'Give it another go, or come back in a little while.' : 'The notes below are ready; the recording will appear here once it is published.'}</p>
+      {failed && <div className="lesson-soon-actions"><button type="button" className="btn sm" onClick={onRetry}>Try again</button></div>}
+      {canManage && (
+        <p className="lesson-soon-admin">
+          {failed ? 'The file at this link did not play.' : url ? 'This lesson is not linked to a VdoCipher video yet; the link it carries is ignored.' : 'This lesson has no video linked.'}
+          {' '}Students see this card. Link the recording in Programs → Manage curriculum.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// An assignment walkthrough is a plain file: the browser plays it, and a file
+// that will not play even after a quiet second try gets the card above.
+function PlainVideo({ url }) {
   const [attempt, setAttempt] = useState(0);
-  if (failed) {
-    return (
-      <div className="panel empty-state lesson-video-error">
-        <p className="muted">This video couldn’t be loaded. It may have moved, or your connection dropped.</p>
-        <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}>
-          <button className="btn sm" onClick={() => { setFailed(false); setAttempt((n) => n + 1); }}>Try again</button>
-          <a className="btn sm ghost" href={url} target="_blank" rel="noreferrer">Open in new tab</a>
-        </div>
-      </div>
-    );
-  }
+  const [failed, setFailed] = useState(false);
+  const onError = () => {
+    if (attempt === 0) { setTimeout(() => setAttempt(1), 1200); return; }
+    setFailed(true);
+  };
+  if (!url || failed) return <LessonSoon url={url} failed={failed} onRetry={() => { setFailed(false); setAttempt((n) => n + 1); }} />;
   // preload="none": the browser's default fetches metadata the moment the
-  // element mounts, so every lesson with a video paid for a range request
-  // nobody had asked to play. The box is sized by CSS, so holding off costs
-  // no layout: .lesson-video carries the same 16:9 the DRM frame does.
-  return <video key={attempt} src={url} controls preload="none" className="lesson-video" onError={() => setFailed(true)} />;
+  // element mounts, so every walkthrough paid for a range request nobody had
+  // asked to play. The box is sized by CSS, so holding off costs no layout.
+  return <video key={attempt} src={url} controls preload="none" className="lesson-video" onError={onError} />;
 }
 
 function Assignments() {
@@ -1088,7 +1103,7 @@ function AssignmentCard({ a, onChange }) {
             <h4 className="assign-pane-head">{a.videoUrl ? 'Walkthrough' : 'Resources'}</h4>
             {a.videoUrl && (
               <div className="assign-video">
-                <LessonVideo key={`${a._id}-v`} url={a.videoUrl} />
+                <PlainVideo key={`${a._id}-v`} url={a.videoUrl} />
               </div>
             )}
             {a.pdfUrl && (
