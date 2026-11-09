@@ -123,7 +123,7 @@ export default function ResetPassword({ user = null, onSignOut }) {
             {err && <div id="reset-error" className="error auth-error" role="alert">{err}</div>}
             <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Set password →'}</button>
 
-            <p className="auth-alt">Link expired? <Link to="/forgot">Request a new one</Link></p>
+            <p className="auth-alt">Link not working? <Link to="/forgot">Request a new one</Link></p>
           </form>
         )}
       </div>

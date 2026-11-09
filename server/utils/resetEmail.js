@@ -11,8 +11,6 @@
 
 import { esc, firstNameOf, P, shell, SUPPORT } from './welcomeEmail.js';
 
-export const RESET_TTL_MINUTES = 30;
-
 export function resetEmail({ fullName, email, link }) {
   const first = firstNameOf(fullName, email);
   const subject = 'Reset your skeo password';
@@ -23,7 +21,7 @@ export function resetEmail({ fullName, email, link }) {
     body: [
       P(`Hi ${esc(first)},`, 0),
       P('Someone (hopefully you) asked to reset the password on your skeo LMS account. Use the button below to choose a new one.'),
-      P(`The link works once and expires in ${RESET_TTL_MINUTES} minutes.`),
+      P('The link works once. Asking for another one replaces it.'),
       P(`If the button does not work, copy this into your browser:<br /><a href="${esc(link)}" style="color:#6746ec; word-break:break-all;">${esc(link)}</a>`),
       P('If you did not ask for this, ignore this email. Your password stays as it is.'),
     ].join(''),
@@ -36,7 +34,7 @@ export function resetEmail({ fullName, email, link }) {
     'Someone (hopefully you) asked to reset the password on your skeo LMS account.',
     'Open this link to choose a new one:', '',
     link, '',
-    `The link works once and expires in ${RESET_TTL_MINUTES} minutes.`, '',
+    'The link works once. Asking for another one replaces it.', '',
     'If you did not ask for this, ignore this email. Your password stays as it is.', '',
     `Questions? Write to ${SUPPORT}.`, '',
     'Team skeo',

@@ -8,7 +8,7 @@ import { forget } from '../middleware/auth.js';
 import { issuedBeforeReset, signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
 import { trySendMail } from '../utils/email.js';
 import { appUrl } from '../utils/appUrl.js';
-import { passwordChangedEmail, resetEmail, RESET_TTL_MINUTES } from '../utils/resetEmail.js';
+import { passwordChangedEmail, resetEmail } from '../utils/resetEmail.js';
 import { clear, hit as rateLimit, record, tooMany } from '../middleware/rateLimit.js';
 
 const router = Router();
@@ -148,7 +148,9 @@ router.post('/forgot', async (req, res) => {
     if (user) {
       const raw = crypto.randomBytes(32).toString('hex');
       user.resetTokenHash = hashToken(raw);
-      user.resetExpires = new Date(Date.now() + RESET_TTL_MINUTES * 60_000);
+      // No time limit: the link stays good until it is used, or until a newer
+      // reset request replaces it.
+      user.resetExpires = null;
       await user.save();
       // appUrl, not SKEO_APP_URL directly: that variable can be a comma list
       // (it doubles as the CORS allowlist), and a link built from the raw value
@@ -179,14 +181,13 @@ router.post('/reset', async (req, res) => {
   try {
     if (!rateLimit(`reset:${req.ip}`, 30, 15 * 60_000)) return res.status(429).json({ error: 'Too many attempts. Try again shortly.' });
     const { email, token, password } = req.body || {};
-    if (typeof password !== 'string' || typeof token !== 'string') return res.status(400).json({ error: 'This reset link is invalid or has expired.' });
+    if (typeof password !== 'string' || typeof token !== 'string') return res.status(400).json({ error: 'This reset link is invalid or has already been used.' });
     if (!password || String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     const user = await User.findOne({
       email: String(email || '').toLowerCase().trim(),
       resetTokenHash: hashToken(String(token || '')),
-      resetExpires: { $gt: new Date() },
     });
-    if (!user) return res.status(400).json({ error: 'This reset link is invalid or has expired.' });
+    if (!user) return res.status(400).json({ error: 'This reset link is invalid or has already been used.' });
     user.passwordHash = await hashPassword(password);
     // One use only: the link dies with the reset.
     user.resetTokenHash = '';

@@ -37,7 +37,7 @@ export default function ForgotPassword() {
         <div className="auth-brand"><SkeoWordmark size={30} theme="dark" /></div>
         <div className="auth-hero-copy">
           <h2>Locked out?</h2>
-          <p>It happens. We&apos;ll email you a link to set a new password. It stays valid for 30 minutes.</p>
+          <p>It happens. We&apos;ll email you a link to set a new password.</p>
         </div>
         <div />
       </div>
@@ -47,7 +47,7 @@ export default function ForgotPassword() {
           <div className="auth-form">
             <h1>Check your email</h1>
             <p className="sub">
-              If an account exists for <strong>{email}</strong>, a reset link is on its way. It expires in 30 minutes.
+              If an account exists for <strong>{email}</strong>, a reset link is on its way.
             </p>
             <p className="sub">Nothing arrived? Check spam, or ask your admin to reset it for you.</p>
             <p className="auth-alt"><Link to="/login">Back to sign in</Link></p>
