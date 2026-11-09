@@ -51,7 +51,7 @@ export default function Review() {
       <div>
         <div className="eyebrow">Feedback</div>
         <h1>Your feedback</h1>
-        <p>Tell the skeo team how the programme is going for you.</p>
+        <p>Tell the skeo team how your course is going.</p>
       </div>
     </div>
   );
@@ -123,7 +123,7 @@ export default function Review() {
         <form className="panel rv-sheet rv-form" onSubmit={submit} noValidate>
           <div className="rv-form-head">
             <div>
-              <h2 className="rv-title">{form.intro?.title || 'How was the class?'}</h2>
+              <h2 className="rv-title">{form.intro?.title || 'How’s your course going?'}</h2>
               {form.intro?.note && <p className="muted rv-scale-note">{form.intro.note}</p>}
             </div>
             {ratings.length > 0 && <span className="rv-progress" aria-live="polite">{rated}/{ratings.length} rated</span>}

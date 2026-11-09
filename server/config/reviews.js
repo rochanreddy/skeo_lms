@@ -11,24 +11,29 @@
 //
 //   placeholder  hint text inside a text box
 //   max          longest answer a text box accepts (characters)
+//
+// Worded for any course, not one in particular: a student leaves one review
+// for the course they are on. New ids rather than reworded old ones, so the
+// reviews left on the earlier class-session form keep their own questions.
 export const REVIEW_INTRO = {
-  title: 'How was the class?',
-  note: 'Rate each from 1 (low) to 5 (high).',
+  title: 'How’s your course going?',
+  note: 'Rate each from 1 (low) to 5 (high). It takes under a minute.',
 };
 
 export const REVIEW_QUESTIONS = [
-  { id: 'session', label: "How would you rate today's session?", type: 'rating', required: true },
-  { id: 'useful', label: 'How useful was the session for you?', type: 'rating', required: true },
-  { id: 'understood', label: 'How well did you understand what was taught?', type: 'rating', required: true },
-  { id: 'instructor', label: 'How would you rate the instructor and session experience?', type: 'rating', required: true },
+  { id: 'overall', label: 'Overall, how would you rate this course so far?', type: 'rating', required: true },
+  { id: 'lessons', label: 'How clear are the lessons and notes?', type: 'rating', required: true },
+  { id: 'practice', label: 'How useful are the assignments, projects and quizzes for learning by doing?', type: 'rating', required: true },
+  { id: 'confidence', label: 'How confident do you feel using what you’ve learned in your own work?', type: 'rating', required: true },
+  { id: 'platform', label: 'How easy is skeo to use: watching lessons, submitting work, checking grades?', type: 'rating', required: true },
   {
     id: 'comment',
-    label: 'What did you like most, and what can we improve?',
+    label: 'What’s worked best for you, and what should we improve?',
     type: 'text',
     long: true,
     required: false,
     max: 2000,
-    placeholder: "What worked, what didn't, anything you want covered again…",
+    placeholder: 'A lesson that clicked, something confusing, a topic you’d like added…',
   },
 ];
 
