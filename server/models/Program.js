@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { keepsClassCacheFresh } from '../utils/classCache.js';
+import { parseYouTubeId } from '../utils/youtube.js';
 
 // Curriculum hierarchy from the canvas: Program → Module → Chapter → Topic.
 // Edited together as one tree, so embedded as sub-documents.
@@ -14,8 +15,13 @@ const topicSchema = new mongoose.Schema(
     // live in VdoCipher under vdoVideoId and are only ever reached through a
     // short-lived, per-viewer OTP minted by routes/videos.js; nothing playable
     // is stored here, so a leaked curriculum dump leaks no video.
-    videoSource: { type: String, enum: ['url', 'vdocipher'], default: 'url' },
+    // 'youtube' plays the unlisted YouTube video under youtubeId instead. A
+    // lesson keeps both ids, so switching its source back loses nothing.
+    videoSource: { type: String, enum: ['url', 'vdocipher', 'youtube'], default: 'url' },
     vdoVideoId: { type: String, default: '', trim: true, index: true },
+    // Stored as the bare id whatever link was pasted; anything that is not a
+    // YouTube video comes out empty.
+    youtubeId: { type: String, default: '', set: parseYouTubeId },
     body: { type: String, default: '' },
     // Where this particular lecture meets. Set by hand and deliberately dumb:
     // a live meeting URL while the class is running, swapped for a YouTube URL once the

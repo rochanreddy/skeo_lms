@@ -6,6 +6,8 @@ import VdoLibrary from './VdoLibrary.jsx';
 import VdoCheck from './VdoCheck.jsx';
 import { isReady, loadLibrary } from '../lib/vdoLinks.js';
 import { addFrame, missingFrame } from '../lib/courseFrame.js';
+import { lessonVideo } from '../lib/youtube.js';
+import { YouTubeBulk, YouTubeField } from './YouTubeLinks.jsx';
 
 // Admin curriculum builder for one program. Upload a doc to auto-structure it,
 // then review/edit the Module → Chapter → Topic tree and publish.
@@ -61,7 +63,7 @@ export default function CurriculumEditor({ programId, onClose }) {
     let topics = 0; let videos = 0; let linked = 0;
     for (const m of modules) for (const c of m.chapters || []) for (const t of c.topics || []) {
       topics += 1;
-      if (t.contentType === 'video') { videos += 1; if (t.vdoVideoId) linked += 1; }
+      if (t.contentType === 'video') { videos += 1; if (lessonVideo(t)) linked += 1; }
     }
     return { modules: modules.length, topics, videos, linked };
   }, [modules]);
@@ -78,7 +80,8 @@ export default function CurriculumEditor({ programId, onClose }) {
   // ── Tree mutators ──
   const addModule = () => touch((m) => m.push({ title: 'New module', order: m.length, chapters: [] }));
   const addChapter = (mi) => touch((m) => m[mi].chapters.push({ title: 'New chapter', order: m[mi].chapters.length, topics: [] }));
-  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'video', videoSource: 'vdocipher', vdoVideoId: '', contentUrl: '', body: '', order: m[mi].chapters[ci].topics.length }));
+  // New lessons default to YouTube (unlisted), the course's main video home.
+  const addTopic = (mi, ci) => touch((m) => m[mi].chapters[ci].topics.push({ title: 'New lesson', contentType: 'video', videoSource: 'youtube', youtubeId: '', vdoVideoId: '', contentUrl: '', body: '', order: m[mi].chapters[ci].topics.length }));
   const delModule = (mi) => { touch((m) => m.splice(mi, 1)); setSel(null); };
   const delChapter = (mi, ci) => { touch((m) => m[mi].chapters.splice(ci, 1)); setSel(null); };
   const delTopic = (mi, ci, ti) => { touch((m) => m[mi].chapters[ci].topics.splice(ti, 1)); setSel(null); };
@@ -94,8 +97,32 @@ export default function CurriculumEditor({ programId, onClose }) {
       requestAnimationFrame(() => document.querySelector('.ce-editor')?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
     }
   };
-  // A lesson's type decides what it carries; a video lesson is always VdoCipher.
-  const setType = (tp) => setTopicField(sel.mi, sel.ci, sel.ti, tp === 'video' ? { contentType: 'video', videoSource: 'vdocipher' } : { contentType: tp });
+  // A lesson's type decides what it carries. A video lesson plays from
+  // YouTube or VdoCipher; it keeps whichever it had, and is YouTube otherwise.
+  const setType = (tp) => {
+    const t = modules[sel.mi]?.chapters[sel.ci]?.topics[sel.ti];
+    setTopicField(sel.mi, sel.ci, sel.ti, tp === 'video'
+      ? { contentType: 'video', videoSource: t?.videoSource === 'vdocipher' ? 'vdocipher' : 'youtube' }
+      : { contentType: tp });
+  };
+  // From the YouTube card: links pasted in bulk, and the source for everyone.
+  const linkYouTube = (matches) => {
+    touch((m) => {
+      for (const p of matches) Object.assign(m[p.mi].chapters[p.ci].topics[p.ti], { videoSource: 'youtube', youtubeId: p.id });
+    });
+    flash(`Linked ${matches.length} lesson${matches.length === 1 ? '' : 's'} to YouTube. Save to publish.`);
+  };
+  const useSource = (kind) => {
+    let n = 0;
+    touch((m) => {
+      for (const mod of m) for (const c of mod.chapters || []) for (const t of c.topics || []) {
+        if (t.contentType !== 'video') continue;
+        const has = kind === 'youtube' ? t.youtubeId : t.vdoVideoId;
+        if (has && t.videoSource !== kind) { t.videoSource = kind; n += 1; }
+      }
+    });
+    flash(`${n} lesson${n === 1 ? '' : 's'} now play${n === 1 ? 's' : ''} from ${kind === 'youtube' ? 'YouTube' : 'VdoCipher'}. Save to publish.`);
+  };
   const attachVideo = (v) => {
     setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: 'vdocipher', vdoVideoId: v.id, contentUrl: '' });
     // A fresh upload is not in the library we loaded; remember it ourselves.
@@ -132,6 +159,10 @@ export default function CurriculumEditor({ programId, onClose }) {
   /** How a video lesson stands: what the tree dot and the editor card both say. */
   const videoState = (t) => {
     if (t.contentType !== 'video') return null;
+    if (t.videoSource === 'youtube') {
+      if (t.youtubeId) return { tone: 'ok', label: 'YouTube' };
+      return t.vdoVideoId ? { tone: 'wait', label: 'No YouTube link yet: plays from VdoCipher' } : { tone: 'none', label: 'No YouTube link yet' };
+    }
     const id = (t.vdoVideoId || '').trim();
     if (!id) return { tone: 'none', label: 'No video yet' };
     if (!library) return { tone: 'wait', label: 'Checking the library…' };
@@ -192,6 +223,8 @@ export default function CurriculumEditor({ programId, onClose }) {
           </div>
         </div>
       )}
+
+      <YouTubeBulk modules={modules} onLink={linkYouTube} onUseSource={useSource} />
 
       {vdoReady && <VdoCheck modules={modules} onLink={linkVideos} onOpen={(p) => select({ mi: p.mi, ci: p.ci, ti: p.ti })} />}
 
@@ -267,8 +300,26 @@ export default function CurriculumEditor({ programId, onClose }) {
 
               {selTopic.contentType === 'video' && (
                 <>
-                  <label className="ce-label">Video <span className="muted">(VdoCipher: encrypted playback, watermarked with the student’s name)</span></label>
-                  {!vdoReady ? (
+                  <label className="ce-label">Video source</label>
+                  <div className="ce-types" role="radiogroup" aria-label="Video source">
+                    {[['youtube', 'YouTube (unlisted)'], ['vdocipher', 'VdoCipher (DRM)']].map(([kind, label]) => {
+                      const on = kind === 'youtube' ? selTopic.videoSource === 'youtube' : selTopic.videoSource !== 'youtube';
+                      return (
+                        <button key={kind} type="button" role="radio" aria-checked={on} className={`ce-type ${on ? 'on' : ''}`} onClick={() => setTopicField(sel.mi, sel.ci, sel.ti, { videoSource: kind })}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="ce-src-note muted">
+                    {selTopic.videoSource === 'youtube'
+                      ? 'Plays the unlisted YouTube video in the skeo player. The VdoCipher video stays linked, for switching back.'
+                      : 'Encrypted playback, watermarked with the student’s name. A YouTube link on this lesson stays saved, for switching.'}
+                  </p>
+
+                  {selTopic.videoSource === 'youtube' ? (
+                    <YouTubeField youtubeId={selTopic.youtubeId || ''} onChange={(id) => setTopicField(sel.mi, sel.ci, sel.ti, { youtubeId: id })} />
+                  ) : !vdoReady ? (
                     <div className="ce-video is-none">
                       <p className="ce-video-title">Video hosting is not set up on the server.</p>
                       <p className="ce-video-sub">Add VDOCIPHER_API_SECRET to the API and this lesson can carry a recording. Students see “on its way” until then.</p>

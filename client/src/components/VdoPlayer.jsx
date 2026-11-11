@@ -4,6 +4,7 @@ import {
   RATES, SKIP_SECONDS, bufferedEnd, clamp, clearPosition, formatTime, fractionAlong, keyAction, loadPlayerApi,
   readPosition, readRate, resumePoint, spokenTime, stepRate, writePosition, writeRate,
 } from '../lib/player.js';
+import { loadYouTubeApi, youtubeEmbedUrl, youtubeError, youtubeMedia } from '../lib/youtube.js';
 
 /* DRM playback for a VdoCipher-hosted lesson, in the LMS's own clothes.
  *
@@ -17,6 +18,12 @@ import {
  * The browser is never told anything durable: it asks our API for a 5-minute
  * OTP for this one video and hands that to the player. Reload the page a day
  * later and the old ticket is worthless, which is the point.
+ *
+ * The same player plays unlisted YouTube videos (source="youtube"). YouTube's
+ * controls are switched off too and lib/youtube.js makes its player look like
+ * a <video>, so everything below, the controls, resume, speed, auto-complete
+ * and the classroom's timeline, works the same for either source. No ticket
+ * is needed: an unlisted video plays for anyone holding its id.
  */
 
 const PLAYER_ORIGIN = 'https://player.vdocipher.com';
@@ -68,7 +75,8 @@ const Spinner = () => (
 );
 
 /**
- * @param videoId  the VdoCipher id the lesson points at
+ * @param videoId  the VdoCipher (or YouTube) id the lesson points at
+ * @param source   'vdocipher' (default) or 'youtube'
  * @param title    the lesson's title, shown while fullscreen
  * @param upNext   { title, onPlay } for the card at the end, or null
  * @param onEnded  called once when the video reaches its end
@@ -77,7 +85,7 @@ const Spinner = () => (
  * @param clock    optional, from lib/videoClock.js: the time is published to
  *                 it and seeks requested through it are carried out
  */
-export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = null, onEnded, onWatched, clock = null }) {
+export default function VdoPlayer({ videoId, source = 'vdocipher', title = 'Lesson video', upNext = null, onEnded, onWatched, clock = null }) {
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -173,6 +181,11 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     player.current = null;
     (async () => {
       try {
+        if (source === 'youtube') {
+          await loadYouTubeApi();
+          if (!cancelled) setTicket({ youtube: videoId });
+          return;
+        }
         const [{ otp, playbackInfo }] = await Promise.all([
           api(`/videos/${encodeURIComponent(videoId)}/otp`, { method: 'POST' }),
           loadPlayerApi(),
@@ -185,16 +198,44 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
       }
     })();
     return () => { cancelled = true; };
-  }, [videoId, attempt]);
+  }, [videoId, source, attempt]);
 
   // ── 2. The player behind the frame ────────────────────────────────────────
+  // VdoCipher hands its player over at once; YouTube's is ready when it says so.
   useEffect(() => {
     const iframe = frame.current;
-    if (!ticket || !iframe || !window.VdoPlayer) return undefined;
-    const p = window.VdoPlayer.getInstance(iframe);
-    player.current = p;
+    if (!ticket || !iframe) return undefined;
+    let detach = null;
+    let disposed = false;
+    const start = (p) => {
+      if (disposed) return;
+      player.current = p;
+      setReady(true);
+      detach = listen(p);
+    };
+    if (ticket.youtube) {
+      if (!window.YT?.Player) return undefined;
+      const yt = new window.YT.Player(iframe, {
+        events: {
+          onReady: () => start({ video: youtubeMedia(yt), api: null }),
+          onError: (e) => { if (!disposed) setError(youtubeError(e?.data)); },
+        },
+      });
+    } else {
+      if (!window.VdoPlayer) return undefined;
+      start(window.VdoPlayer.getInstance(iframe));
+    }
+    return () => {
+      disposed = true;
+      detach?.();
+      player.current?.video?.destroy?.();
+    };
+  }, [ticket, videoId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Wires the controls to a player, whichever source it came from. Returns
+  // the unwiring.
+  function listen(p) {
     const vid = p.video;
-    setReady(true);
 
     const onTime = () => {
       if (dragging.current) return;
@@ -258,7 +299,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
     // The player's own failures (a browser without DRM, a licence refused) would
     // otherwise be a black frame that never explains itself.
     try {
-      p.api.addEventListener?.('error', (e) => {
+      p.api?.addEventListener?.('error', (e) => {
         const text = e?.message || e?.payload?.message || '';
         setError(/figure out what to play|not supported|drm|incognito|protected content/i.test(text)
           ? 'This browser cannot play protected video. Try Chrome, Edge or Safari, outside private browsing.'
@@ -268,8 +309,8 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
 
     // The lessons carry their words in the picture already, so a caption track
     // on top would only double them up: keep VdoCipher's own captions off.
-    Promise.resolve(p.api.getCaptionLanguages?.()).then((c) => {
-      if (c?.visible) return p.api.hideCaptions?.();
+    Promise.resolve(p.api?.getCaptionLanguages?.()).then((c) => {
+      if (c?.visible) return p.api?.hideCaptions?.();
       return undefined;
     }).catch(() => {});
 
@@ -278,7 +319,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
       const t = vid.currentTime;
       if (t > 0) writePosition(videoId, t);
     };
-  }, [ticket, videoId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   // ── 3. Showing and hiding the chrome ──────────────────────────────────────
   const wake = useCallback(() => {
@@ -506,7 +547,7 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
   return (
     <div
       ref={root}
-      className={`vp ${idle ? 'is-idle' : ''} ${isFull ? 'is-full' : ''} ${fakeFull ? 'is-fake-full' : ''} ${fakeFull && portrait ? 'is-sideways' : ''} ${started ? 'is-started' : ''} ${ended ? 'is-ended' : ''}`}
+      className={`vp ${source === 'youtube' ? 'is-youtube' : ''} ${idle ? 'is-idle' : ''} ${isFull ? 'is-full' : ''} ${fakeFull ? 'is-fake-full' : ''} ${fakeFull && portrait ? 'is-sideways' : ''} ${started ? 'is-started' : ''} ${ended ? 'is-ended' : ''}`}
       tabIndex={0}
       role="region"
       aria-label={`Video: ${title}`}
@@ -520,13 +561,28 @@ export default function VdoPlayer({ videoId, title = 'Lesson video', upNext = nu
           ref={frame}
           key={`${videoId}-${attempt}`}
           className="vp-frame"
-          src={`${PLAYER_ORIGIN}/v2/?otp=${encodeURIComponent(ticket.otp)}&playbackInfo=${encodeURIComponent(ticket.playbackInfo)}&controls=off&primaryColor=${accentHex()}`}
+          src={ticket.youtube
+            ? youtubeEmbedUrl(ticket.youtube)
+            : `${PLAYER_ORIGIN}/v2/?otp=${encodeURIComponent(ticket.otp)}&playbackInfo=${encodeURIComponent(ticket.playbackInfo)}&controls=off&primaryColor=${accentHex()}`}
           title={title}
           // Widevine/FairPlay need encrypted-media; the rest is what playback
           // uses. No sandbox: the player runs its own DRM stack.
           allow="encrypted-media; autoplay; fullscreen; picture-in-picture"
           allowFullScreen
           tabIndex={-1}
+        />
+      )}
+
+      {/* YouTube shows its own title and logo on an unplayed frame; the
+          lesson's thumbnail covers them until play is pressed. maxres is not
+          made for every upload, so hq stands in when it is missing. */}
+      {source === 'youtube' && !started && !error && (
+        <img
+          className="vp-poster"
+          src={`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`}
+          onError={(e) => { if (!e.currentTarget.src.includes('hqdefault')) e.currentTarget.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`; }}
+          alt=""
+          aria-hidden="true"
         />
       )}
 

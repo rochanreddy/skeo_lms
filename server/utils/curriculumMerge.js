@@ -14,7 +14,7 @@
 // touches again: they belong to whoever attached the media. The VdoCipher id
 // matters most: it is minted by an admin's upload and stored nowhere else, so
 // overwriting it detaches that video permanently.
-export const ADMIN_FIELDS = ['contentUrl', 'videoSource', 'vdoVideoId', 'classLink', 'readingUrl', 'notesUrl'];
+export const ADMIN_FIELDS = ['contentUrl', 'videoSource', 'vdoVideoId', 'youtubeId', 'classLink', 'readingUrl', 'notesUrl'];
 // Fields the curriculum source owns outright and may overwrite freely.
 const LESSON_FIELDS = ['title', 'contentType', 'body', 'order'];
 const CHAPTER_FIELDS = ['title', 'description', 'pageLabel', 'order'];

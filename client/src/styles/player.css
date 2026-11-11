@@ -25,6 +25,13 @@
 .vp:focus-visible { box-shadow: inset 0 0 0 3px var(--blue-glow); }
 .vp.is-idle { cursor: none; }
 .vp-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+/* YouTube draws its title along the top and its logo along the bottom of the
+   frame. A frame taller than the box, centred, keeps the picture filling the
+   box exactly (it is letterboxed inside the frame) while those strips fall
+   outside it, so only skeo's controls show. */
+.vp.is-youtube { overflow: hidden; }
+.vp.is-youtube .vp-frame { top: -64px; bottom: auto; height: calc(100% + 128px); }
+.vp-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 .vp-surface { position: absolute; inset: 0; cursor: pointer; }
 .vp.is-idle .vp-surface { cursor: none; }
 

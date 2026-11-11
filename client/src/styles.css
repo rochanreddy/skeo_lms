@@ -1313,6 +1313,17 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .ce-video-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ce-video.is-none .ce-video-actions { margin-top: 12px; }
 .ce-video.is-none .ce-field { margin-top: 10px; }
+/* YouTube: the thumbnail stands in for the video mark. */
+.ce-yt-thumb { flex: none; width: 96px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--wash-2); box-shadow: var(--shadow); }
+.ce-yt-err { margin: 6px 0 0; font-size: 12.5px; color: var(--red-ink); }
+.ce-src-note { margin: 8px 0 12px; font-size: 12.5px; line-height: 1.5; max-width: 62ch; }
+/* The bulk-paste card above the tree. */
+.yb-body { margin-top: 14px; }
+.yb-text { width: 100%; font-family: var(--mono, ui-monospace, monospace); font-size: 12.5px; line-height: 1.6; resize: vertical; }
+.yb-list { max-height: 260px; overflow: auto; }
+.yb-lesson { cursor: default; text-align: left; overflow-wrap: anywhere; }
+.yb-miss .yb-lesson { color: var(--muted); }
+.yb-foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
 .ce-link { border: 0; background: none; padding: 0; font: inherit; font-size: 13px; color: var(--brand); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .ce-link:hover { color: var(--ink); }
 @media (max-width: 560px) {
@@ -2306,6 +2317,9 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 /* The video keeps the 16:9 stage it has in lessons; the PDF under it becomes
    a row you can actually read. */
 .assign-video .lesson-video { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); margin: 0 0 12px; }
+/* A YouTube walkthrough plays in the lesson player, which fills its box. */
+.assign-yt { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); overflow: hidden; background: #000; margin: 0 0 12px; }
+.assign-yt .vp { border-radius: inherit; }
 .assign-resource {
   display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
   padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;

@@ -10,6 +10,7 @@ import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.
 import { GradeCard, gradeState } from '../components/GradeResult.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 import { createVideoClock } from '../lib/videoClock.js';
+import { lessonVideo, parseYouTubeId } from '../lib/youtube.js';
 import { formatTime } from '../lib/player.js';
 import { mediaOf, mediaFrom, stripParentContext, lessonWords, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
 import CertificateModal from '../components/CertificateModal.jsx';
@@ -674,9 +675,10 @@ function Content() {
   // this module's gate, in which case the gate is what's next.
   const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
   const nextLocked = !!next && isLocked(modIndexOf(next.modId));
-  // A DRM lesson wins over every plain URL on the topic: if the admin put the
-  // recording in VdoCipher, that is where it is watched.
-  const vdoId = topic?.contentType === 'video' ? (topic.vdoVideoId || '') : '';
+  // The lesson's video: its unlisted YouTube video or its VdoCipher one,
+  // whichever source the admin chose (lib/youtube.js). A plain URL on the
+  // topic is never played.
+  const video = lessonVideo(topic);
   // A video lesson always has the player box; without a recording yet it
   // holds the "on its way" card rather than disappearing.
 
@@ -731,11 +733,12 @@ function Content() {
 
             {topic && hasVideo && (
               <div className={`cp-player ${lessonsView ? 'phone-hide' : ''}`}>
-                {vdoId
+                {video
                   ? (
                     <VdoPlayer
                       key={topic._id}
-                      videoId={vdoId}
+                      source={video.kind}
+                      videoId={video.id}
                       title={topic.title}
                       onWatched={() => markDone(topic._id)}
                       clock={clock}
@@ -777,7 +780,7 @@ function Content() {
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 4.5v15a1 1 0 0 1-1.5.87l-12-7.5a1 1 0 0 1 0-1.74l12-7.5A1 1 0 0 1 17 4.5z" fill="currentColor" /></svg>
                       </button>
-                      {vdoId ? (
+                      {video ? (
                         <StepTimeline clock={clock} />
                       ) : (
                         <div className="cp-step-mid" title={`Lesson ${idx + 1} of ${flat.length}`}>
@@ -996,7 +999,7 @@ function LessonSoon({ url, failed, onRetry }) {
       {failed && <div className="lesson-soon-actions"><button type="button" className="btn sm" onClick={onRetry}>Try again</button></div>}
       {canManage && (
         <p className="lesson-soon-admin">
-          {failed ? 'The file at this link did not play.' : url ? 'This lesson is not linked to a VdoCipher video yet; the link it carries is ignored.' : 'This lesson has no video linked.'}
+          {failed ? 'The file at this link did not play.' : 'This lesson has no YouTube or VdoCipher video linked.'}
           {' '}Students see this card. Link the recording in Programs → Manage curriculum.
         </p>
       )}
@@ -1005,8 +1008,15 @@ function LessonSoon({ url, failed, onRetry }) {
 }
 
 // An assignment walkthrough is a plain file: the browser plays it, and a file
-// that will not play even after a quiet second try gets the card above.
+// that will not play even after a quiet second try gets the card above. A
+// YouTube link plays in the lesson player instead.
 function PlainVideo({ url }) {
+  const youtubeId = parseYouTubeId(url);
+  if (youtubeId) return <div className="assign-yt"><VdoPlayer source="youtube" videoId={youtubeId} title="Walkthrough" /></div>;
+  return <FileVideo url={url} />;
+}
+
+function FileVideo({ url }) {
   const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
   const onError = () => {
