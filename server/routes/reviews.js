@@ -5,10 +5,16 @@ import { REVIEW_QUESTIONS, REVIEW_LINKS, REVIEW_INTRO } from '../config/reviews.
 
 const router = Router();
 
+// Only reviews that answered today's questions count. Ones left on an earlier
+// form (the old class-session questions) answer none of the current required
+// ones, so they are left out everywhere: the admin list, and a student's own
+// page, where they get the current form instead.
+const CURRENT = { 'answers.questionId': { $all: REVIEW_QUESTIONS.filter((q) => q.required).map((q) => q.id) } };
+
 // GET /api/skeo/reviews/form: the questions, the public review links, and
 // the caller's own review if they have left one.
 router.get('/form', requireAuth, async (req, res) => {
-  const mine = await Review.findOne({ userId: req.user._id }).lean();
+  const mine = await Review.findOne({ userId: req.user._id, ...CURRENT }).lean();
   res.json({ intro: REVIEW_INTRO, questions: REVIEW_QUESTIONS, links: REVIEW_LINKS, mine });
 });
 
@@ -29,7 +35,12 @@ function clean(q, raw) {
 }
 
 // POST /api/skeo/reviews { answers: { [questionId]: value } }, students only.
+// Once sent, a review is final: it can't be edited. A review left on an
+// earlier form is replaced by the new one.
 router.post('/', requireAuth, requireRole('student'), async (req, res) => {
+  if (await Review.exists({ userId: req.user._id, ...CURRENT })) {
+    return res.status(409).json({ error: 'You have already sent your feedback.' });
+  }
   const given = req.body?.answers || {};
   const answers = [];
   try {
@@ -52,7 +63,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
 // GET /api/skeo/reviews: every review, newest first, for the admin panel,
 // with the questions so the page can lay out answers and averages.
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
-  const reviews = await Review.find()
+  const reviews = await Review.find(CURRENT)
     .populate('userId', 'fullName email')
     .sort({ updatedAt: -1 })
     .limit(1000)

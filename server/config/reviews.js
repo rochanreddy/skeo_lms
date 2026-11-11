@@ -13,8 +13,9 @@
 //   max          longest answer a text box accepts (characters)
 //
 // Worded for any course, not one in particular: a student leaves one review
-// for the course they are on. New ids rather than reworded old ones, so the
-// reviews left on the earlier class-session form keep their own questions.
+// for the course they are on. New ids rather than reworded old ones: a review
+// that doesn't answer every required question here was left on an earlier
+// form, and is hidden from students and admins (routes/reviews.js).
 export const REVIEW_INTRO = {
   title: 'How’s your course going?',
   note: 'Rate each from 1 (low) to 5 (high). It takes under a minute.',

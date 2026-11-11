@@ -7,11 +7,11 @@ import { api } from '../api.js';
 // One compact card, as in the menler LMS class review: the scale stated once
 // at the top, each question with its stars and the word for the one picked,
 // an optional comment, one button. After sending, the card says thanks, plays
-// their answers back, and asks for a Google review.
+// their answers back, and asks for a Google review. A sent review is final:
+// there is no editing it.
 export default function Review() {
   const [form, setForm] = useState(null); // { intro, questions, links, mine }
   const [answers, setAnswers] = useState({});
-  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [failed, setFailed] = useState(false);
@@ -37,7 +37,6 @@ export default function Review() {
     try {
       const d = await api('/reviews', { method: 'POST', body: { answers } });
       setForm((f) => ({ ...f, mine: d.review, links: d.links || f.links }));
-      setEditing(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(err.message || 'Could not send your feedback. Try again.');
@@ -59,7 +58,7 @@ export default function Review() {
   if (failed) return <div className="rv-page">{head}<p className="muted">The feedback form didn't load. Refresh to try again.</p></div>;
   if (!form) return <div className="rv-page">{head}<div className="skeleton" style={{ height: 420, borderRadius: 16 }} /></div>;
 
-  const done = form.mine && !editing;
+  const done = Boolean(form.mine);
   const ratings = form.questions.filter((q) => q.type === 'rating');
   const rated = ratings.filter((q) => !isBlank(answers[q.id])).length;
 
@@ -116,8 +115,6 @@ export default function Review() {
               )}
             </div>
           </div>
-
-          <button type="button" className="rv-edit" onClick={() => setEditing(true)}>Edit your feedback</button>
         </div>
       ) : (
         <form className="panel rv-sheet rv-form" onSubmit={submit} noValidate>
@@ -140,8 +137,7 @@ export default function Review() {
 
           {error && <p className="rv-error" role="alert">{error}</p>}
           <div className="rv-actions">
-            <button className="btn rv-send" disabled={busy}>{busy ? 'Sending…' : form.mine ? 'Save feedback' : 'Send feedback'}</button>
-            {form.mine && <button type="button" className="btn ghost" onClick={() => { setEditing(false); setError(''); }}>Cancel</button>}
+            <button className="btn rv-send" disabled={busy}>{busy ? 'Sending…' : 'Send feedback'}</button>
           </div>
         </form>
       )}
