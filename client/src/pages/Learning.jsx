@@ -119,9 +119,10 @@ function Quizzes() {
   }, []);
 
   // How many gates are reachable: every one up to and including the first
-  // unattempted. Attempting it opens the next.
+  // unattempted. Attempting it opens the next; so does having attempted it
+  // before a reset (wasAttempted), even while it waits to be taken again.
   let open = 0;
-  for (const g of gates) { open += 1; if (!g.myAttempt) break; }
+  for (const g of gates) { open += 1; if (!g.myAttempt && !g.wasAttempted) break; }
 
   if (loading) return <p className="muted">Loading quizzes…</p>;
   if (gates.length === 0 && others.length === 0) {
@@ -370,7 +371,7 @@ function Content() {
     for (const m of mods) {
       n += 1;                                   // this one is reachable
       const g = gateFor(m._id);
-      if (g && !g.myAttempt) break;             // its gate stops the rest
+      if (g && !g.myAttempt && !g.wasAttempted) break; // its gate stops the rest (one sat before a reset doesn't)
     }
     return n;
   }, [program, gates, isStudent]);
@@ -462,10 +463,13 @@ function Content() {
     : null;
 
   // The next gate a student still has to sit: the newest open module's quiz,
-  // when it hasn't been attempted. (A gate behind a lock isn't "pending" yet.)
+  // when it hasn't been attempted. (A gate behind a lock isn't "pending" yet,
+  // and one sat before a reset doesn't lock anything, so it isn't either.)
   const pendingGate = useMemo(() => {
     if (!isStudent) return null;
-    return gates.find((g) => !g.myAttempt && modIndexOf(g.moduleId) >= 0 && modIndexOf(g.moduleId) < unlockedCount) || null;
+    return gates
+      .filter((g) => !g.myAttempt && !g.wasAttempted && modIndexOf(g.moduleId) >= 0 && modIndexOf(g.moduleId) < unlockedCount)
+      .sort((a, b) => modIndexOf(a.moduleId) - modIndexOf(b.moduleId))[0] || null;
   }, [gates, unlockedCount, program, isStudent]);
 
   const loadProgress = (programId) => {

@@ -3,6 +3,7 @@ import { Program } from '../models/Program.js';
 import { Quiz } from '../models/Quiz.js';
 import { Counter } from '../models/Counter.js';
 import { QUIZZES } from '../scripts/claudeQuizzes.js';
+import { resetQuizAttempts } from './quizReset.js';
 
 /**
  * Bring the Claude programme's eight module gate quizzes in line with
@@ -20,6 +21,10 @@ import { QUIZZES } from '../scripts/claudeQuizzes.js';
  * admin's later edit in the app is not reverted on the next restart, only by
  * the next change to claudeQuizzes.js. `npm run seed:quizzes` applies it on
  * demand, fingerprint or not.
+ *
+ * A quiz whose questions change is reset for everyone (utils/quizReset.js):
+ * a score earned on the old questions says nothing about the new ones, so
+ * every student sits it again. A retitle alone resets nothing.
  */
 export const QUIZ_FINGERPRINT = crypto.createHash('sha1').update(JSON.stringify(QUIZZES)).digest('hex').slice(0, 16);
 const marker = `quizsync:claude:${QUIZ_FINGERPRINT}`;
@@ -57,11 +62,34 @@ export async function syncClaudeQuizzes({ write = true, force = false, log = () 
       log(`+ create  ${title} (${questions.length} questions)`);
       if (write) await Quiz.create({ programId: program._id, moduleId, title, type: 'quiz', questions });
     } else if (existing.title !== title || !same(existing.questions || [], questions)) {
+      const newQuestions = !same(existing.questions || [], questions);
       changes += 1;
-      log(`~ update  ${title}: ${(existing.questions || []).length} -> ${questions.length} questions`);
-      if (write) { existing.title = title; existing.questions = questions; await existing.save(); }
+      log(`~ update  ${title}: ${(existing.questions || []).length} -> ${questions.length} questions${newQuestions ? ', attempts reset' : ''}`);
+      if (write) {
+        existing.title = title; existing.questions = questions; await existing.save();
+        if (newQuestions) await resetQuizAttempts([existing._id], 'questions replaced');
+      }
     }
   }
   if (write) await Counter.updateOne({ _id: marker }, { $setOnInsert: { seq: 0 } }, { upsert: true });
   return { changes };
+}
+
+/**
+ * One-off: reset every attempt at the Claude module quizzes, once. The
+ * questions were replaced on 2026-11-11 before the sync above reset attempts
+ * itself, so attempts made on the old questions were still standing. The
+ * marker in skeo_counters keeps it from ever running twice.
+ *
+ * @returns {Promise<{ skipped?: string, reset: number }>}
+ */
+export async function resetClaudeQuizAttemptsOnce() {
+  const once = 'quizreset:claude:2026-11-11';
+  if (await Counter.exists({ _id: once })) return { skipped: 'already done', reset: 0 };
+  const program = await Program.findOne({ title: 'Claude' }).select('_id').lean();
+  if (!program) return { skipped: 'no "Claude" programme', reset: 0 };
+  const quizIds = (await Quiz.find({ programId: program._id }).select('_id').lean()).map((q) => q._id);
+  const reset = await resetQuizAttempts(quizIds, 'new questions, 2026-11-11');
+  await Counter.updateOne({ _id: once }, { $setOnInsert: { seq: 0 } }, { upsert: true });
+  return { reset };
 }

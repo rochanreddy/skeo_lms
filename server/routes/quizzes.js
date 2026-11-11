@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { Quiz, QUIZ_STUDENT_FIELDS } from '../models/Quiz.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
+import { QuizAttemptArchive } from '../models/QuizAttemptArchive.js';
 import { Batch } from '../models/Batch.js';
 import { canAccessBatch, canManageBatch, myBatchIds } from '../utils/access.js';
 import { notifyMany } from '../utils/notify.js';
@@ -39,10 +40,18 @@ router.get('/', requireAuth, async (req, res) => {
     .lean());
 
   if (studentShape) {
-    const attempts = await QuizAttempt.find({ studentId: req.user._id, quizId: { $in: quizzes.map((q) => q._id) } }).lean();
+    const quizIds = quizzes.map((q) => q._id);
+    const [attempts, resetIds] = await Promise.all([
+      QuizAttempt.find({ studentId: req.user._id, quizId: { $in: quizIds } }).lean(),
+      QuizAttemptArchive.distinct('quizId', { studentId: req.user._id, quizId: { $in: quizIds } }),
+    ]);
     const byId = new Map(attempts.map((a) => [a.quizId.toString(), a]));
+    const wasReset = new Set(resetIds.map(String));
+    // wasAttempted: sat before a reset (utils/quizReset.js). The quiz is to
+    // be taken again, but as a module gate it stays open: a reset never
+    // locks a student out of modules they had already reached.
     return res.json({
-      quizzes: quizzes.map((q) => ({ ...q, myAttempt: byId.get(q._id.toString()) || null })),
+      quizzes: quizzes.map((q) => ({ ...q, myAttempt: byId.get(q._id.toString()) || null, wasAttempted: wasReset.has(q._id.toString()) })),
     });
   }
   res.json({ quizzes });
@@ -121,6 +130,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
   await QuizAttempt.deleteMany({ quizId: quiz._id });
+  await QuizAttemptArchive.deleteMany({ quizId: quiz._id });
   await quiz.deleteOne();
   res.json({ ok: true });
 });
