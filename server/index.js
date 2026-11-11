@@ -12,6 +12,7 @@ import { notFound, errorHandler } from './middleware/errors.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import { startUsageMeter, usageMeter } from './utils/usageMeter.js';
 import { syncLibrary } from './utils/librarySeed.js';
+import { syncClaudeQuizzes } from './utils/claudeQuizSync.js';
 import { startAiGrading } from './utils/aiGrader.js';
 
 const app = express();
@@ -117,6 +118,11 @@ async function start() {
     syncLibrary()
       .then((r) => { if (r.changed) console.log(`[library] synced: removed ${r.removed}, added ${r.added}`); })
       .catch((err) => console.error('[library] sync failed:', err.message));
+    // Likewise the Claude module quizzes follow scripts/claudeQuizzes.js, once
+    // per version of that file (utils/claudeQuizSync.js).
+    syncClaudeQuizzes()
+      .then((r) => { if (r.changes) console.log(`[quizzes] synced ${r.changes} Claude module quiz(zes)`); })
+      .catch((err) => console.error('[quizzes] sync failed:', err.message));
     const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
     // Grades submitted Drive folders with Gemini; also off the critical path.
     startAiGrading();
