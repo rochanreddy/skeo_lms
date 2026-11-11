@@ -45,7 +45,7 @@ export function YouTubeField({ youtubeId, onChange }) {
   return (
     <div className="ce-video is-none">
       <p className="ce-video-title">{youtubeId ? 'Paste the new YouTube link' : 'Paste the YouTube link'}</p>
-      <p className="ce-video-sub">{UNLISTED_HINT} Until a link is here, students see “This lesson’s video is on its way”.</p>
+      <p className="ce-video-sub">{UNLISTED_HINT}</p>
       <input
         className="ce-field"
         placeholder="https://youtu.be/…"
@@ -107,22 +107,17 @@ export function matchLines(text, lessons) {
 }
 
 /**
- * The course's YouTube links in one place: how many lessons have one, a box to
- * paste many at once, and the switch between YouTube and VdoCipher for every
- * lesson that has both.
- *   onLink(matched)    sets youtubeId (and the YouTube source) on each lesson
- *   onUseSource(kind)  'youtube' | 'vdocipher' for every lesson that has one
+ * The course's YouTube links in one place: how many lessons have one, and a
+ * box to paste many at once.
+ *   onLink(matched)  sets youtubeId on each matched lesson
  */
-export function YouTubeBulk({ modules, onLink, onUseSource }) {
+export function YouTubeBulk({ modules, onLink }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const lessons = useMemo(() => videoLessons(modules), [modules]);
   const { matched, unmatched } = useMemo(() => matchLines(text, lessons), [text, lessons]);
 
-  const withYt = lessons.filter((l) => l.t.youtubeId);
-  const onYt = withYt.filter((l) => l.t.videoSource === 'youtube');
-  const toYt = withYt.length - onYt.length;
-  const toVdo = lessons.filter((l) => l.t.videoSource === 'youtube' && l.t.vdoVideoId).length;
+  const withYt = lessons.filter((l) => l.t.youtubeId).length;
   if (!lessons.length) return null;
 
   const link = () => {
@@ -135,15 +130,12 @@ export function YouTubeBulk({ modules, onLink, onUseSource }) {
     <div className="vc vc-note yb" role="region" aria-label="YouTube links">
       <div className="vc-head">
         <div>
-          <strong>YouTube: {withYt.length} of {lessons.length} video lessons linked</strong>
+          <strong>YouTube: {withYt} of {lessons.length} video lessons linked</strong>
           <p className="vc-sub">
             {UNLISTED_HINT} Paste many links at once, each on a line with its lesson number (“1.3 Hallucinations https://youtu.be/…”), and they are matched for you.
-            {toYt > 0 ? ` ${toYt} linked lesson${toYt === 1 ? ' still plays' : 's still play'} from VdoCipher.` : ''}
           </p>
         </div>
         <div className="vc-actions">
-          {toYt > 0 && <button type="button" className="btn sm ghost" onClick={() => onUseSource('youtube')}>Play YouTube on all {withYt.length}</button>}
-          {toVdo > 0 && <button type="button" className="btn sm ghost" onClick={() => onUseSource('vdocipher')}>Back to VdoCipher ({toVdo})</button>}
           <button type="button" className="btn sm" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{open ? 'Close' : 'Paste links'}</button>
         </div>
       </div>

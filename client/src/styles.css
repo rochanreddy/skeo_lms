@@ -1317,6 +1317,12 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .ce-yt-thumb { flex: none; width: 96px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--wash-2); box-shadow: var(--shadow); }
 .ce-yt-err { margin: 6px 0 0; font-size: 12.5px; color: var(--red-ink); }
 .ce-src-note { margin: 8px 0 12px; font-size: 12.5px; line-height: 1.5; max-width: 62ch; }
+/* VdoCipher, kept for later: folded out of the way, per lesson and per course. */
+.ce-vdo { margin-top: 18px; border-top: 1px solid var(--line-soft); padding-top: 12px; }
+.ce-vdo > summary { cursor: pointer; font-size: 13px; font-weight: 650; color: var(--ink-2); list-style-position: inside; }
+.ce-vdo[open] > summary { margin-bottom: 4px; }
+.ce-vdo-page { margin: 0 0 18px; padding: 12px 16px; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--card); }
+.ce-vdo-page .vc { margin-bottom: 0; }
 /* The bulk-paste card above the tree. */
 .yb-body { margin-top: 14px; }
 .yb-text { width: 100%; font-family: var(--mono, ui-monospace, monospace); font-size: 12.5px; line-height: 1.6; resize: vertical; }

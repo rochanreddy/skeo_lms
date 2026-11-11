@@ -40,11 +40,10 @@ export function videoProblems(modules, library) {
   const problems = [];
   (modules || []).forEach((m, mi) => (m.chapters || []).forEach((c, ci) => (c.topics || []).forEach((t, ti) => {
     if (t.contentType !== 'video') return;
-    // Lessons playing from YouTube are not this check's business, and nor is
-    // one with only a YouTube link: it plays that (lib/youtube.js).
-    if (t.videoSource === 'youtube') return;
+    // A lesson with a YouTube link plays that (lib/youtube.js); its VdoCipher
+    // video, if any, is not in use, so it is not this check's business.
+    if ((t.youtubeId || '').trim()) return;
     const id = (t.vdoVideoId || '').trim();
-    if (!id && (t.youtubeId || '').trim()) return;
     if (id && owned.has(id)) return;
     const n = lessonNumber(t.title);
     problems.push({

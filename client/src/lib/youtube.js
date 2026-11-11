@@ -1,8 +1,6 @@
-/* YouTube (unlisted) as a second home for lesson videos, beside VdoCipher.
- *
- * A lesson keeps both: `vdoVideoId` for VdoCipher and `youtubeId` for YouTube,
- * and `videoSource` says which one students get. Switching a lesson's source
- * never throws the other away, so going back to VdoCipher is one click.
+/* YouTube (unlisted) is where lesson videos live. VdoCipher is kept, apart,
+ * for later: a lesson can still carry a `vdoVideoId`, and it plays only when
+ * that lesson has no YouTube link (see lessonVideo).
  *
  * YouTube plays through the IFrame Player API with its own controls switched
  * off; VdoPlayer draws the controls, exactly as it does for VdoCipher, through
@@ -48,15 +46,15 @@ export function youtubeEmbedUrl(id, origin = window.location.origin) {
 }
 
 /** Which video a lesson plays, if any: { kind: 'youtube' | 'vdocipher', id }.
- * The chosen source first; if it has nothing yet, the other one, so a lesson
- * mid-switch keeps playing rather than going blank. */
+ * YouTube whenever the lesson has a link. Its VdoCipher video, kept for
+ * later, plays only when there is none, so a lesson not yet moved over keeps
+ * playing rather than going blank. */
 export function lessonVideo(topic) {
   if (!topic || topic.contentType !== 'video') return null;
   const yt = (topic.youtubeId || '').trim();
+  if (yt) return { kind: 'youtube', id: yt };
   const vdo = (topic.vdoVideoId || '').trim();
-  const youtube = yt ? { kind: 'youtube', id: yt } : null;
-  const vdocipher = vdo ? { kind: 'vdocipher', id: vdo } : null;
-  return topic.videoSource === 'youtube' ? (youtube || vdocipher) : (vdocipher || youtube);
+  return vdo ? { kind: 'vdocipher', id: vdo } : null;
 }
 
 // ── The IFrame API ──────────────────────────────────────────────────────────

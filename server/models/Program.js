@@ -15,8 +15,9 @@ const topicSchema = new mongoose.Schema(
     // live in VdoCipher under vdoVideoId and are only ever reached through a
     // short-lived, per-viewer OTP minted by routes/videos.js; nothing playable
     // is stored here, so a leaked curriculum dump leaks no video.
-    // 'youtube' plays the unlisted YouTube video under youtubeId instead. A
-    // lesson keeps both ids, so switching its source back loses nothing.
+    // YouTube (unlisted) is the main home now: a lesson with a youtubeId
+    // plays that, and its VdoCipher video, kept for later, plays only when
+    // there is no YouTube link (client/src/lib/youtube.js, lessonVideo).
     videoSource: { type: String, enum: ['url', 'vdocipher', 'youtube'], default: 'url' },
     vdoVideoId: { type: String, default: '', trim: true, index: true },
     // Stored as the bare id whatever link was pasted; anything that is not a
