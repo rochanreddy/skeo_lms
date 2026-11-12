@@ -1,5 +1,6 @@
 import { User, ROLES } from '../models/User.js';
 import { accessPayload, issuedBeforeReset } from '../utils/token.js';
+import { trialEnded, TRIAL_ENDED_MESSAGE } from '../utils/access.js';
 
 // ── The user cache ────────────────────────────────────────────────────────
 //
@@ -113,6 +114,9 @@ export async function requireAuth(req, res, next) {
       code: 'blocked',
     });
   }
+  // A free trial that has run out: the session ends here, and the next sign-in
+  // or refresh says why (routes/auth.js, utils/access.js trialEnded).
+  if (trialEnded(user)) return res.status(401).json({ error: TRIAL_ENDED_MESSAGE, code: 'trial_ended' });
   req.user = user;
 
   // Fire-and-forget last-seen tracking: never blocks or fails the request.

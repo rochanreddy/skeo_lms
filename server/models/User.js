@@ -50,6 +50,11 @@ const userSchema = new mongoose.Schema(
     // as it is created. Set by routes/provision.js; never set by a student.
     allAccess: { type: Boolean, default: false, index: true },
 
+    // A free trial from a campaign page (provision item `free`): full access
+    // until this moment, then the account reads as unpaid (utils/access.js
+    // trialEnded) and sign-in points to the plans. Cleared by any purchase.
+    trialEndsAt: { type: Date, default: null },
+
     // Admin moderation controls. lms=true locks the account out of the whole
     // app (login + every API call); batchIds hides specific cohorts/courses;
     // moduleIds hides specific curriculum modules; assignmentIds hides specific

@@ -35,11 +35,16 @@ export const TOOL_BATCHES = {
 };
 
 /** What the website sells, as the LMS understands it. */
-export const ITEMS = ['member', 'earlyaccess', 'playbooks', 'library', ...Object.keys(TOOL_BATCHES)];
+/* `free`: a free sign-up from a campaign page. Everything AI's access, no
+   payment and no playbook PDFs (see playbooks.js). */
+export const ITEMS = ['member', 'earlyaccess', 'free', 'playbooks', 'library', ...Object.keys(TOOL_BATCHES)];
 
 /** Everything AI, and its ₹499 early-access price from skeoai.com/early-access:
  *  both unlock everything. */
-export const isAllAccess = (items) => items.includes('member') || items.includes('earlyaccess');
+/** How long a free sign-up lasts. */
+export const TRIAL_DAYS = 7;
+
+export const isAllAccess = (items) => items.includes('member') || items.includes('earlyaccess') || items.includes('free');
 
 /**
  * Which batches an order unlocks. Pure, so it is tested without a database.
@@ -189,8 +194,14 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
       }
       displayName = user.fullName || displayName;
 
+      const freeOnly = cleanItems.every((i) => i === 'free');
+      /* A free sign-up from someone who already has a paid account changes
+         nothing: a trial must never put an end date on what they bought. */
+      const alreadyPaying = !order.created && !user.trialEndsAt && (user.allAccess || (user.batchIds || []).length > 0);
       if (user.role !== 'student') {
         warnings.push(`${cleanEmail} is a ${user.role} account, so nothing was enrolled.`);
+      } else if (freeOnly && alreadyPaying) {
+        warnings.push(`${cleanEmail} already has a paid account, so the free trial was not applied.`);
       } else {
         if (batchIds.length) {
           await Batch.updateMany({ _id: { $in: batchIds } }, { $addToSet: { studentIds: user._id } });
@@ -202,6 +213,11 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
             $set: {
               ...(allAccess ? { allAccess: true } : {}),
               ...(!user.phone && phone ? { phone: String(phone).trim() } : {}),
+              /* Free: the trial clock starts once, and signing up again does
+                 not restart it. Anything paid: the trial is over for good. */
+              ...(freeOnly
+                ? user.trialEndsAt ? {} : { trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) }
+                : { trialEndsAt: null }),
             },
           },
         );
@@ -225,6 +241,8 @@ export async function provisionOrder({ orderId, email, name = '', phone = '', it
           batches: batchNames,
           allAccess,
           playbooks: getsPlaybooks(cleanItems),
+          free: cleanItems.every((i) => i === 'free'),
+          trialDays: TRIAL_DAYS,
         });
         const sent = await trySendMail({ to: cleanEmail, subject: mail.subject, text: mail.text, html: mail.html });
         if (!sent.emailed && !sent.dev) throw new Error(`Login mail not sent: ${sent.error || 'unknown error'}`);

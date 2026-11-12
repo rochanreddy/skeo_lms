@@ -75,16 +75,25 @@ function box(rows) {
  * @param {string[]} p.batches       names of the batches this purchase unlocked
  * @param {boolean} p.allAccess      bought Everything AI
  * @param {boolean} p.playbooks      a playbooks mail is going out alongside
+ * @param {boolean} p.free           a free sign-up, not a purchase
  */
-export function welcomeEmail({ fullName, email, password = null, loginUrl, batches = [], allAccess = false, playbooks = false }) {
+export function welcomeEmail({ fullName, email, password = null, loginUrl, batches = [], allAccess = false, playbooks = false, free = false, trialDays = 7 }) {
   const first = firstNameOf(fullName, email);
   const isNew = Boolean(password);
 
-  const subject = isNew ? 'Your skeo LMS login' : 'Your purchase is on your skeo account';
+  const subject = isNew ? 'Your skeo LMS login' : free ? 'Your free access is on your skeo account' : 'Your purchase is on your skeo account';
 
-  const opener = isNew
-    ? 'Your payment is confirmed and your skeo LMS account is ready.'
-    : 'Your payment is confirmed and it has been added to your existing skeo LMS account.';
+  const opener = free
+    ? isNew
+      ? 'Thanks for registering. Your free skeo LMS account is ready.'
+      : 'Thanks for registering. Free access has been added to your existing skeo LMS account.'
+    : isNew
+      ? 'Your payment is confirmed and your skeo LMS account is ready.'
+      : 'Your payment is confirmed and it has been added to your existing skeo LMS account.';
+
+  const trialNote = free
+    ? `Your free access lasts ${trialDays} days. After that, get Everything AI at skeoai.com to keep everything you have started.`
+    : '';
 
   const unlocked = allAccess
     ? 'Everything AI: every batch on the LMS, including new ones as they are added.'
@@ -101,6 +110,7 @@ export function welcomeEmail({ fullName, email, password = null, loginUrl, batch
       P(`Hi ${esc(first)},`, 0),
       P(esc(opener)),
       unlocked ? P(`<strong>Unlocked:</strong> ${esc(unlocked)}`) : '',
+      trialNote ? P(esc(trialNote)) : '',
       box([
         ['Sign in at', `<a href="${esc(loginUrl)}" style="color:#6746ec;">${esc(loginUrl)}</a>`],
         ['Email', esc(email), true],
@@ -116,6 +126,7 @@ export function welcomeEmail({ fullName, email, password = null, loginUrl, batch
     `Hi ${first},`, '',
     opener, '',
     ...(unlocked ? [`Unlocked: ${unlocked}`, ''] : []),
+    ...(trialNote ? [trialNote, ''] : []),
     `Sign in at: ${loginUrl}`,
     `Email:      ${email}`,
     ...(isNew ? [`Password:   ${password}`] : []),

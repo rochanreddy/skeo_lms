@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { hashPassword, needsRehash, verifyPassword } from '../utils/password.js';
 
 import { User, ROLES } from '../models/User.js';
-import { hasPaidAccess } from '../utils/access.js';
+import { hasPaidAccess, trialEnded, TRIAL_ENDED_MESSAGE } from '../utils/access.js';
 import { forget } from '../middleware/auth.js';
 import { issuedBeforeReset, signAccessToken, signRefreshToken, verifyToken } from '../utils/token.js';
 import { trySendMail } from '../utils/email.js';
@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
     // say: would open onto an empty LMS. Point it at the plans instead.
     if (user.role === 'student' && !(await hasPaidAccess(user))) {
       return res.status(403).json({
-        error: 'Your account does not have a skeo plan yet.',
+        error: trialEnded(user) ? TRIAL_ENDED_MESSAGE : 'Your account does not have a skeo plan yet.',
         code: 'not_purchased',
       });
     }
@@ -126,7 +126,7 @@ router.post('/refresh', async (req, res) => {
   // The same gate as login, so a session begun before it existed does not
   // outlive it.
   if (user.role === 'student' && !(await hasPaidAccess(user))) {
-    return res.status(403).json({ error: 'Your account does not have a skeo plan yet.', code: 'not_purchased' });
+    return res.status(403).json({ error: trialEnded(user) ? TRIAL_ENDED_MESSAGE : 'Your account does not have a skeo plan yet.', code: 'not_purchased' });
   }
   return res.json({ accessToken: signAccessToken(user), user: user.toPublic() });
 });

@@ -11,8 +11,16 @@ import { PLAYBOOK_SETS, playbookSetsFor } from './playbooks.js';
  * the buyer whose batch did not exist yet when they paid: the order recorded a
  * warning for an admin to act on, and they must still be able to sign in.
  */
+/** A free trial whose time is up. Admins never have one. */
+export function trialEnded(user) {
+  return user.role !== 'admin' && Boolean(user.trialEndsAt) && Date.now() > new Date(user.trialEndsAt).getTime();
+}
+
+export const TRIAL_ENDED_MESSAGE = 'Your 7-day free trial has ended. Get Everything AI at skeoai.com to keep learning.';
+
 export async function hasPaidAccess(user) {
   if (user.role === 'admin') return true;
+  if (trialEnded(user)) return false;
   if (user.allAccess) return true;
   if ((user.batchIds || []).length) return true;
   if (await Batch.exists({ studentIds: user._id })) return true;

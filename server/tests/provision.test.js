@@ -139,3 +139,12 @@ test('the Library serves only files a set lists, by bare name', async () => {
   assert.equal(await playbookFilePath('toString', 'a.pdf', dir), null);
   await fs.rm(dir, { recursive: true, force: true });
 });
+
+test('A free sign-up unlocks everything, with no playbook PDFs', () => {
+  const r = batchesFor(['free'], B);
+  assert.equal(r.allAccess, true);
+  assert.equal(r.batchIds.length, B.length);
+  assert.deepEqual(playbookSetsFor(['free']), []);
+  assert.equal(getsPlaybooks(['free']), false);
+  assert.equal(needsAccount(['free']), true);
+});
