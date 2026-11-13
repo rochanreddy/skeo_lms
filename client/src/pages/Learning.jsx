@@ -1161,6 +1161,18 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                 <PlainVideo key={`${a._id}-v`} url={a.videoUrl} />
               </div>
             )}
+            {(a.pdfUrl || a.solutionPdfUrl) && (
+            <div className={`assign-resources ${a.pdfUrl && a.solutionPdfUrl ? 'pair' : ''}`}>
+            {a.solutionPdfUrl && (
+              <button type="button" className="assign-resource" onClick={() => setPdf({ label: 'PDF', subtitle: `${a.title}: solution brief`, url: a.solutionPdfUrl })}>
+                <span className="assign-resource-icon"><LessonIcon type="pdf" size={18} /></span>
+                <span className="assign-resource-text">
+                  <strong>Solution brief</strong>
+                  <span>Step by step, with a worked example</span>
+                </span>
+                <span className="assign-resource-cta">Open</span>
+              </button>
+            )}
             {a.pdfUrl && (
               <button type="button" className="assign-resource" onClick={() => setPdf({ label: 'PDF', subtitle: a.title, url: a.pdfUrl })}>
                 <span className="assign-resource-icon"><LessonIcon type="pdf" size={18} /></span>
@@ -1171,15 +1183,7 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                 <span className="assign-resource-cta">Open</span>
               </button>
             )}
-            {a.solutionPdfUrl && (
-              <button type="button" className="assign-resource" onClick={() => setPdf({ label: 'PDF', subtitle: `${a.title}: solution brief`, url: a.solutionPdfUrl })}>
-                <span className="assign-resource-icon"><LessonIcon type="pdf" size={18} /></span>
-                <span className="assign-resource-text">
-                  <strong>Solution brief</strong>
-                  <span>Step by step, with a worked example</span>
-                </span>
-                <span className="assign-resource-cta">Open</span>
-              </button>
+            </div>
             )}
           </div>
         )}

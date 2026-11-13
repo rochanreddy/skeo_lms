@@ -10,9 +10,7 @@ import { resetQuizAttempts } from './quizReset.js';
  * scripts/claudeQuizzes.js.
  *
  * Quizzes are matched to modules by position (module 1 gets QUIZZES[0]) and
- * updated in place, never deleted, so students' attempts survive. The first
- * three questions of each quiz never change (see claudeQuizzes.js), so stored
- * answers to them still line up.
+ * updated in place, never deleted.
  *
  * Run on every server start (index.js), so editing claudeQuizzes.js and
  * deploying is all it takes to change the live quizzes. It applies each

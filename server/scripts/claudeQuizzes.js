@@ -1,28 +1,26 @@
-// Gate quizzes for the Claude programme: one quiz per module, 12 questions each,
-// in module order. Each entry is [subject, questions[]], where a question is
+// Gate quizzes for the Claude programme: one quiz per module, 10 questions each,
+// every one with four options, in module order. Each entry is
+// [subject, questions[]], where a question is
 // { text, options, correctIndex, explanation }. The explanation is shown to the
 // student after they submit.
 //
 // Every question is drawn from what the lessons in claudeCurriculum.js teach.
-// Questions 4-12 of each module are written from the recorded video scripts
-// (the Script column of the "Skeo - Video Recording Tracker" sheet): the
-// examples, demos and common mistakes the videos actually show, asked only
-// where the script agrees with the syllabus. Modules 7 and 8 are scripted from
-// the Use Case Library and Capstone Menu companion docs, which go beyond the
-// syllabus, so their questions stick to what the two have in common.
+// Most are written from the recorded video scripts (the Script column of the
+// "Skeo - Video Recording Tracker" sheet): the examples, demos and common
+// mistakes the videos actually show, asked only where the script agrees with
+// the syllabus. Modules 7 and 8 are scripted from the Use Case Library and
+// Capstone Menu companion docs, which go beyond the syllabus, so their
+// questions stick to what the two have in common.
 //
-// The FIRST THREE questions of each module are the original gate questions.
-// Students have already answered them and their stored answers are option
-// indexes, so their text, options and correctIndex must never change or move.
-// Add new questions after them only.
+// Changing a quiz's questions resets it for everyone on the next deploy
+// (utils/claudeQuizSync.js): every student sits the new version, and modules
+// they had already unlocked stay open.
 export const QUIZZES = [
   ["What Claude is actually doing when it answers", [
-    { text: "Claude answers by…", options: ["Predicting the next likely piece of text from learned patterns", "Looking facts up in a database", "Searching the web on every message"], correctIndex: 0,
+    { text: "Claude answers by…", options: ["Looking facts up in a database", "Searching the web on every message", "Copying the closest answer it has stored", "Predicting the next likely piece of text from learned patterns"], correctIndex: 3,
       explanation: "Claude generates text by predicting what comes next, based on patterns learned from huge amounts of data. It is not pulling stored facts from a database." },
-    { text: "Fluency and accuracy are…", options: ["The same thing", "Separate properties: one does not guarantee the other", "Both guaranteed by a bigger context window"], correctIndex: 1,
+    { text: "Fluency and accuracy are…", options: ["The same thing", "Separate properties: one does not guarantee the other", "Both guaranteed by a bigger context window", "Linked, since a confident answer is usually right"], correctIndex: 1,
       explanation: "An answer can sound completely right and still be wrong. Fluency is how it reads; accuracy is whether it is true." },
-    { text: "A brand-new chat starts blank unless…", options: ["You're inside a Project that carries context forward", "You paid for Max", "You ask Claude to remember"], correctIndex: 0,
-      explanation: "A Project keeps context, files and instructions across every conversation inside it. Outside one, each new chat starts from nothing." },
     { text: "You ask Claude, 'Isn't it true that the company was founded in 1987?' and it agrees. Why should you be wary of that answer?", options: ["A clear 'yes' means it found that date stored in its training", "It only agrees after it has searched the web for the date", "Leading phrasing nudges the prediction towards agreeing", "A certain tone is a reliable sign the answer is correct"], correctIndex: 2,
       explanation: "Claude predicts the most plausible continuation, and a leading question makes agreement the likely continuation whether or not 1987 is right. Ask neutrally first, then verify." },
     { text: "Forty messages into a chat, Claude has lost the budget figure you gave in your first message. What is the quickest fix?", options: ["Restate the budget at the top of your next message", "Open a brand-new chat and ask the follow-up there", "Paste in more background documents for extra context", "Send the same follow-up again, word for word"], correctIndex: 0,
@@ -31,8 +29,6 @@ export const QUIZZES = [
       explanation: "Niche topics and exact numbers are where hallucinations cluster, and a fabricated citation can look completely real. A search grounds the answer in something checkable." },
     { text: "You ask 'Write a product update email' and get a bland, generic draft. What is the most likely cause?", options: ["Claude does not know how product update emails work", "The prompt gave no audience, constraint or format", "The context window filled up before Claude could finish", "Writing tasks always need a slower, deeper model"], correctIndex: 1,
       explanation: "A vague prompt pulls the most common, average pattern. Adding a specific audience, constraint and format steers the substance of the answer, as the vague versus detailed demo shows." },
-    { text: "Deep into a long chat about an obscure topic, Claude's answer has dropped a detail you gave early on and also states a shaky fact. What is the best fix?", options: ["Re-ask the whole question and hope the next attempt is better", "Switch to Haiku so the answer comes back faster", "Turn on Memory so it keeps that detail next time", "Restate the lost detail and check the fact with a search"], correctIndex: 3,
-      explanation: "This is a property collision: a memory gap from the context window and a hallucination-prone topic at once. Naming both lets you fix each one directly." },
     { text: "You want a one-page onboarding checklist that you can keep, edit and share with your team. Which surface fits best?", options: ["An Artifact", "A plain Chat reply", "Claude Code", "Memory"], correctIndex: 0,
       explanation: "Artifacts are standalone, reusable outputs that live outside the chat scroll, so you can view, edit and keep them. A Chat reply stays buried in the conversation." },
     { text: "You run a simple, well-defined task on a light model like Haiku and on a deeper one like Opus. What are you most likely to see?", options: ["Opus replies faster because it is the more powerful model", "Haiku's answer is unusable, so simple tasks need Opus", "A clear speed gap, with little difference in quality", "The same speed, with Opus's answer far better"], correctIndex: 2,
@@ -43,12 +39,8 @@ export const QUIZZES = [
       explanation: "Extended thinking helps most on problems with several interacting constraints or real ambiguity. Simple, well-defined tasks just get slower with no real quality gain." },
   ]],
   ["Prompting and the 4D framework", [
-    { text: "The four Ds are…", options: ["Delegation, Description, Discernment, Diligence", "Draft, Debug, Deploy, Deliver", "Define, Design, Develop, Deliver"], correctIndex: 0,
-      explanation: "The 4D framework is Delegation, Description, Discernment and Diligence: what to hand over, how to describe it, how to judge the output, and owning the result." },
-    { text: "Role prompting (\"act as a senior analyst\")…", options: ["Adds knowledge Claude lacks", "Sharpens tone and framing but adds no new knowledge", "Increases the context window"], correctIndex: 1,
+    { text: "Role prompting (\"act as a senior analyst\")…", options: ["Sharpens tone and framing but adds no new knowledge", "Adds knowledge Claude lacks", "Increases the context window", "Makes its facts more reliable"], correctIndex: 0,
       explanation: "Giving Claude a role shapes how it frames and phrases the answer. It cannot add knowledge Claude does not already have." },
-    { text: "A Skill that will not trigger is usually…", options: ["A broken tool", "A vague description problem", "A billing issue"], correctIndex: 1,
-      explanation: "Claude applies a Skill when a task matches its description. If the description is vague, Claude cannot tell when to use it." },
     { text: "Your short prompt gets a generic answer, and a colleague says Claude just isn't good at this task. What does the 4D framework suggest?", options: ["Claude lacks the knowledge, so do the task yourself", "Evaluate the output, refine your description, resend", "Send the same prompt again until a better answer appears", "Add 'act as an expert' and leave the rest unchanged"], correctIndex: 1,
       explanation: "Description and Discernment form a loop: describe, evaluate, refine, repeat. Most weak results come from treating the first prompt as the only shot, not from Claude itself." },
     { text: "You need a one-line reply confirming a meeting time, and also a client proposal that really matters. How should you prompt for each?", options: ["Write a detailed brief for both, since more detail always helps", "Send a bare one-liner for both and fix the results later", "Use a role prompt for both instead of adding any context", "Keep the reply prompt short and give the proposal full context"], correctIndex: 3,
@@ -69,12 +61,8 @@ export const QUIZZES = [
       explanation: "Sharing with your team gives a defined group access, which is all this needs. Publishing publicly out of convenience, when team-shared would do, is a common mistake." },
   ]],
   ["The visual and creative layer", [
-    { text: "Claude natively generates…", options: ["Photorealistic images and video", "SVG, Mermaid diagrams and interactive HTML", "Nothing visual at all"], correctIndex: 1,
-      explanation: "Claude renders SVG graphics, Mermaid diagrams and interactive HTML inside Artifacts. Photorealistic images and video need a connected specialist tool." },
-    { text: "For audio and video generation Claude…", options: ["Produces the media itself", "Connects out to specialist tools", "Refuses entirely"], correctIndex: 1,
+    { text: "For audio and video generation Claude…", options: ["Connects out to specialist tools", "Produces the audio or video itself", "Builds it as an interactive Artifact", "Needs a higher effort setting to render it"], correctIndex: 0,
       explanation: "Claude does not produce audio or video itself. It connects out to specialist tools that do." },
-    { text: "Claude processes spoken content by…", options: ["Listening to the raw audio file", "Reasoning over the transcript text you provide", "Rendering a waveform"], correctIndex: 1,
-      explanation: "Claude works with the text of spoken content, such as transcripts, notes and captions, not the raw audio or video as media." },
     { text: "An error message you don't understand pops up on your screen. What does the lesson recommend?", options: ["Retype the full error text word for word", "Describe roughly what the error said", "Share a screenshot and let Claude read it", "Copy only the first line of the error"], correctIndex: 2,
       explanation: "Claude reads the error straight off the screenshot, so there is no retyping and no risk of a typo changing the meaning." },
     { text: "You photograph a page of handwritten notes for Claude to summarise. What matters most for a good result?", options: ["That the handwriting in the photo is legible", "That the notes are already in bullet points", "That you type the notes out underneath too", "That the photo is converted to a PDF first"], correctIndex: 0,
@@ -95,12 +83,8 @@ export const QUIZZES = [
       explanation: "The lesson teaches no new concept. It is calibration: seeing what one well-described prompt can produce so you stop underestimating what to ask for." },
   ]],
   ["Connectors, research and reaching further", [
-    { text: "MCP is…", options: ["A Claude subscription tier", "The open standard many connectors are built on", "A prompt format"], correctIndex: 1,
+    { text: "MCP is…", options: ["The open standard many connectors are built on", "A Claude subscription tier", "A prompt format", "A setting that lets Claude browse the web"], correctIndex: 0,
       explanation: "MCP, the Model Context Protocol, is the open standard many connectors are built on, which is what lets the ecosystem keep growing." },
-    { text: "Connections are authorised…", options: ["Automatically by default", "Explicitly by you, one at a time", "By your employer only"], correctIndex: 1,
-      explanation: "You explicitly authorise each connection. Nothing connects silently or by default." },
-    { text: "Cowork differs from Chat because it…", options: ["Executes multi-step tasks directly on your real files", "Only writes longer answers", "Runs a different model family"], correctIndex: 0,
-      explanation: "Cowork is a working session, not a conversation: Claude plans a multi-step task and carries it out on your actual files." },
     { text: "You connected Google Drive to Claude months ago and no longer use it. What does the lesson advise?", options: ["Leave it on, as unused connections expire on their own", "Review what is connected and revoke what you no longer use", "Delete your Claude account and start again", "Reconnect it every week to refresh the access"], correctIndex: 1,
       explanation: "Connections stay until you remove them, so it is worth reviewing them now and then and revoking anything you no longer use." },
     { text: "Every week you copy a file out of Drive and paste it into Claude. What should you check first?", options: ["Whether a bigger model can take more pasted text", "Whether pasting as plain text would be quicker", "Whether Claude can recall the file from last week", "Whether there is a Connector for Drive to set up"], correctIndex: 3,
@@ -121,12 +105,8 @@ export const QUIZZES = [
       explanation: "You can steer Cowork mid-task. It adjusts its plan from that point forward rather than starting over." },
   ]],
   ["Delegation, automation and building", [
-    { text: "A subagent reports back…", options: ["Its full transcript", "Only a summary, keeping your main context clean", "Nothing at all"], correctIndex: 1,
-      explanation: "A subagent does its piece of work separately and returns only a summary, so your main conversation stays clean and focused." },
-    { text: "A scheduled task’s prompt must be…", options: ["Short", "Self-contained, since there is no mid-run clarification", "Written in the API"], correctIndex: 1,
+    { text: "A scheduled task’s prompt must be…", options: ["Self-contained, since there is no mid-run clarification", "Short, so it runs quickly", "Written in the API", "Linked to the chat you first wrote it in"], correctIndex: 0,
       explanation: "A scheduled task runs without you there, so it cannot stop to ask questions. Everything it needs has to be in the prompt." },
-    { text: "Claude Code is a poor fit, without expert review, for…", options: ["Small internal tools", "Production-scale or security-sensitive systems", "Landing pages"], correctIndex: 1,
-      explanation: "Small tools, trackers and landing pages are a good fit. Production-scale or security-sensitive systems need expert review." },
     { text: "You hand a research sub-task to a subagent. What comes back is well done but oddly off-target. What is the most likely cause?", options: ["The subagent was too slow, so it cut corners", "Subagents can only return a full transcript, not an answer", "It never got the background it needed from you", "Subagents always share your main chat, so it got confused"], correctIndex: 2,
       explanation: "A subagent has its own context window and does not know what you discussed in the main conversation. Any context it needs has to be written into the hand-off." },
     { text: "You expect to rule options out and change direction as findings come in. Where should this work happen?", options: ["In your main chat, where you can steer it", "In a subagent, so the main thread stays tidy", "In a recurring task that runs every morning", "In several subagents at once, then pick a winner"], correctIndex: 0,
@@ -147,12 +127,8 @@ export const QUIZZES = [
       explanation: "Proof of a specific outcome beats a list of tools used. 'I built X, and it saved Y' says far more than 'I use AI'." },
   ]],
   ["Devices, teams and enterprise", [
-    { text: "Claude Tag lets teammates…", options: ["Tag @Claude into Slack to delegate work", "Rename their chats", "Share a login"], correctIndex: 0,
+    { text: "Claude Tag lets teammates…", options: ["Tag @Claude into Slack to delegate work", "Rename and organise their chats", "Share one Claude login", "Label files so Claude skips them"], correctIndex: 0,
       explanation: "With Claude Tag, teammates tag @Claude in Slack to hand off work without switching apps." },
-    { text: "Enterprise data controls…", options: ["Are identical to personal defaults", "Differ meaningfully from personal account defaults", "Do not exist"], correctIndex: 1,
-      explanation: "Enterprise accounts have their own data controls, which differ meaningfully from the defaults on a personal account." },
-    { text: "Choosing a plan should be driven by…", options: ["The newest tier available", "Your actual weekly usage patterns", "What your friend uses"], correctIndex: 1,
-      explanation: "Heavy daily use and light occasional use have very different needs, so match the plan to how you actually use Claude." },
     { text: "You have five minutes between meetings and want to check on a Cowork task that is already running. Which surface fits best?", options: ["Wait until you are back at Claude Desktop", "The Claude mobile app on your phone", "A new API project with its own system prompt", "A shared Project set up by your admin"], correctIndex: 1,
       explanation: "Mobile suits quick questions, short delegations and checking in on something already running. It is the same real capability, not a stripped-down version." },
     { text: "You need to carefully review a long, multi-file piece of Cowork output. Why does the lesson point you to Desktop rather than your phone?", options: ["Cowork does not run on the mobile app at all", "The phone version uses a weaker model", "Mobile chats are deleted after each session", "A small screen makes careful review harder"], correctIndex: 3,
@@ -173,20 +149,16 @@ export const QUIZZES = [
       explanation: "Staying current is a skim-and-scan habit. Pick out what is new and relevant to you rather than relearning the tool each time." },
   ]],
   ["Real-world use cases", [
-    { text: "A good \"thinking partner\" use of Claude is…", options: ["Red-teaming your own plan", "Asking it to feel emotions", "Having it pick your lunch"], correctIndex: 0,
+    { text: "A good \"thinking partner\" use of Claude is…", options: ["Letting it make the final call for you", "Asking it to agree with your view", "Having it pick your lunch", "Red-teaming your own plan"], correctIndex: 3,
       explanation: "As a thinking partner, Claude is most useful for stress-testing your ideas, such as red-teaming a plan to find its weak points." },
-    { text: "For a small business, a sensible Project structure is…", options: ["One giant catch-all Project", "One Project per business function", "A new Project per message"], correctIndex: 1,
+    { text: "For a small business, a sensible Project structure is…", options: ["One Project per business function", "One giant catch-all Project", "A new Project per message", "No Projects, just separate chats"], correctIndex: 0,
       explanation: "One Project per function keeps the context, files and instructions for each area focused, instead of mixing everything together." },
-    { text: "Outcome-based positioning sounds like…", options: ["\"I use AI\"", "\"I built X, saving Y hours\"", "\"I know many tools\""], correctIndex: 1,
-      explanation: "Proof of a specific outcome is stronger than a list of tools. Say what you built and what it saved." },
     { text: "Claude turns your meeting transcript into minutes and action items. Before the follow-up emails go out, what must you check?", options: ["That every attendee gets exactly the same email", "That owners and due dates match what was actually said in the meeting", "That the minutes are written in a formal tone", "That the summary fits in under 100 words"], correctIndex: 1,
       explanation: "Claude can invent or misassign actions. Check owners and dates against what was really said, and review each follow-up before sending." },
     { text: "In a long study chat inside your course Project, details from early on start to fade. What is the suggested fix?", options: ["Upload the same files again in the same chat", "Switch to a lighter model so the chat runs faster", "Ask Claude for a short state summary, then start a fresh chat in the same Project", "Turn Memory off and keep going"], correctIndex: 2,
       explanation: "A long chat outgrows the context window. A short state summary carried into a fresh chat inside the same Project keeps the important details in view." },
     { text: "Claude cleans your sales spreadsheet and builds a dashboard from it. What should you do before presenting the numbers?", options: ["Cross-check a few key totals yourself against the spreadsheet", "Trust them, since Claude did the maths", "Ask Claude to add more charts", "Round every figure to the nearest thousand"], correctIndex: 0,
       explanation: "Do not present a figure you have not reconciled. Checking a few totals yourself catches cleaning or calculation errors before anyone acts on them." },
-    { text: "Your cited research brief is drafted. Which step makes it ready for someone to decide on?", options: ["Adding more citations so it looks thorough", "Making the executive summary longer", "Removing the risks section to keep it positive", "Opening the key citations to confirm them, and listing what could not be verified"], correctIndex: 3,
-      explanation: "A brief is only as good as its checked sources. Confirm the citations that matter and say plainly what you could not verify." },
     { text: "You are turning one long podcast into posts in two other languages. What is the right approach?", options: ["Translate every sentence word for word", "Adapt idioms and examples, then check with a back-translation or a fluent speaker", "Skip the transcript and work from memory", "Publish the translations without anyone reading them"], correctIndex: 1,
       explanation: "Good localisation adapts idioms and examples rather than translating literally, and a back-translation or fluent reviewer checks the meaning survived." },
     { text: "You want to build a small internal tool, such as an expense tracker, with Claude Code. How should you start?", options: ["Ask for every feature in one prompt", "Skip planning and fix problems as they appear", "Ask for a plan first, then build the smallest working version with one feature", "Write the code yourself and use Claude only for the README"], correctIndex: 2,
@@ -199,12 +171,8 @@ export const QUIZZES = [
       explanation: "Claude drafts and analyses; you stay in charge of actions. Anything that sends, shares, deletes or spends waits for your approval." },
   ]],
   ["Capstone readiness", [
-    { text: "A capstone should be…", options: ["A shipped, real piece of proof-of-work", "A written summary of the course", "A list of tools"], correctIndex: 0,
-      explanation: "The capstone is proof you can do the work: something real that you actually shipped." },
-    { text: "The Automation Suite capstone requires…", options: ["One Cowork task + one Skill + one recurring brief", "Three Artifacts", "An API key"], correctIndex: 0,
+    { text: "The Automation Suite capstone requires…", options: ["Three Artifacts", "One Cowork task + one Skill + one recurring brief", "An API key", "A Claude Code app and a dashboard"], correctIndex: 1,
       explanation: "The Automation Suite combines one Cowork task, one Skill and one recurring scheduled brief, all running for real." },
-    { text: "Diligence at capstone time means…", options: ["Shipping fast without review", "Reviewing before you put your name on it", "Letting Claude decide"], correctIndex: 1,
-      explanation: "You are accountable for what you ship. Review it properly before your name goes on it." },
     { text: "Your capstone needs data to work with. What should you use?", options: ["Sample, dummy or anonymised data", "Real client files, since they make it more convincing", "A colleague's personal records, with their names left in", "Whatever is quickest to paste in"], correctIndex: 0,
       explanation: "Use sample, dummy or anonymised data throughout. Confidential or personal information stays out of any AI tool unless it has been approved." },
     { text: "A draft for your capstone includes an impressive statistic you never gave Claude. What should you do?", options: ["Keep it, because it makes the work look stronger", "Ask Claude to make the number more precise", "Verify it against a real source, or remove it", "Move it into a footnote"], correctIndex: 2,

@@ -32,6 +32,7 @@ import { QuizAttempt } from '../models/QuizAttempt.js';
 import { mergeModules, idsOf } from '../utils/curriculumMerge.js';
 import { MODULES } from './claudeCurriculum.js';
 import { capstoneBriefs } from '../utils/capstoneBriefs.js';
+import { resetQuizAttempts } from '../utils/quizReset.js';
 
 // Stand-in video so the flow is clickable end to end. Swap per lesson later.
 const VIDEO = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4';
@@ -165,10 +166,10 @@ const RENAMED = {
 };
 const RETIRED = ['AI Audit \u2014 where does AI already touch your life?'];
 
-// ── Gate quizzes: one per module, 12 questions each, in claudeQuizzes.js ──
+// ── Gate quizzes: one per module, 10 questions each, in claudeQuizzes.js ──
 // Each question carries an explanation, shown after the student submits.
-// The first three per module are the original gate questions, unchanged,
-// so attempts already stored still line up with their questions.
+// A quiz whose questions change is reset for everyone (utils/quizReset.js),
+// since a score on the old questions says nothing about the new ones.
 
 function buildModules() {
   return MODULES.map((m, mi) => ({
@@ -367,7 +368,11 @@ async function run() {
       if (WRITE) await Quiz.create({ programId: program._id, moduleId, title, type: 'quiz', questions });
     } else if (existing.title !== title || !sameQuestions(existing.questions || [], questions)) {
       note(`- update gate quiz: ${title}`);
-      if (WRITE) { existing.title = title; existing.questions = questions; await existing.save(); }
+      if (WRITE) {
+        const newQuestions = !sameQuestions(existing.questions || [], questions);
+        existing.title = title; existing.questions = questions; await existing.save();
+        if (newQuestions) await resetQuizAttempts([existing._id], 'questions replaced');
+      }
     }
   }
   // A gate pointing at a module that no longer exists can never be reached.

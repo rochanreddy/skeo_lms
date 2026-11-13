@@ -9,9 +9,8 @@
 // script is for applying it on demand: it ignores that once-per-version mark.
 //
 // Quizzes are matched to modules by position (module 1 gets QUIZZES[0]) and
-// updated in place, never deleted, so students' attempts survive. The first
-// three questions of each quiz are the original ones, unchanged, so an
-// attempt made against a 3-question quiz still lines up with its answers.
+// updated in place, never deleted. A quiz whose questions change is reset for
+// everyone: its attempts are archived and every student sits it again.
 //
 // Dry run by default: it prints what would change and writes nothing.
 //   npm run seed:quizzes            # dry run, report only

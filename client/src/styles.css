@@ -2333,7 +2333,9 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   transition: border-color .15s, background .15s, box-shadow .15s;
 }
 .assign-resource:hover { border-color: var(--purple-line); background: var(--wash); }
-.assign-resource + .assign-resource { margin-top: 10px; }
+/* A capstone's two briefs sit side by side; stacked again on a phone. */
+.assign-resources.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 640px) { .assign-resources.pair { grid-template-columns: 1fr; } }
 .assign-resource:focus-visible { outline: none; box-shadow: var(--ring); }
 .assign-resource-icon {
   width: 40px; height: 40px; flex: none; display: grid; place-items: center;
