@@ -31,6 +31,7 @@ import { QUIZZES } from './claudeQuizzes.js';
 import { QuizAttempt } from '../models/QuizAttempt.js';
 import { mergeModules, idsOf } from '../utils/curriculumMerge.js';
 import { MODULES } from './claudeCurriculum.js';
+import { capstoneBriefs } from '../utils/capstoneBriefs.js';
 
 // Stand-in video so the flow is clickable end to end. Swap per lesson later.
 const VIDEO = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4';
@@ -423,7 +424,10 @@ async function run() {
             title: p.title,
             description: p.description,
             videoUrl: VIDEO,
-            pdfUrl: PDF,
+            // Assignments open no PDF; a capstone opens its own project and
+            // solution briefs (utils/capstoneBriefs.js).
+            pdfUrl: '',
+            ...(capstoneBriefs(p.title) || {}),
             requiredDriveTypes: p.requires,
           });
         }
@@ -437,7 +441,7 @@ async function run() {
           existing.description = p.description;
           existing.type = p.type;
           existing.requiredDriveTypes = p.requires;
-          if (retiredPdf) existing.pdfUrl = PDF;
+          if (retiredPdf) existing.pdfUrl = capstoneBriefs(p.title)?.pdfUrl || '';
           await existing.save();
         }
       }

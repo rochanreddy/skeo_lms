@@ -46,7 +46,7 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /api/skeo/assignments: admin sets an assignment/project.
 router.post('/', requireAuth, async (req, res) => {
-  const { batchId, type, title, description, videoUrl, pdfUrl, requiredDriveTypes } = req.body || {};
+  const { batchId, type, title, description, videoUrl, pdfUrl, solutionPdfUrl, requiredDriveTypes } = req.body || {};
   if (!batchId || !title) return res.status(400).json({ error: 'batchId and title are required.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
 
@@ -62,6 +62,7 @@ router.post('/', requireAuth, async (req, res) => {
     description: description || '',
     videoUrl: videoUrl || '',
     pdfUrl: pdfUrl || '',
+    solutionPdfUrl: solutionPdfUrl || '',
     ...(required ? { requiredDriveTypes: required } : {}),
   });
   const batch = await Batch.findById(batchId).select('studentIds').lean();
@@ -76,7 +77,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (!assignment) return res.status(404).json({ error: 'Assignment not found.' });
   if (!canManageBatch(req.user)) return res.status(403).json({ error: 'Forbidden.' });
 
-  const { type, title, description, videoUrl, pdfUrl, requiredDriveTypes } = req.body || {};
+  const { type, title, description, videoUrl, pdfUrl, solutionPdfUrl, requiredDriveTypes } = req.body || {};
   if (title !== undefined && !String(title).trim()) return res.status(400).json({ error: 'Title cannot be empty.' });
 
   const ALLOWED_TYPES = ['doc', 'slides', 'html'];
@@ -85,6 +86,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (description !== undefined) assignment.description = description || '';
   if (videoUrl !== undefined) assignment.videoUrl = videoUrl || '';
   if (pdfUrl !== undefined) assignment.pdfUrl = pdfUrl || '';
+  if (solutionPdfUrl !== undefined) assignment.solutionPdfUrl = solutionPdfUrl || '';
   if (Array.isArray(requiredDriveTypes)) {
     assignment.requiredDriveTypes = [...new Set(requiredDriveTypes.filter((t) => ALLOWED_TYPES.includes(t)))];
   }

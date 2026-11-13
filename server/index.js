@@ -13,6 +13,7 @@ import { rateLimit } from './middleware/rateLimit.js';
 import { startUsageMeter, usageMeter } from './utils/usageMeter.js';
 import { syncLibrary } from './utils/librarySeed.js';
 import { syncClaudeQuizzes, resetClaudeQuizAttemptsOnce } from './utils/claudeQuizSync.js';
+import { attachCapstoneBriefsOnce } from './utils/capstoneBriefs.js';
 import { startAiGrading } from './utils/aiGrader.js';
 
 const app = express();
@@ -126,6 +127,11 @@ async function start() {
       .then(() => resetClaudeQuizAttemptsOnce())
       .then((r) => { if (r.reset) console.log(`[quizzes] reset ${r.reset} attempt(s) on the Claude module quizzes`); })
       .catch((err) => console.error('[quizzes] sync failed:', err.message));
+    // Coursework PDFs: each capstone's project and solution briefs, and no
+    // syllabus on the assignments (utils/capstoneBriefs.js).
+    attachCapstoneBriefsOnce()
+      .then((r) => { if (r.capstones || r.assignments) console.log(`[coursework] PDFs: ${r.capstones} capstone(s) given their briefs, syllabus removed from ${r.assignments} assignment(s)`); })
+      .catch((err) => console.error('[coursework] PDFs failed:', err.message));
     const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
     // Grades submitted Drive folders with Gemini; also off the critical path.
     startAiGrading();

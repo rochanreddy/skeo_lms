@@ -13,6 +13,9 @@ const assignmentSchema = new mongoose.Schema(
     // and a PDF that opens in the in-page viewer. Both optional.
     videoUrl: { type: String, default: '' },
     pdfUrl: { type: String, default: '' },
+    // A second PDF beside the first: a capstone's solution brief, the
+    // step-by-step guide students may open from the start. Optional.
+    solutionPdfUrl: { type: String, default: '' },
     // File types a Drive-folder submission must contain to pass verification.
     // Written deliverables only: no video or photo requirements.
     // Listing 'html' also opts this assignment out of the default HTML block.

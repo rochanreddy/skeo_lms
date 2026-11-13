@@ -71,11 +71,12 @@ export function ProjectsManager({ batchId }) {
                   </span>
                 </div>
                 <div className="assignment-reqs">
-                  {(a.videoUrl || a.pdfUrl) && (
+                  {(a.videoUrl || a.pdfUrl || a.solutionPdfUrl) && (
                     <>
                       <span className="muted">Content:</span>
                       {a.videoUrl && <span className="badge badge-muted">video</span>}
                       {a.pdfUrl && <span className="badge badge-muted">PDF</span>}
+                      {a.solutionPdfUrl && <span className="badge badge-muted">solution PDF</span>}
                     </>
                   )}
                   {(a.requiredDriveTypes || []).length > 0 && (
@@ -108,11 +109,12 @@ export function AssignmentForm({ onAdd, initial, onCancel }) {
   const [description, setDescription] = useState(initial?.description || '');
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl || '');
   const [pdfUrl, setPdfUrl] = useState(initial?.pdfUrl || '');
+  const [solutionPdfUrl, setSolutionPdfUrl] = useState(initial?.solutionPdfUrl || '');
   const [required, setRequired] = useState(initial?.requiredDriveTypes || ['doc']);
 
   function reset() {
     if (editing) { onCancel?.(); return; }
-    setTitle(''); setType('assignment'); setDescription(''); setVideoUrl(''); setPdfUrl('');
+    setTitle(''); setType('assignment'); setDescription(''); setVideoUrl(''); setPdfUrl(''); setSolutionPdfUrl('');
     setRequired(['doc']);
     setOpen(false);
   }
@@ -129,6 +131,7 @@ export function AssignmentForm({ onAdd, initial, onCancel }) {
       description: description.trim(),
       videoUrl: videoUrl.trim(),
       pdfUrl: pdfUrl.trim(),
+      solutionPdfUrl: solutionPdfUrl.trim(),
       requiredDriveTypes: required,
     });
     reset();
@@ -159,6 +162,7 @@ export function AssignmentForm({ onAdd, initial, onCancel }) {
       <div className="af-content">
         <input className="af-content-field" placeholder="Video URL (https://… .mp4), plays inline" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
         <input className="af-content-field" placeholder="PDF URL (https://… .pdf), opens in the viewer" value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)} />
+        <input className="af-content-field" placeholder="Solution brief PDF URL (optional), a second PDF" value={solutionPdfUrl} onChange={(e) => setSolutionPdfUrl(e.target.value)} />
       </div>
 
       <label className="af-label">Required in the Drive folder</label>

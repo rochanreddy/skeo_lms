@@ -1122,7 +1122,7 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
   const required = (a.requiredDriveTypes || []).map((t) => REQUIRED_LABELS[t] || t);
   // No video and no PDF means no left column at all, an empty rail beside
   // the brief reads as something that failed to load.
-  const hasMedia = Boolean(a.videoUrl || a.pdfUrl);
+  const hasMedia = Boolean(a.videoUrl || a.pdfUrl || a.solutionPdfUrl);
 
   // One badge in the corner answers "where do I stand" before anything else.
   const grade = gradeState(sub);
@@ -1167,6 +1167,16 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                 <span className="assign-resource-text">
                   <strong>{a.type === 'project' ? 'Project' : 'Assignment'} brief</strong>
                   <span>PDF · opens in the viewer</span>
+                </span>
+                <span className="assign-resource-cta">Open</span>
+              </button>
+            )}
+            {a.solutionPdfUrl && (
+              <button type="button" className="assign-resource" onClick={() => setPdf({ label: 'PDF', subtitle: `${a.title}: solution brief`, url: a.solutionPdfUrl })}>
+                <span className="assign-resource-icon"><LessonIcon type="pdf" size={18} /></span>
+                <span className="assign-resource-text">
+                  <strong>Solution brief</strong>
+                  <span>Step by step, with a worked example</span>
                 </span>
                 <span className="assign-resource-cta">Open</span>
               </button>
