@@ -2303,11 +2303,9 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 .assign-name { font-family: var(--display); font-size: 18px; font-weight: 700; line-height: 1.25; color: var(--ink); transition: color .16s; }
 .assign-head > .badge { flex: none; margin-left: auto; }
 
-.assign-split { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(340px, 1fr); gap: 32px; margin-top: 24px; align-items: start; }
-/* Nothing to watch and nothing to download: the brief gets the whole card
-   rather than sitting beside an empty column. */
-.assign-split.solo { grid-template-columns: minmax(0, 1fr); }
-.assign-media { min-width: 0; position: sticky; top: 84px; }
+/* One column: the briefs as a row across the top, the submission box under. */
+.assign-split { display: flex; flex-direction: column; gap: 22px; margin-top: 20px; }
+.assign-media { min-width: 0; }
 /* The right-hand column: brief, then the box you hand the work in through. */
 .assign-work { min-width: 0; display: flex; flex-direction: column; gap: 26px; }
 .assign-content { min-width: 0; }
@@ -2322,14 +2320,16 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 
 .assign-resource {
   display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
-  padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px;
   background: var(--card); font-family: var(--font); cursor: pointer;
   transition: border-color .15s, background .15s, box-shadow .15s;
 }
 .assign-resource:hover { border-color: var(--purple-line); background: var(--wash); }
-/* A capstone's two briefs sit side by side; stacked again on a phone. */
-.assign-resources.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 640px) { .assign-resources.pair { grid-template-columns: 1fr; } }
+/* A brief is a row a third of the card wide at most; a capstone's two sit
+   side by side, and stack again on a phone. */
+.assign-resources { display: grid; grid-template-columns: minmax(0, 420px); gap: 12px; }
+.assign-resources.pair { grid-template-columns: repeat(2, minmax(0, 420px)); }
+@media (max-width: 640px) { .assign-resources, .assign-resources.pair { grid-template-columns: minmax(0, 1fr); } }
 .assign-resource:focus-visible { outline: none; box-shadow: var(--ring); }
 .assign-resource-icon {
   width: 40px; height: 40px; flex: none; display: grid; place-items: center;
@@ -2337,11 +2337,18 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 }
 .assign-resource-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .assign-resource-text strong { font-size: 14px; color: var(--ink); }
-.assign-resource-text span { font-size: 12.5px; color: var(--muted); }
-.assign-resource-cta { font-size: 13px; font-weight: 600; color: var(--purple); }
+.assign-resource-text span { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assign-resource-cta { flex: none; font-size: 13px; font-weight: 600; color: var(--purple); white-space: nowrap; }
 
 /* The rail: a raised wash inside the card. */
-.assign-rail { background: var(--wash); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 22px 22px 24px; }
+.assign-rail { background: var(--wash); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 22px 24px 24px; }
+/* In the form: what the folder must hold on the left, where to paste it on
+   the right, so the link field never stretches the full card. */
+.sub-form-grid { display: grid; grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); gap: 16px 40px; align-items: start; }
+.sub-form-grid.solo { grid-template-columns: minmax(0, 1fr); }
+.sub-form-main { min-width: 0; max-width: 640px; }
+.sub-form .sub-form-main > label.sub-field-label { margin: 0; }
+@media (max-width: 760px) { .sub-form-grid { grid-template-columns: minmax(0, 1fr); } }
 /* The rail's first child sits flush with its top edge, level with the video. */
 .assign-rail > :first-child { margin-top: 0; }
 .assign-rail > * + * { margin-top: 16px; }
@@ -2369,7 +2376,7 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
   padding: 0 0 0 13px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
   transition: border-color .15s, box-shadow .15s;
 }
-.sub-form > .assign-linkfield { margin-top: 6px; }
+.sub-form > .assign-linkfield, .sub-form-main > .assign-linkfield { margin-top: 8px; }
 .assign-linkfield svg { color: var(--muted); }
 .assign-linkfield:focus-within { border-color: var(--purple); box-shadow: var(--ring); }
 .assign-rail .assign-linkfield input { flex: 1; min-width: 0; margin: 0; padding: 11px 13px 11px 0; border: 0; border-radius: 0 12px 12px 0; background: transparent; }

@@ -1125,10 +1125,10 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
         </span>
       </button>
 
-      {/* Two columns: the brief PDFs on the left, handing in on the right.
-          The left column sticks while a student works down the right. */}
+      {/* One column: the brief PDFs as a row across the top, then the box the
+          work is handed in through. */}
       {open && (
-      <div className={`assign-split ${hasMedia ? '' : 'solo'}`} id={`assign-${a._id}`}>
+      <div className="assign-split" id={`assign-${a._id}`}>
         {hasMedia && (
           <div className="assign-media">
             <h4 className="assign-pane-head">Briefs</h4>
@@ -1139,9 +1139,9 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                 <span className="assign-resource-icon"><LessonIcon type="pdf" size={18} /></span>
                 <span className="assign-resource-text">
                   <strong>Solution brief</strong>
-                  <span>Step by step, with a worked example</span>
+                  <span>How to build it, step by step</span>
                 </span>
-                <span className="assign-resource-cta">Open</span>
+                <span className="assign-resource-cta">Open <span aria-hidden="true">↗</span></span>
               </button>
             )}
             {a.pdfUrl && (
@@ -1149,9 +1149,9 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                 <span className="assign-resource-icon"><LessonIcon type="pdf" size={18} /></span>
                 <span className="assign-resource-text">
                   <strong>{a.type === 'project' ? 'Project' : 'Assignment'} brief</strong>
-                  <span>PDF · opens in the viewer</span>
+                  <span>What to build and hand in</span>
                 </span>
-                <span className="assign-resource-cta">Open</span>
+                <span className="assign-resource-cta">Open <span aria-hidden="true">↗</span></span>
               </button>
             )}
             </div>
@@ -1161,8 +1161,6 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
 
         <div className="assign-work">
           <aside className="assign-submitpane">
-            {/* The heading sits above the box, as "Walkthrough" sits above the
-                video, so the box and the video start on the same line. */}
             <h4 className="assign-pane-head">Your submission</h4>
             <div className="assign-rail">
 
@@ -1185,6 +1183,9 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                     </div>
                   )}
 
+                  {/* What the folder must hold beside where to paste it: two
+                      columns on a laptop, so neither stretches across the card. */}
+                  <div className={`sub-form-grid ${required.length > 0 ? '' : 'solo'}`}>
                   {/* What the automated check will look for, shown so the student
                       isn't guessing at what the folder must contain. */}
                   {required.length > 0 && (
@@ -1196,6 +1197,7 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                     </div>
                   )}
 
+                  <div className="sub-form-main">
                   <label className="sub-field-label" htmlFor={`drive-${a._id}`}>Google Drive folder link</label>
                   <div className="assign-linkfield">
                     <LineIcon name="folder" size={16} />
@@ -1213,6 +1215,8 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
                   <div className="assign-submit">
                     <button className="btn" disabled={busy}>{busy ? 'Checking…' : (sub ? 'Resubmit for grading' : 'Submit for grading')}</button>
                     {sub && <button type="button" className="btn ghost" onClick={() => { setEditing(false); setError(''); setDriveLink(sub.driveLink || ''); }}>Cancel</button>}
+                  </div>
+                  </div>
                   </div>
                 </form>
               ) : sub?.locked ? (
