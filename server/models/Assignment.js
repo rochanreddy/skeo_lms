@@ -9,8 +9,8 @@ const assignmentSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true },
     // The brief, in Markdown, the written half of the content pane.
     description: { type: String, default: '' },
-    // Taught content, exactly as a lesson carries it: a video that plays inline
-    // and a PDF that opens in the in-page viewer. Both optional.
+    // Coursework carries no video. The field stays only so old records still
+    // load; nothing sets it or shows it. The PDF opens in the in-page viewer.
     videoUrl: { type: String, default: '' },
     pdfUrl: { type: String, default: '' },
     // A second PDF beside the first: a capstone's solution brief, the

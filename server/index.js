@@ -13,7 +13,7 @@ import { rateLimit } from './middleware/rateLimit.js';
 import { startUsageMeter, usageMeter } from './utils/usageMeter.js';
 import { syncLibrary } from './utils/librarySeed.js';
 import { syncClaudeQuizzes, resetClaudeQuizAttemptsOnce } from './utils/claudeQuizSync.js';
-import { attachCapstoneBriefsOnce } from './utils/capstoneBriefs.js';
+import { attachCapstoneBriefsOnce, clearCourseworkVideosOnce } from './utils/capstoneBriefs.js';
 import { startAiGrading } from './utils/aiGrader.js';
 
 const app = express();
@@ -132,6 +132,9 @@ async function start() {
     attachCapstoneBriefsOnce()
       .then((r) => { if (r.capstones || r.assignments) console.log(`[coursework] PDFs: ${r.capstones} capstone(s) given their briefs, syllabus removed from ${r.assignments} assignment(s)`); })
       .catch((err) => console.error('[coursework] PDFs failed:', err.message));
+    clearCourseworkVideosOnce()
+      .then((r) => { if (r.cleared) console.log(`[coursework] removed the video from ${r.cleared} assignment(s) and project(s)`); })
+      .catch((err) => console.error('[coursework] video removal failed:', err.message));
     const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
     // Grades submitted Drive folders with Gemini; also off the critical path.
     startAiGrading();

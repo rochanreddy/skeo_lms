@@ -55,3 +55,22 @@ export async function attachCapstoneBriefsOnce() {
   await Counter.updateOne({ _id: once }, { $setOnInsert: { seq: 0 } }, { upsert: true });
   return { capstones, assignments };
 }
+
+/**
+ * Coursework carries no video: clear the walkthrough every assignment and
+ * project was seeded with. Once, on server start (a marker in skeo_counters).
+ *
+ * @returns {Promise<{ skipped?: string, cleared: number }>}
+ */
+export async function clearCourseworkVideosOnce() {
+  const once = 'coursework-novideo:2026-11-15';
+  if (await Counter.exists({ _id: once })) return { skipped: 'already done', cleared: 0 };
+  let cleared = 0;
+  for (const a of await Assignment.find({ videoUrl: { $nin: ['', null] } })) {
+    a.videoUrl = '';
+    await a.save();
+    cleared += 1;
+  }
+  await Counter.updateOne({ _id: once }, { $setOnInsert: { seq: 0 } }, { upsert: true });
+  return { cleared };
+}

@@ -428,7 +428,6 @@ async function run() {
             type: p.type,
             title: p.title,
             description: p.description,
-            videoUrl: VIDEO,
             // Assignments open no PDF; a capstone opens its own project and
             // solution briefs (utils/capstoneBriefs.js).
             pdfUrl: '',

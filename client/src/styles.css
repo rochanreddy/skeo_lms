@@ -2320,12 +2320,6 @@ input:hover:not(:disabled):not(:focus), select:hover:not(:disabled):not(:focus),
 
 /* The brief is the task itself, so it reads as prose, no grey box. */
 
-/* The video keeps the 16:9 stage it has in lessons; the PDF under it becomes
-   a row you can actually read. */
-.assign-video .lesson-video { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); margin: 0 0 12px; }
-/* A YouTube walkthrough plays in the lesson player, which fills its box. */
-.assign-yt { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); overflow: hidden; background: #000; margin: 0 0 12px; }
-.assign-yt .vp { border-radius: inherit; }
 .assign-resource {
   display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
   padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;

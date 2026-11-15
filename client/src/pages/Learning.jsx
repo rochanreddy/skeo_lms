@@ -10,7 +10,7 @@ import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.
 import { GradeCard, gradeState } from '../components/GradeResult.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
 import { createVideoClock } from '../lib/videoClock.js';
-import { lessonVideo, parseYouTubeId } from '../lib/youtube.js';
+import { lessonVideo } from '../lib/youtube.js';
 import { formatTime } from '../lib/player.js';
 import { mediaOf, mediaFrom, stripParentContext, lessonWords, readLastLesson, writeLastLesson } from '../lib/syllabus.js';
 import CertificateModal from '../components/CertificateModal.jsx';
@@ -1011,29 +1011,6 @@ function LessonSoon({ url, failed, onRetry }) {
   );
 }
 
-// An assignment walkthrough is a plain file: the browser plays it, and a file
-// that will not play even after a quiet second try gets the card above. A
-// YouTube link plays in the lesson player instead.
-function PlainVideo({ url }) {
-  const youtubeId = parseYouTubeId(url);
-  if (youtubeId) return <div className="assign-yt"><VdoPlayer source="youtube" videoId={youtubeId} title="Walkthrough" /></div>;
-  return <FileVideo url={url} />;
-}
-
-function FileVideo({ url }) {
-  const [attempt, setAttempt] = useState(0);
-  const [failed, setFailed] = useState(false);
-  const onError = () => {
-    if (attempt === 0) { setTimeout(() => setAttempt(1), 1200); return; }
-    setFailed(true);
-  };
-  if (!url || failed) return <LessonSoon url={url} failed={failed} onRetry={() => { setFailed(false); setAttempt((n) => n + 1); }} />;
-  // preload="none": the browser's default fetches metadata the moment the
-  // element mounts, so every walkthrough paid for a range request nobody had
-  // asked to play. The box is sized by CSS, so holding off costs no layout.
-  return <video key={attempt} src={url} controls preload="none" className="lesson-video" onError={onError} />;
-}
-
 function Assignments() {
   const [items, setItems] = useState([]);
   // Before the first response an empty list means "not known yet", announcing
@@ -1120,9 +1097,9 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
   const showForm = !sub || editing;
   const editable = !sub?.locked;
   const required = (a.requiredDriveTypes || []).map((t) => REQUIRED_LABELS[t] || t);
-  // No video and no PDF means no left column at all, an empty rail beside
-  // the brief reads as something that failed to load.
-  const hasMedia = Boolean(a.videoUrl || a.pdfUrl || a.solutionPdfUrl);
+  // Coursework carries no video, only brief PDFs. With none, there is no left
+  // column at all: an empty rail beside the brief reads as a failed load.
+  const hasMedia = Boolean(a.pdfUrl || a.solutionPdfUrl);
 
   // One badge in the corner answers "where do I stand" before anything else.
   const grade = gradeState(sub);
@@ -1148,19 +1125,13 @@ function AssignmentCard({ a, onChange, open, onToggle }) {
         </span>
       </button>
 
-      {/* Two columns. Watching on the left, the video with the brief PDF
-          under it; handing in on the right. The media column sticks, so the
-          video stays put while a student works down the right-hand side. */}
+      {/* Two columns: the brief PDFs on the left, handing in on the right.
+          The left column sticks while a student works down the right. */}
       {open && (
       <div className={`assign-split ${hasMedia ? '' : 'solo'}`} id={`assign-${a._id}`}>
         {hasMedia && (
           <div className="assign-media">
-            <h4 className="assign-pane-head">{a.videoUrl ? 'Walkthrough' : 'Resources'}</h4>
-            {a.videoUrl && (
-              <div className="assign-video">
-                <PlainVideo key={`${a._id}-v`} url={a.videoUrl} />
-              </div>
-            )}
+            <h4 className="assign-pane-head">Briefs</h4>
             {(a.pdfUrl || a.solutionPdfUrl) && (
             <div className={`assign-resources ${a.pdfUrl && a.solutionPdfUrl ? 'pair' : ''}`}>
             {a.solutionPdfUrl && (
