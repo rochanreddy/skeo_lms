@@ -14,6 +14,7 @@ import { startUsageMeter, usageMeter } from './utils/usageMeter.js';
 import { syncLibrary } from './utils/librarySeed.js';
 import { syncClaudeQuizzes, resetClaudeQuizAttemptsOnce } from './utils/claudeQuizSync.js';
 import { attachCapstoneBriefsOnce, clearCourseworkVideosOnce } from './utils/capstoneBriefs.js';
+import { linkClaudeDriveVideosOnce } from './utils/driveLessons.js';
 import { startAiGrading } from './utils/aiGrader.js';
 
 const app = express();
@@ -135,6 +136,11 @@ async function start() {
     clearCourseworkVideosOnce()
       .then((r) => { if (r.cleared) console.log(`[coursework] removed the video from ${r.cleared} assignment(s) and project(s)`); })
       .catch((err) => console.error('[coursework] video removal failed:', err.message));
+    // The Claude lessons' videos from its Google Drive folder, once
+    // (utils/driveLessons.js).
+    linkClaudeDriveVideosOnce()
+      .then((r) => { if (r.linked) console.log(`[videos] linked ${r.linked} lesson(s) to their Google Drive videos`); })
+      .catch((err) => console.error('[videos] Drive linking failed:', err.message));
     const server = app.listen(port, () => console.log(`Skeo LMS API listening on http://localhost:${port}`));
     // Grades submitted Drive folders with Gemini; also off the critical path.
     startAiGrading();
