@@ -1325,6 +1325,9 @@ h1.md-h { font-size: 22px; } h2.md-h { font-size: 19px; } h3.md-h { font-size: 1
 .ce-vdo-page .vc { margin-bottom: 0; }
 /* The bulk-paste card above the tree. */
 .yb-body { margin-top: 14px; }
+.yb-import { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.yb-import .ce-field { flex: 1 1 260px; min-width: 0; margin: 0; }
+.yb-import-note { flex-basis: 100%; margin: 0; }
 .yb-text { width: 100%; font-family: var(--mono, ui-monospace, monospace); font-size: 12.5px; line-height: 1.6; resize: vertical; }
 .yb-list { max-height: 260px; overflow: auto; }
 .yb-lesson { cursor: default; text-align: left; overflow-wrap: anywhere; }

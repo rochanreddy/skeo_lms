@@ -76,7 +76,7 @@ function videoLessons(modules) {
  * column copied from a sheet) and pairs each with the lesson of that number.
  * A number two lessons share matches neither: guessing is how a lesson ends
  * up with the wrong video. */
-export function matchLines(text, lessons) {
+export function matchLines(text, lessons, parse = parseYouTubeId, name = 'YouTube') {
   const byNumber = new Map();
   for (const l of lessons) {
     if (!l.n) continue;
@@ -89,9 +89,9 @@ export function matchLines(text, lessons) {
     const line = raw.trim();
     if (!line) continue;
     const words = line.split(/\s+/);
-    const at = words.findIndex((w) => parseYouTubeId(w.replace(/^[<(["']+|[>)\]"',;]+$/g, '')));
-    if (at < 0) { unmatched.push({ line, why: 'no YouTube link in this line' }); continue; }
-    const id = parseYouTubeId(words[at].replace(/^[<(["']+|[>)\]"',;]+$/g, ''));
+    const at = words.findIndex((w) => parse(w.replace(/^[<(["']+|[>)\]"',;]+$/g, '')));
+    if (at < 0) { unmatched.push({ line, why: `no ${name} link in this line` }); continue; }
+    const id = parse(words[at].replace(/^[<(["']+|[>)\]"',;]+$/g, ''));
     const rest = words.filter((_, i) => i !== at).join(' ');
     const n = lessonNumber(rest);
     if (!n) { unmatched.push({ line, why: 'no lesson number at the start, like 1.3' }); continue; }
@@ -106,18 +106,24 @@ export function matchLines(text, lessons) {
   return { matched, unmatched };
 }
 
+const YOUTUBE = {
+  name: 'YouTube', field: 'youtubeId', parse: parseYouTubeId, hint: UNLISTED_HINT,
+  example: 'https://youtu.be/…', short: (id) => `youtu.be/${id}`,
+};
+
 /**
- * The course's YouTube links in one place: how many lessons have one, and a
- * box to paste many at once.
- *   onLink(matched)  sets youtubeId on each matched lesson
+ * The course's links from one source in one place: how many lessons have
+ * one, and a box to paste many at once. YouTube unless `source` says
+ * otherwise (DriveLinks.jsx passes Drive's).
+ *   onLink(matched)  sets the source's field on each matched lesson
  */
-export function YouTubeBulk({ modules, onLink }) {
+export function YouTubeBulk({ modules, onLink, source = YOUTUBE }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const lessons = useMemo(() => videoLessons(modules), [modules]);
-  const { matched, unmatched } = useMemo(() => matchLines(text, lessons), [text, lessons]);
+  const { matched, unmatched } = useMemo(() => matchLines(text, lessons, source.parse, source.name), [text, lessons, source]);
 
-  const withYt = lessons.filter((l) => l.t.youtubeId).length;
+  const withYt = lessons.filter((l) => l.t[source.field]).length;
   if (!lessons.length) return null;
 
   const link = () => {
@@ -127,12 +133,12 @@ export function YouTubeBulk({ modules, onLink }) {
   };
 
   return (
-    <div className="vc vc-note yb" role="region" aria-label="YouTube links">
+    <div className="vc vc-note yb" role="region" aria-label={`${source.name} links`}>
       <div className="vc-head">
         <div>
-          <strong>YouTube: {withYt} of {lessons.length} video lessons linked</strong>
+          <strong>{source.name}: {withYt} of {lessons.length} video lessons linked</strong>
           <p className="vc-sub">
-            {UNLISTED_HINT} Paste many links at once, each on a line with its lesson number (“1.3 Hallucinations https://youtu.be/…”), and they are matched for you.
+            {source.hint} Paste many links at once, each on a line with its lesson number (“1.3 Hallucinations {source.example}”), and they are matched for you.
           </p>
         </div>
         <div className="vc-actions">
@@ -142,10 +148,11 @@ export function YouTubeBulk({ modules, onLink }) {
 
       {open && (
         <div className="yb-body">
+          {source.Importer && <source.Importer onLines={setText} />}
           <textarea
             className="ce-field yb-text"
             rows={6}
-            placeholder={'1.1 What Generative AI Actually Is  https://youtu.be/…\n1.2 Tokens  https://youtu.be/…\nModule 1 Recap  https://youtu.be/…'}
+            placeholder={`1.1 What Generative AI Actually Is  ${source.example}\n1.2 Tokens  ${source.example}\nModule 1 Recap  ${source.example}`}
             value={text}
             onChange={(e) => setText(e.target.value)}
             autoFocus
@@ -156,8 +163,8 @@ export function YouTubeBulk({ modules, onLink }) {
                 <li key={`${m.mi}.${m.ci}.${m.ti}`} className="vc-row">
                   <span className="vc-lesson yb-lesson">{m.t.title}</span>
                   <span className="vc-match">
-                    <span aria-hidden="true">→ </span>youtu.be/{m.id}
-                    {m.t.youtubeId && m.t.youtubeId !== m.id ? <em className="vc-processing"> replaces its current link</em> : null}
+                    <span aria-hidden="true">→ </span>{source.short(m.id)}
+                    {m.t[source.field] && m.t[source.field] !== m.id ? <em className="vc-processing"> replaces its current link</em> : null}
                   </span>
                 </li>
               ))}
