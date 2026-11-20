@@ -31,6 +31,14 @@
    outside it, so only skeo's controls show. */
 .vp.is-youtube { overflow: hidden; }
 .vp.is-youtube .vp-frame { top: -64px; bottom: auto; height: calc(100% + 128px); }
+/* Google Drive's player (DriveFrame) puts a "Pop out" button in its top
+   right corner, which opens the file in Drive. The frame starts 56px above
+   the box, so that strip, button and all, falls outside it. Drive letterboxes
+   the video inside the taller frame: about 28px of the picture's top is lost
+   and a matching black strip sits under Drive's controls at the bottom.
+   (Measured 2026-11-21; Drive moving its button would need a new number.) */
+.vp.is-drive { overflow: hidden; }
+.vp.is-drive .vp-frame { top: -56px; bottom: auto; height: calc(100% + 56px); }
 .vp-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 .vp-surface { position: absolute; inset: 0; cursor: pointer; }
 .vp.is-idle .vp-surface { cursor: none; }

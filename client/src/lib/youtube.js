@@ -45,12 +45,14 @@ export function youtubeEmbedUrl(id, origin = window.location.origin) {
   return `https://www.youtube.com/embed/${id}?${q}`;
 }
 
-/** Which video a lesson plays, if any: { kind: 'youtube' | 'vdocipher', id }.
- * YouTube whenever the lesson has a link. Its VdoCipher video, kept for
- * later, plays only when there is none, so a lesson not yet moved over keeps
- * playing rather than going blank. */
+/** Which video a lesson plays, if any: { kind: 'drive' | 'youtube' | 'vdocipher', id }.
+ * A Google Drive file first (lib/drive.js), then YouTube. Its VdoCipher
+ * video, kept for later, plays only when there is neither, so a lesson not
+ * yet moved over keeps playing rather than going blank. */
 export function lessonVideo(topic) {
   if (!topic || topic.contentType !== 'video') return null;
+  const drive = (topic.driveFileId || '').trim();
+  if (drive) return { kind: 'drive', id: drive };
   const yt = (topic.youtubeId || '').trim();
   if (yt) return { kind: 'youtube', id: yt };
   const vdo = (topic.vdoVideoId || '').trim();

@@ -6,6 +6,7 @@ import Markdown from '../components/Markdown.jsx';
 import LessonIcon from '../components/LessonIcon.jsx';
 import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
+import DriveFrame from '../components/DriveFrame.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { GradeCard, gradeState } from '../components/GradeResult.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
@@ -737,7 +738,9 @@ function Content() {
 
             {topic && hasVideo && (
               <div className={`cp-player ${lessonsView ? 'phone-hide' : ''}`}>
-                {video
+                {video?.kind === 'drive'
+                  ? <DriveFrame key={topic._id} fileId={video.id} title={topic.title} onWatched={() => markDone(topic._id)} />
+                  : video
                   ? (
                     <VdoPlayer
                       key={topic._id}
