@@ -13,6 +13,7 @@ import {
   watermarkFor,
 } from '../utils/vdocipher.js';
 import { videoPlayed } from '../utils/usageMeter.js';
+import { checkDriveFile, listDriveVideos, parseDriveId, parseFolderId } from '../utils/driveVideo.js';
 
 // VdoCipher playback and library management.
 //
@@ -36,9 +37,9 @@ const fail = (res, e) =>
  * the admin has not blocked for them -- the same visibility rule
  * routes/programs.js applies to the curriculum itself.
  */
-async function canWatch(user, videoId) {
+async function canWatch(user, videoId, field = 'vdoVideoId') {
   if (user.role === 'admin') return true;
-  const program = await Program.findOne({ 'modules.chapters.topics.vdoVideoId': videoId })
+  const program = await Program.findOne({ [`modules.chapters.topics.${field}`]: videoId })
     .select('modules')
     .lean();
   if (!program) return false;
@@ -47,7 +48,7 @@ async function canWatch(user, videoId) {
   return (program.modules || []).some(
     (m) =>
       !blocked.has(String(m._id)) &&
-      (m.chapters || []).some((c) => (c.topics || []).some((t) => t.vdoVideoId === videoId)),
+      (m.chapters || []).some((c) => (c.topics || []).some((t) => t[field] === videoId)),
   );
 }
 
@@ -87,6 +88,30 @@ router.post(
     }
   },
 );
+
+// GET /api/skeo/videos/drive/:fileId/check, for the editor: is the file
+// shared so students can open it, and what is it called.
+router.get('/drive/:fileId/check', requireAuth, requireRole('admin'), async (req, res) => {
+  const id = parseDriveId(req.params.fileId);
+  if (!id) return res.status(400).json({ error: 'That is not a Google Drive file.' });
+  return res.json(await checkDriveFile(id));
+});
+
+// GET /api/skeo/videos/drive/folder/:folderId, every video in a shared
+// course folder and its module folders, for linking lessons in one go.
+router.get('/drive/folder/:folderId', requireAuth, requireRole('admin'), async (req, res) => {
+  const id = parseFolderId(req.params.folderId);
+  if (!id) return res.status(400).json({ error: 'That is not a Google Drive folder.' });
+  try {
+    const videos = await listDriveVideos(id);
+    if (!videos.length) {
+      return res.status(404).json({ error: 'No videos found. Check the folder is shared as “Anyone with the link”.' });
+    }
+    return res.json({ videos });
+  } catch (e) {
+    return res.status(502).json({ error: `Could not read the folder: ${e.message}` });
+  }
+});
 
 // GET /api/skeo/videos: the account's library, for the admin lesson picker.
 router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
