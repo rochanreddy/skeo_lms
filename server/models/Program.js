@@ -19,7 +19,8 @@ const topicSchema = new mongoose.Schema(
     // YouTube (unlisted) is the main home now: a lesson with a youtubeId
     // plays that, and its VdoCipher video, kept for later, plays only when
     // there is no YouTube link (client/src/lib/youtube.js, lessonVideo).
-    // A Google Drive file, when set, comes before both (utils/driveVideo.js).
+    // A Google Drive file (utils/driveVideo.js) plays when there is no
+    // YouTube link, before the VdoCipher video.
     videoSource: { type: String, enum: ['url', 'vdocipher', 'youtube', 'drive'], default: 'url' },
     vdoVideoId: { type: String, default: '', trim: true, index: true },
     // Stored as the bare id whatever link was pasted; anything that is not a

@@ -346,6 +346,8 @@ function Content() {
   // Phones: under the player, "About" (the lesson text) and "Lessons" (the
   // list) share one spot, switched by a segmented control. Desktop ignores it.
   const [mobileTab, setMobileTab] = useState('lessons');
+  // Lessons whose YouTube video would not play here: they use their Drive copy.
+  const [ytFailed, setYtFailed] = useState(() => new Set());
   // Progress and gates arrive after the tree. The first lesson is chosen only
   // once both are in, or it could pick one that is finished or locked.
   const [progressReady, setProgressReady] = useState(false);
@@ -683,7 +685,13 @@ function Content() {
   // The lesson's video: its unlisted YouTube video or its VdoCipher one,
   // whichever source the admin chose (lib/youtube.js). A plain URL on the
   // topic is never played.
-  const video = lessonVideo(topic);
+  // When YouTube cannot play a lesson on this device or network and the
+  // lesson also has a Drive copy, the Drive copy plays instead.
+  const preferred = lessonVideo(topic);
+  const driveBackup = (topic?.driveFileId || '').trim();
+  const video = preferred?.kind === 'youtube' && driveBackup && ytFailed.has(topic._id)
+    ? { kind: 'drive', id: driveBackup }
+    : preferred;
   // A video lesson always has the player box; without a recording yet it
   // holds the "on its way" card rather than disappearing.
 
@@ -748,6 +756,7 @@ function Content() {
                       videoId={video.id}
                       title={topic.title}
                       onWatched={() => markDone(topic._id)}
+                      onUnavailable={video.kind === 'youtube' && driveBackup ? () => setYtFailed((s) => new Set(s).add(topic._id)) : null}
                       clock={clock}
                       upNext={next && !nextLocked ? { title: next.topic.title, onPlay: () => selectTopic(next) } : null}
                     />

@@ -84,8 +84,11 @@ const Spinner = () => (
  *                  or it ends: the classroom marks the lesson done on this
  * @param clock    optional, from lib/videoClock.js: the time is published to
  *                 it and seeks requested through it are carried out
+ * @param onUnavailable optional: called when a YouTube video cannot play here
+ *                 (YouTube blocked or unreachable, video removed, embedding
+ *                 off), so the classroom can switch to the lesson's Drive copy
  */
-export default function VdoPlayer({ videoId, source = 'vdocipher', title = 'Lesson video', upNext = null, onEnded, onWatched, clock = null }) {
+export default function VdoPlayer({ videoId, source = 'vdocipher', title = 'Lesson video', upNext = null, onEnded, onWatched, clock = null, onUnavailable = null }) {
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -199,6 +202,11 @@ export default function VdoPlayer({ videoId, source = 'vdocipher', title = 'Less
     })();
     return () => { cancelled = true; };
   }, [videoId, source, attempt]);
+
+  // A YouTube failure is handed up once, when there is somewhere else to go.
+  useEffect(() => {
+    if (error && source === 'youtube' && onUnavailable) onUnavailable(error);
+  }, [error]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 2. The player behind the frame ────────────────────────────────────────
   // VdoCipher hands its player over at once; YouTube's is ready when it says so.

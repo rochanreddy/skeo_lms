@@ -102,7 +102,7 @@ export default function CurriculumEditor({ programId, onClose }) {
   // link (VdoCipher is kept apart, for later: see lib/youtube.js).
   const setType = (tp) => setTopicField(sel.mi, sel.ci, sel.ti, tp === 'video' ? { contentType: 'video', videoSource: 'youtube' } : { contentType: tp });
   const setYouTube = (id) => setTopicField(sel.mi, sel.ci, sel.ti, { youtubeId: id, videoSource: 'youtube' });
-  // A Drive file, when set, plays before the YouTube link (lib/youtube.js, lessonVideo).
+  // A YouTube link, when set, plays before the Drive file (lib/youtube.js, lessonVideo).
   const setDrive = (id) => setTopicField(sel.mi, sel.ci, sel.ti, { driveFileId: id, videoSource: id ? 'drive' : 'youtube' });
   const linkDrive = (matches) => {
     touch((m) => {
@@ -153,8 +153,8 @@ export default function CurriculumEditor({ programId, onClose }) {
   /** How a video lesson stands, for the tree dot: is its YouTube video in. */
   const videoState = (t) => {
     if (t.contentType !== 'video') return null;
-    if (t.driveFileId) return { tone: 'ok', label: 'Google Drive video linked' };
     if (t.youtubeId) return { tone: 'ok', label: 'YouTube video linked' };
+    if (t.driveFileId) return { tone: 'ok', label: 'Google Drive video linked' };
     if (t.vdoVideoId) return { tone: 'wait', label: 'No YouTube link yet: plays its VdoCipher video for now' };
     return { tone: 'none', label: 'No YouTube link yet' };
   };
@@ -307,10 +307,10 @@ export default function CurriculumEditor({ programId, onClose }) {
 
               {selTopic.contentType === 'video' && (
                 <>
-                  <label className="ce-label">Google Drive video <span className="muted">(plays first when linked)</span></label>
+                  <label className="ce-label">Google Drive video <span className="muted">({selTopic.youtubeId ? 'not used while a YouTube video is linked' : 'plays when there is no YouTube link'})</span></label>
                   <DriveField driveFileId={selTopic.driveFileId || ''} onChange={setDrive} />
 
-                  <label className="ce-label">YouTube video <span className="muted">(unlisted{selTopic.driveFileId ? ', not used while a Drive video is linked' : ', plays in the skeo player'})</span></label>
+                  <label className="ce-label">YouTube video <span className="muted">(unlisted, plays first, in the skeo player)</span></label>
                   <YouTubeField youtubeId={selTopic.youtubeId || ''} onChange={setYouTube} />
                   {!selTopic.driveFileId && !selTopic.youtubeId && selTopic.vdoVideoId && (
                     <p className="ce-src-note muted">Until a YouTube link is added, students get this lesson’s VdoCipher video.</p>

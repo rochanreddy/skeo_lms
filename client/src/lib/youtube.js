@@ -45,39 +45,50 @@ export function youtubeEmbedUrl(id, origin = window.location.origin) {
   return `https://www.youtube.com/embed/${id}?${q}`;
 }
 
-/** Which video a lesson plays, if any: { kind: 'drive' | 'youtube' | 'vdocipher', id }.
- * A Google Drive file first (lib/drive.js), then YouTube. Its VdoCipher
- * video, kept for later, plays only when there is neither, so a lesson not
- * yet moved over keeps playing rather than going blank. */
+/** Which video a lesson plays, if any: { kind: 'youtube' | 'drive' | 'vdocipher', id }.
+ * YouTube first: it adapts the quality to the viewer's connection and plays
+ * on every device, where Drive lagged or failed on some. A Google Drive file
+ * (lib/drive.js) plays when there is no YouTube link, and the VdoCipher video,
+ * kept for later, only when there is neither, so a lesson not yet moved over
+ * keeps playing rather than going blank. */
 export function lessonVideo(topic) {
   if (!topic || topic.contentType !== 'video') return null;
-  const drive = (topic.driveFileId || '').trim();
-  if (drive) return { kind: 'drive', id: drive };
   const yt = (topic.youtubeId || '').trim();
   if (yt) return { kind: 'youtube', id: yt };
+  const drive = (topic.driveFileId || '').trim();
+  if (drive) return { kind: 'drive', id: drive };
   const vdo = (topic.vdoVideoId || '').trim();
   return vdo ? { kind: 'vdocipher', id: vdo } : null;
 }
 
 // ── The IFrame API ──────────────────────────────────────────────────────────
 let loading = null;
+/* A network that blocks YouTube does not always refuse: some just never
+ * answer. Past this long the API counts as unreachable, so a lesson with a
+ * Drive copy can switch to it. The script is small: a slow phone line has it
+ * well inside this. */
+const API_TIMEOUT_MS = 20000;
 export function loadYouTubeApi({ doc = document, win = window } = {}) {
   if (win.YT?.Player) return Promise.resolve(win.YT);
   if (loading) return loading;
   loading = new Promise((resolve, reject) => {
     const before = win.onYouTubeIframeAPIReady;
-    win.onYouTubeIframeAPIReady = () => {
-      if (typeof before === 'function') before();
-      resolve(win.YT);
-    };
     const script = doc.createElement('script');
-    script.src = 'https://www.youtube.com/iframe_api';
-    script.async = true;
-    script.onerror = () => {
+    const fail = () => {
+      clearTimeout(timer);
       loading = null;
       script.remove();
       reject(new Error('YouTube could not be reached. Check your connection and try again.'));
     };
+    const timer = setTimeout(fail, API_TIMEOUT_MS);
+    win.onYouTubeIframeAPIReady = () => {
+      clearTimeout(timer);
+      if (typeof before === 'function') before();
+      resolve(win.YT);
+    };
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    script.onerror = fail;
     doc.head.appendChild(script);
   });
   return loading;
