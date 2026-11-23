@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { keepsClassCacheFresh } from '../utils/classCache.js';
 import { parseYouTubeId } from '../utils/youtube.js';
-import { parseDriveId } from '../utils/driveVideo.js';
 
 // Curriculum hierarchy from the canvas: Program → Module → Chapter → Topic.
 // Edited together as one tree, so embedded as sub-documents.
@@ -19,16 +18,16 @@ const topicSchema = new mongoose.Schema(
     // YouTube (unlisted) is the main home now: a lesson with a youtubeId
     // plays that, and its VdoCipher video, kept for later, plays only when
     // there is no YouTube link (client/src/lib/youtube.js, lessonVideo).
-    // A Google Drive file (utils/driveVideo.js) plays when there is no
-    // YouTube link, before the VdoCipher video.
+    // 'drive' stays in the list only so lessons saved while Drive videos
+    // played still validate; Drive is no longer played.
     videoSource: { type: String, enum: ['url', 'vdocipher', 'youtube', 'drive'], default: 'url' },
     vdoVideoId: { type: String, default: '', trim: true, index: true },
     // Stored as the bare id whatever link was pasted; anything that is not a
     // YouTube video comes out empty.
     youtubeId: { type: String, default: '', set: parseYouTubeId },
-    // A Google Drive video, stored as the bare file id whatever link was
-    // pasted. The file must be shared "Anyone with the link".
-    driveFileId: { type: String, default: '', set: parseDriveId },
+    // A Google Drive file id from when lessons played from Drive. No longer
+    // played or edited; kept so the old links are not lost.
+    driveFileId: { type: String, default: '', trim: true },
     body: { type: String, default: '' },
     // Where this particular lecture meets. Set by hand and deliberately dumb:
     // a live meeting URL while the class is running, swapped for a YouTube URL once the

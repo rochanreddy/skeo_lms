@@ -6,7 +6,6 @@ import Markdown from '../components/Markdown.jsx';
 import LessonIcon from '../components/LessonIcon.jsx';
 import LineIcon from '../components/LineIcon.jsx';
 import VdoPlayer from '../components/VdoPlayer.jsx';
-import DriveFrame from '../components/DriveFrame.jsx';
 import { CheckBadge, SubmissionCheckPanel } from '../components/SubmissionCheck.jsx';
 import { GradeCard, gradeState } from '../components/GradeResult.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
@@ -346,8 +345,6 @@ function Content() {
   // Phones: under the player, "About" (the lesson text) and "Lessons" (the
   // list) share one spot, switched by a segmented control. Desktop ignores it.
   const [mobileTab, setMobileTab] = useState('lessons');
-  // Lessons whose YouTube video would not play here: they use their Drive copy.
-  const [ytFailed, setYtFailed] = useState(() => new Set());
   // Progress and gates arrive after the tree. The first lesson is chosen only
   // once both are in, or it could pick one that is finished or locked.
   const [progressReady, setProgressReady] = useState(false);
@@ -685,13 +682,7 @@ function Content() {
   // The lesson's video: its unlisted YouTube video or its VdoCipher one,
   // whichever source the admin chose (lib/youtube.js). A plain URL on the
   // topic is never played.
-  // When YouTube cannot play a lesson on this device or network and the
-  // lesson also has a Drive copy, the Drive copy plays instead.
-  const preferred = lessonVideo(topic);
-  const driveBackup = (topic?.driveFileId || '').trim();
-  const video = preferred?.kind === 'youtube' && driveBackup && ytFailed.has(topic._id)
-    ? { kind: 'drive', id: driveBackup }
-    : preferred;
+  const video = lessonVideo(topic);
   // A video lesson always has the player box; without a recording yet it
   // holds the "on its way" card rather than disappearing.
 
@@ -746,9 +737,7 @@ function Content() {
 
             {topic && hasVideo && (
               <div className={`cp-player ${lessonsView ? 'phone-hide' : ''}`}>
-                {video?.kind === 'drive'
-                  ? <DriveFrame key={topic._id} fileId={video.id} title={topic.title} onWatched={() => markDone(topic._id)} />
-                  : video
+                {video
                   ? (
                     <VdoPlayer
                       key={topic._id}
@@ -756,7 +745,6 @@ function Content() {
                       videoId={video.id}
                       title={topic.title}
                       onWatched={() => markDone(topic._id)}
-                      onUnavailable={video.kind === 'youtube' && driveBackup ? () => setYtFailed((s) => new Set(s).add(topic._id)) : null}
                       clock={clock}
                       upNext={next && !nextLocked ? { title: next.topic.title, onPlay: () => selectTopic(next) } : null}
                     />

@@ -42,7 +42,7 @@ export function videoProblems(modules, library) {
     if (t.contentType !== 'video') return;
     // A lesson with a YouTube link plays that (lib/youtube.js); its VdoCipher
     // video, if any, is not in use, so it is not this check's business.
-    if ((t.youtubeId || '').trim() || (t.driveFileId || '').trim()) return;
+    if ((t.youtubeId || '').trim()) return;
     const id = (t.vdoVideoId || '').trim();
     if (id && owned.has(id)) return;
     const n = lessonNumber(t.title);

@@ -8,7 +8,6 @@ import { isReady, loadLibrary } from '../lib/vdoLinks.js';
 import { addFrame, missingFrame } from '../lib/courseFrame.js';
 import { lessonVideo } from '../lib/youtube.js';
 import { YouTubeBulk, YouTubeField } from './YouTubeLinks.jsx';
-import { DriveBulk, DriveField } from './DriveLinks.jsx';
 
 // Admin curriculum builder for one program. Upload a doc to auto-structure it,
 // then review/edit the Module → Chapter → Topic tree and publish.
@@ -64,7 +63,7 @@ export default function CurriculumEditor({ programId, onClose }) {
     let topics = 0; let videos = 0; let linked = 0;
     for (const m of modules) for (const c of m.chapters || []) for (const t of c.topics || []) {
       topics += 1;
-      if (t.contentType === 'video') { videos += 1; const k = lessonVideo(t)?.kind; if (k === 'drive' || k === 'youtube') linked += 1; }
+      if (t.contentType === 'video') { videos += 1; const k = lessonVideo(t)?.kind; if (k === 'youtube') linked += 1; }
     }
     return { modules: modules.length, topics, videos, linked };
   }, [modules]);
@@ -102,14 +101,6 @@ export default function CurriculumEditor({ programId, onClose }) {
   // link (VdoCipher is kept apart, for later: see lib/youtube.js).
   const setType = (tp) => setTopicField(sel.mi, sel.ci, sel.ti, tp === 'video' ? { contentType: 'video', videoSource: 'youtube' } : { contentType: tp });
   const setYouTube = (id) => setTopicField(sel.mi, sel.ci, sel.ti, { youtubeId: id, videoSource: 'youtube' });
-  // A YouTube link, when set, plays before the Drive file (lib/youtube.js, lessonVideo).
-  const setDrive = (id) => setTopicField(sel.mi, sel.ci, sel.ti, { driveFileId: id, videoSource: id ? 'drive' : 'youtube' });
-  const linkDrive = (matches) => {
-    touch((m) => {
-      for (const p of matches) Object.assign(m[p.mi].chapters[p.ci].topics[p.ti], { videoSource: 'drive', driveFileId: p.id });
-    });
-    flash(`Linked ${matches.length} lesson${matches.length === 1 ? '' : 's'} to Google Drive. Save to publish.`);
-  };
   // From the YouTube card: links pasted in bulk.
   const linkYouTube = (matches) => {
     touch((m) => {
@@ -154,8 +145,7 @@ export default function CurriculumEditor({ programId, onClose }) {
   const videoState = (t) => {
     if (t.contentType !== 'video') return null;
     if (t.youtubeId) return { tone: 'ok', label: 'YouTube video linked' };
-    if (t.driveFileId) return { tone: 'ok', label: 'Google Drive video linked' };
-    if (t.vdoVideoId) return { tone: 'wait', label: 'No YouTube link yet: plays its VdoCipher video for now' };
+    if (t.vdoVideoId) return { tone: 'wait', label: 'No YouTube link yet: students see “video on its way”' };
     return { tone: 'none', label: 'No YouTube link yet' };
   };
   /** The lesson's VdoCipher video (kept for later), for its folded section. */
@@ -221,7 +211,6 @@ export default function CurriculumEditor({ programId, onClose }) {
         </div>
       )}
 
-      <DriveBulk modules={modules} onLink={linkDrive} />
       <YouTubeBulk modules={modules} onLink={linkYouTube} />
 
       {/* VdoCipher is kept, apart, for later. Folded, it stays out of the way;
@@ -307,13 +296,10 @@ export default function CurriculumEditor({ programId, onClose }) {
 
               {selTopic.contentType === 'video' && (
                 <>
-                  <label className="ce-label">Google Drive video <span className="muted">({selTopic.youtubeId ? 'not used while a YouTube video is linked' : 'plays when there is no YouTube link'})</span></label>
-                  <DriveField driveFileId={selTopic.driveFileId || ''} onChange={setDrive} />
-
-                  <label className="ce-label">YouTube video <span className="muted">(unlisted, plays first, in the skeo player)</span></label>
+                  <label className="ce-label">YouTube video <span className="muted">(unlisted, plays in the skeo player)</span></label>
                   <YouTubeField youtubeId={selTopic.youtubeId || ''} onChange={setYouTube} />
-                  {!selTopic.driveFileId && !selTopic.youtubeId && selTopic.vdoVideoId && (
-                    <p className="ce-src-note muted">Until a YouTube link is added, students get this lesson’s VdoCipher video.</p>
+                  {!selTopic.youtubeId && selTopic.vdoVideoId && (
+                    <p className="ce-src-note muted">Students see “video on its way” until a YouTube link is added. The VdoCipher video below is not played.</p>
                   )}
 
                   <details className="ce-vdo">

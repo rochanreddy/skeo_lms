@@ -114,7 +114,7 @@ const YOUTUBE = {
 /**
  * The course's links from one source in one place: how many lessons have
  * one, and a box to paste many at once. YouTube unless `source` says
- * otherwise (DriveLinks.jsx passes Drive's).
+ * otherwise.
  *   onLink(matched)  sets the source's field on each matched lesson
  */
 export function YouTubeBulk({ modules, onLink, source = YOUTUBE }) {

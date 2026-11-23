@@ -45,28 +45,23 @@ export function youtubeEmbedUrl(id, origin = window.location.origin) {
   return `https://www.youtube.com/embed/${id}?${q}`;
 }
 
-/** Which video a lesson plays, if any: { kind: 'youtube' | 'drive' | 'vdocipher', id }.
- * YouTube first: it adapts the quality to the viewer's connection and plays
- * on every device, where Drive lagged or failed on some. A Google Drive file
- * (lib/drive.js) plays when there is no YouTube link, and the VdoCipher video,
- * kept for later, only when there is neither, so a lesson not yet moved over
- * keeps playing rather than going blank. */
+/** Which video a lesson plays, if any: { kind: 'youtube', id }.
+ * Unlisted YouTube is the only home for lesson videos, played in the skeo
+ * player. Google Drive and VdoCipher are not played: a lesson's old
+ * driveFileId and vdoVideoId stay in the database, unused, and a lesson with
+ * no YouTube link shows "on its way" until one is added. */
 export function lessonVideo(topic) {
   if (!topic || topic.contentType !== 'video') return null;
   const yt = (topic.youtubeId || '').trim();
-  if (yt) return { kind: 'youtube', id: yt };
-  const drive = (topic.driveFileId || '').trim();
-  if (drive) return { kind: 'drive', id: drive };
-  const vdo = (topic.vdoVideoId || '').trim();
-  return vdo ? { kind: 'vdocipher', id: vdo } : null;
+  return yt ? { kind: 'youtube', id: yt } : null;
 }
 
 // ── The IFrame API ──────────────────────────────────────────────────────────
 let loading = null;
 /* A network that blocks YouTube does not always refuse: some just never
- * answer. Past this long the API counts as unreachable, so a lesson with a
- * Drive copy can switch to it. The script is small: a slow phone line has it
- * well inside this. */
+ * answer. Past this long the API counts as unreachable and the player says
+ * so, with Try again. The script is small: a slow phone line has it well
+ * inside this. */
 const API_TIMEOUT_MS = 20000;
 export function loadYouTubeApi({ doc = document, win = window } = {}) {
   if (win.YT?.Player) return Promise.resolve(win.YT);
