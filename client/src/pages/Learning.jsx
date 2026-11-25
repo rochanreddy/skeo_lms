@@ -118,11 +118,8 @@ function Quizzes() {
     return () => { window.removeEventListener('message', onMessage); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
-  // How many gates are reachable: every one up to and including the first
-  // unattempted. Attempting it opens the next; so does having attempted it
-  // before a reset (wasAttempted), even while it waits to be taken again.
-  let open = 0;
-  for (const g of gates) { open += 1; if (!g.myAttempt && !g.wasAttempted) break; }
+  // Every module quiz is open, in any order (they no longer unlock modules).
+  const open = gates.length;
 
   if (loading) return <p className="muted">Loading quizzes…</p>;
   if (gates.length === 0 && others.length === 0) {
@@ -135,7 +132,7 @@ function Quizzes() {
         <>
           <h3 className="ruled-head">Module quizzes</h3>
           <p className="muted" style={{ margin: '-8px 0 16px' }}>
-            Attempt each one to unlock the next module, and the next quiz.
+            One quiz per module. Take them in any order.
           </p>
           <div className="list">
             {gates.map((q, i) => (i < open ? (
@@ -362,19 +359,10 @@ function Content() {
 
   const gateFor = (modId) => gates.find((q) => String(q.moduleId) === String(modId)) || null;
 
-  // A module is open if every module before it has had its gate quiz attempted.
-  // Admins see everything; so does anyone on a programme with no gates set up.
-  const unlockedCount = useMemo(() => {
-    const mods = program?.modules || [];
-    if (!isStudent) return mods.length;
-    let n = 0;
-    for (const m of mods) {
-      n += 1;                                   // this one is reachable
-      const g = gateFor(m._id);
-      if (g && !g.myAttempt && !g.wasAttempted) break; // its gate stops the rest (one sat before a reset doesn't)
-    }
-    return n;
-  }, [program, gates, isStudent]);
+  // Every module is open to everyone. Until 25 Nov 2026 a module opened only
+  // once the quiz of the one before it had been attempted; the module quizzes
+  // remain, but they no longer lock anything.
+  const unlockedCount = (program?.modules || []).length;
   const isLocked = (mi) => mi >= unlockedCount;
 
   // Flatten the tree into an ordered lesson list for counting + prev/next.
@@ -462,15 +450,13 @@ function Content() {
     : pageRef?.kind === 'chapter' ? ((program?.modules || []).find((m) => (m.chapters || []).some((c) => String(c._id) === String(pageRef.id)))?._id ?? null)
     : null;
 
-  // The next gate a student still has to sit: the newest open module's quiz,
-  // when it hasn't been attempted. (A gate behind a lock isn't "pending" yet,
-  // and one sat before a reset doesn't lock anything, so it isn't either.)
+  // A reminder of the first module quiz not yet taken. It locks nothing.
   const pendingGate = useMemo(() => {
     if (!isStudent) return null;
     return gates
-      .filter((g) => !g.myAttempt && !g.wasAttempted && modIndexOf(g.moduleId) >= 0 && modIndexOf(g.moduleId) < unlockedCount)
+      .filter((g) => !g.myAttempt && !g.wasAttempted && modIndexOf(g.moduleId) >= 0)
       .sort((a, b) => modIndexOf(a.moduleId) - modIndexOf(b.moduleId))[0] || null;
-  }, [gates, unlockedCount, program, isStudent]);
+  }, [gates, program, isStudent]);
 
   const loadProgress = (programId) => {
     if (!isStudent || !programId) { setProgressReady(true); return; }
@@ -855,7 +841,7 @@ function Content() {
               {isStudent && pct === 100 && <button className="btn sm cp-cert" onClick={viewCertificate}>🎓 View certificate</button>}
               {pendingGate && (
                 <button type="button" className="cp-pending" onClick={() => setParams({ tab: 'quizzes' })}>
-                  <LineIcon name="key" size={14} /> Module {modIndexOf(pendingGate.moduleId) + 1} quiz is waiting. Take it to unlock the next week
+                  <LineIcon name="key" size={14} /> Module {modIndexOf(pendingGate.moduleId) + 1} quiz is waiting. Take it when you're ready
                 </button>
               )}
             </div>

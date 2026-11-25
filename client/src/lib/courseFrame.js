@@ -14,7 +14,7 @@ const INTROS = {
   1: [
     'What this module covers: how Claude actually works underneath, where it goes wrong, and which surface to reach for',
     'Why it comes first: every later module assumes you can tell fluent output from accurate output',
-    'How each week runs: watch the lessons, try every task in Claude yourself, then take the module quiz to unlock the next week',
+    'How each week runs: watch the lessons, try every task in Claude yourself, then take the module quiz',
   ],
   3: [
     'What this module covers: Claude reading images, drawing diagrams, charts and interactive Artifacts, and polishing visuals in Claude Design',
